@@ -1,0 +1,214 @@
+import type { Unit } from './types';
+
+/** B1–C1: lo que conecta ideas y lo que hace sonar natural (el salto para salir de B2). */
+export const ADVANCED_UNITS: Unit[] = [
+  // ───────────── B1 ─────────────
+  {
+    id: 'phrasal-1',
+    level: 'B1',
+    axis: 'Vocabulario',
+    title: 'Phrasal verbs esenciales',
+    prereqs: ['past-simple', 'collocations'],
+    explanation: [
+      'Verbo + partícula con un significado propio. Los nativos los usan todo el tiempo en lugar de palabras "de libro".',
+      'find out (averiguar), look for (buscar), give up (dejar, rendirse), turn on / off (prender / apagar), get up (levantarse), pick up (pasar a buscar, levantar), run out of (quedarse sin), look after (cuidar).',
+    ],
+    examples: [
+      ['I found out the truth.', 'Averigüé la verdad.'],
+      ['We ran out of milk.', 'Nos quedamos sin leche.'],
+      ['Can you pick me up at 8?', '¿Me pasás a buscar a las 8?'],
+    ],
+    trap: 'Por los cognados sale "discover" o "abandon". Suenan formales: en una charla se dice find out y give up.',
+    exercises: [
+      { kind: 'choice', prompt: 'I\'m ___ my keys. Have you seen them?', options: ['looking for', 'looking after', 'looking up'], answer: 0 },
+      { kind: 'type', prompt: 'Please turn ___ the lights when you leave.', answers: ['off'] },
+      { kind: 'choice', prompt: 'We ran ___ of coffee.', options: ['away', 'out', 'off'], answer: 1 },
+      { kind: 'choice', prompt: 'Don\'t give ___! You can do it.', options: ['up', 'out', 'in'], answer: 0 },
+      { kind: 'type', prompt: 'I need to find ___ what time the bus leaves.', answers: ['out'] },
+      { kind: 'translate', prompt: '¿Me pasás a buscar a las 8?', answers: ['Can you pick me up at 8?', 'Could you pick me up at 8?', 'Can you pick me up at eight?'] },
+      { kind: 'listen', prompt: 'She looks after her grandmother.', answers: ['She looks after her grandmother.'] },
+    ],
+  },
+  {
+    id: 'relatives',
+    level: 'B1',
+    axis: 'Estructura',
+    title: 'Oraciones de relativo',
+    prereqs: ['questions', 'past-simple'],
+    explanation: [
+      'Para dar información sobre algo dentro de la misma oración: who (personas), which (cosas), that (personas o cosas), where (lugares), whose (cuyo).',
+      'Si el relativo es objeto, se puede omitir: The book (that) I read was great.',
+    ],
+    examples: [
+      ['The woman who lives next door is a doctor.', 'La mujer que vive al lado es doctora.'],
+      ['This is the town where I grew up.', 'Este es el pueblo donde crecí.'],
+    ],
+    trap: '"Que" no siempre es that: para personas también who. Y no se repite el sujeto: "The man who he called me" está mal.',
+    exercises: [
+      { kind: 'choice', prompt: 'The man ___ called you is my uncle.', options: ['which', 'who', 'where'], answer: 1 },
+      { kind: 'choice', prompt: 'This is the restaurant ___ we met.', options: ['which', 'where', 'who'], answer: 1 },
+      { kind: 'fix', prompt: 'The man who he called me is my boss.', answers: ['The man who called me is my boss.', 'The man that called me is my boss.'] },
+      { kind: 'type', prompt: 'I have a friend ___ father is a pilot. (cuyo)', answers: ['whose'] },
+      { kind: 'choice', prompt: 'The phone ___ I bought is broken.', options: ['who', 'which', 'where'], answer: 1 },
+      { kind: 'translate', prompt: 'La película que vimos era buenísima.', answers: ['The movie we saw was great.', 'The movie that we saw was great.', 'The film we saw was great.', 'The film that we saw was great.', 'The movie which we saw was great.'] },
+    ],
+  },
+  {
+    id: 'connectors',
+    level: 'B1',
+    axis: 'Estructura',
+    title: 'Conectores',
+    prereqs: ['cond-1-2', 'relatives'],
+    explanation: [
+      'Unen ideas y hacen que el discurso fluya. Contraste: but, although (aunque), however (sin embargo).',
+      'Causa y consecuencia: because, because of + sustantivo, so (así que), that\'s why.',
+      'Condición: unless (a menos que) = if ... not. Finalidad: to + verbo, so that.',
+    ],
+    examples: [
+      ['Although it was raining, we went out.', 'Aunque llovía, salimos.'],
+      ['I was tired, so I went to bed.', 'Estaba cansado, así que me fui a dormir.'],
+    ],
+    trap: '"Para" + verbo es to, no "for": I came to learn (no "for learn"). Y because of va con sustantivo: because of the rain.',
+    exercises: [
+      { kind: 'choice', prompt: '___ it was expensive, we bought it.', options: ['Because', 'Although', 'So'], answer: 1 },
+      { kind: 'fix', prompt: 'I came here for learn English.', answers: ['I came here to learn English.'] },
+      { kind: 'choice', prompt: 'The flight was delayed ___ the storm.', options: ['because', 'because of', 'so'], answer: 1 },
+      { kind: 'choice', prompt: 'You won\'t pass ___ you study.', options: ['if', 'unless', 'although'], answer: 1 },
+      { kind: 'type', prompt: 'It was late, ___ we took a taxi. (así que)', answers: ['so'] },
+      { kind: 'translate', prompt: 'Sin embargo, no estoy seguro.', answers: ["However, I'm not sure.", 'However, I am not sure.'] },
+      { kind: 'speak', prompt: 'Although it was raining, we went to the beach.', es: 'Aunque llovía, fuimos a la playa.' },
+    ],
+  },
+  {
+    id: 'connected-speech',
+    level: 'B1',
+    axis: 'Escucha',
+    title: 'Escucha: habla conectada',
+    prereqs: ['future', 'sounds-endings'],
+    explanation: [
+      'En el habla real las palabras se unen y las chicas se reducen: going to → "gonna", want to → "wanna", what do you → "whaddaya".',
+      'Las palabras de función (to, for, of, and, can) casi desaparecen: "a cup of tea" suena "a cuppa tea".',
+      'No hace falta hablar así, pero sí entenderlo. El dictado con frases reales entrena exactamente eso.',
+    ],
+    examples: [
+      ['I\'m going to call her.', 'Suena: "I\'m gonna call her".'],
+      ['What do you want to do?', 'Suena: "Whaddaya wanna do?"'],
+    ],
+    trap: 'Si esperás escuchar cada palabra separada como en el libro, el inglés real te parece rapidísimo. El problema no es la velocidad: es la unión de palabras.',
+    exercises: [
+      { kind: 'listen', prompt: 'What do you want to do tonight?', answers: ['What do you want to do tonight?'] },
+      { kind: 'listen', prompt: "I'm going to call her later.", answers: ["I'm going to call her later."] },
+      { kind: 'listen', prompt: 'Can I have a cup of tea?', answers: ['Can I have a cup of tea?'] },
+      { kind: 'listen', prompt: 'Did you see him at the party?', answers: ['Did you see him at the party?'] },
+      { kind: 'choice', prompt: '"gonna" es la forma hablada de…', options: ['going to', 'got to', 'go now'], answer: 0 },
+      { kind: 'listen', prompt: "Let's get out of here.", answers: ["Let's get out of here."] },
+    ],
+  },
+
+  // ───────────── B2 ─────────────
+  {
+    id: 'false-friends',
+    level: 'B2',
+    axis: 'Vocabulario',
+    title: 'Falsos amigos',
+    prereqs: ['pres-perfect', 'phrasal-1'],
+    explanation: [
+      'Se parecen al español pero significan otra cosa. Son responsables de muchos malentendidos.',
+      'actually = en realidad (no "actualmente" = currently) · embarrassed = avergonzado (no embarazada = pregnant) · assist = ayudar (asistir = attend) · realize = darse cuenta · library = biblioteca (librería = bookshop) · sensible = sensato (sensible = sensitive) · carpet = alfombra · exit = salida (éxito = success).',
+    ],
+    examples: [
+      ['Actually, I don\'t agree.', 'En realidad, no estoy de acuerdo.'],
+      ['I attended the meeting.', 'Asistí a la reunión.'],
+    ],
+    trap: 'El problema no es no saber la palabra: es creer que la sabés. Por eso conviene practicarlos hasta que la versión correcta salga sola.',
+    exercises: [
+      { kind: 'choice', prompt: 'Asistí a la reunión →', options: ['I assisted the meeting.', 'I attended the meeting.'], answer: 1 },
+      { kind: 'choice', prompt: 'Actualmente vivo en Montevideo →', options: ['Actually I live in Montevideo.', 'Currently I live in Montevideo.'], answer: 1 },
+      { kind: 'fix', prompt: 'She is embarrassed, the baby is due in May.', answers: ['She is pregnant, the baby is due in May.'] },
+      { kind: 'choice', prompt: 'Me di cuenta del error →', options: ['I realized the mistake.', 'I realised the mistake.', 'Ambas'], answer: 2 },
+      { kind: 'choice', prompt: 'Compré un libro en la librería →', options: ['at the library', 'at the bookshop'], answer: 1 },
+      { kind: 'type', prompt: 'He is very ___ — he cries at every movie. (sensible)', answers: ['sensitive'] },
+      { kind: 'translate', prompt: 'El proyecto fue un éxito.', answers: ['The project was a success.'] },
+    ],
+  },
+  {
+    id: 'gerund-inf',
+    level: 'B2',
+    axis: 'Estructura',
+    title: 'Gerundio o infinitivo',
+    prereqs: ['phrasal-1', 'connectors'],
+    explanation: [
+      'Algunos verbos van con -ing: enjoy, avoid, finish, mind, suggest, keep. I enjoy cooking.',
+      'Otros con to: want, decide, hope, plan, need, promise. I decided to stay.',
+      'Después de preposición, siempre -ing: I\'m interested in learning. Thanks for coming.',
+      'Algunos cambian de significado: stop smoking (dejar de fumar) vs stop to smoke (parar para fumar); remember to call (acordarse de llamar) vs remember calling (recordar haber llamado).',
+    ],
+    examples: [
+      ['I\'m looking forward to seeing you.', 'Tengo ganas de verte.'],
+      ['She suggested going to the beach.', 'Ella sugirió ir a la playa.'],
+    ],
+    trap: 'Por el español sale "I\'m looking forward to see you". Ese to es preposición → seeing.',
+    exercises: [
+      { kind: 'type', prompt: 'I enjoy ___ (cook).', answers: ['cooking'] },
+      { kind: 'type', prompt: 'We decided ___ (stay) at home.', answers: ['to stay'] },
+      { kind: 'fix', prompt: "I'm looking forward to see you.", answers: ["I'm looking forward to seeing you."] },
+      { kind: 'choice', prompt: 'He stopped ___ ten years ago. (dejó de fumar)', options: ['smoking', 'to smoke'], answer: 0 },
+      { kind: 'fix', prompt: 'Thanks for come.', answers: ['Thanks for coming.'] },
+      { kind: 'choice', prompt: 'Remember ___ the door when you leave.', options: ['locking', 'to lock'], answer: 1 },
+      { kind: 'translate', prompt: 'Me interesa aprender a surfear.', answers: ["I'm interested in learning to surf.", 'I am interested in learning to surf.', "I'm interested in learning how to surf."] },
+    ],
+  },
+  {
+    id: 'register',
+    level: 'B2',
+    axis: 'Vocabulario',
+    title: 'Sonar natural: inglés hablado vs de libro',
+    prereqs: ['false-friends', 'gerund-inf'],
+    explanation: [
+      'En B2 se entiende casi todo, pero al hablar sale un inglés formal: los cognados latinos (obtain, commence, inform) suenan a documento.',
+      'En la conversación se prefiere el verbo corto o el phrasal: get (obtain), start (commence), let know (inform), need (require), help (assist), buy (purchase).',
+      'Frases que dan fluidez: to be honest, I mean, it depends, no worries, fair enough, I reckon (muy australiano).',
+    ],
+    examples: [
+      ['Let me know if you need anything.', 'Avisame si necesitás algo (en vez de "inform me").'],
+      ['To be honest, I\'m not sure.', 'La verdad, no estoy seguro.'],
+    ],
+    trap: 'Que tu frase sea correcta no significa que suene natural. "I will inform you" es correcto, pero un amigo diría "I\'ll let you know".',
+    exercises: [
+      { kind: 'choice', prompt: 'Más natural en una charla:', options: ['I will inform you tomorrow.', "I'll let you know tomorrow."], answer: 1 },
+      { kind: 'choice', prompt: 'Más natural:', options: ['The film commences at 8.', 'The film starts at 8.'], answer: 1 },
+      { kind: 'choice', prompt: 'Más natural:', options: ['Where can I get a ticket?', 'Where can I obtain a ticket?'], answer: 0 },
+      { kind: 'type', prompt: 'To be ___, I didn\'t like it. (la verdad)', answers: ['honest'] },
+      { kind: 'choice', prompt: '"No worries" significa…', options: ['No te preocupes / de nada', 'No tengo problemas'], answer: 0 },
+      { kind: 'speak', prompt: "I'll let you know tomorrow.", es: 'Te aviso mañana.' },
+      { kind: 'listen', prompt: 'To be honest, it depends on the weather.', answers: ['To be honest, it depends on the weather.'] },
+    ],
+  },
+
+  // ───────────── C1 ─────────────
+  {
+    id: 'inversion',
+    level: 'C1',
+    axis: 'Estructura',
+    title: 'Inversión y énfasis',
+    prereqs: ['past-perfect', 'register'],
+    explanation: [
+      'Después de ciertas expresiones negativas al principio, el orden se invierte como en una pregunta: Never have I seen..., Not only did she..., Hardly had we arrived when...',
+      'Énfasis con what / it: What I need is a holiday. It was Ana who called.',
+      'Es inglés formal o de narración: sirve para escribir y entender textos de nivel alto.',
+    ],
+    examples: [
+      ['Never have I seen such a beautiful place.', 'Nunca vi un lugar tan hermoso.'],
+      ['What I need is more time.', 'Lo que necesito es más tiempo.'],
+    ],
+    trap: 'Sin la inversión la frase queda mal: "Never I have seen" es un error típico.',
+    exercises: [
+      { kind: 'fix', prompt: 'Never I have seen anything like this.', answers: ['Never have I seen anything like this.'] },
+      { kind: 'choice', prompt: 'Not only ___ late, but she also forgot the tickets.', options: ['she was', 'was she', 'she is'], answer: 1 },
+      { kind: 'choice', prompt: 'Hardly ___ arrived when it started to rain.', options: ['we had', 'had we', 'we have'], answer: 1 },
+      { kind: 'type', prompt: '___ I need is a long holiday. (Lo que)', answers: ['What'] },
+      { kind: 'translate', prompt: 'Fue Ana la que llamó.', answers: ['It was Ana who called.', 'It was Ana that called.'] },
+      { kind: 'listen', prompt: 'Rarely do we see such talent.', answers: ['Rarely do we see such talent.'] },
+    ],
+  },
+];

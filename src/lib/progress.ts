@@ -1,6 +1,6 @@
 import { LEVELS, type Level, type PlacementItem, type Skill } from '../content/types';
 import { PLACEMENT } from '../content/placement';
-import { UNITS } from '../content/units';
+import { UNITS } from '../content/curriculum';
 import type { AppState, TestResult } from './store';
 
 export type UnitStatus = 'locked' | 'available' | 'mastered' | 'placed';

@@ -43,6 +43,7 @@ export function Review({ keys, title, onExit }: { keys: string[]; title: string;
         showUnit
         onItem={(r) => {
           recordReview(r);
+          if (r.outcome === 'skip') return;
           setStats((s) => ({ ok: s.ok + (r.outcome === 'again' ? 0 : 1), total: s.total + 1 }));
         }}
         onDone={() => setDone(true)}

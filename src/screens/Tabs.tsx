@@ -1,7 +1,8 @@
 import { LEVELS } from '../content/types';
-import { UNITS } from '../content/units';
+import { UNITS } from '../content/curriculum';
 import { daysSince, lastTest, nextUnit, pathLevel, previousLevelDone, unitStatus } from '../lib/progress';
-import { dueKeys, resetAll, streak, useAppState } from '../lib/store';
+import { dueKeys, resetAll, setState, streak, useAppState } from '../lib/store';
+import { ACCENT_LABEL, say, type Accent } from '../lib/speech';
 import type { Route } from '../App';
 
 const REVIEW_BATCH = 20;
@@ -56,7 +57,7 @@ export function Home({ go }: { go: (r: Route) => void }) {
             </button>
           </>
         ) : (
-          <p>Terminaste todas las unidades disponibles del eje de verbos.</p>
+          <p>No hay unidades nuevas disponibles por ahora: repasá para afianzar lo aprendido.</p>
         )}
       </div>
       {errorCount > 0 && (
@@ -87,8 +88,10 @@ export function Path({ go }: { go: (r: Route) => void }) {
   const s = useAppState();
   return (
     <div className="screen">
-      <h1>Camino: tiempos verbales</h1>
-      <p className="small">Cada unidad se desbloquea cuando dominás las anteriores.</p>
+      <h1>Tu camino</h1>
+      <p className="small">
+        Cada unidad se desbloquea cuando dominás lo que necesita antes. Un nivel se abre al completar el anterior.
+      </p>
       {LEVELS.map((L) => (
         <section key={L} className="level-block">
           <h2>{L}</h2>
@@ -98,7 +101,9 @@ export function Path({ go }: { go: (r: Route) => void }) {
             if (!previousLevelDone(s, u.level)) needs.push(`completar ${LEVELS[LEVELS.indexOf(u.level) - 1]}`);
             return (
               <button key={u.id} className={`unit ${st}`} disabled={st === 'locked'} onClick={() => go({ name: 'lesson', unitId: u.id })}>
-                <span className="unit-title">{u.title}</span>
+                <span className="unit-title">
+                  {u.title} <span className="tag">{u.axis}</span>
+                </span>
                 <span className="unit-status">
                   {STATUS_LABEL[st]}
                   {st === 'locked' && needs.length > 0 && ` · antes: ${needs.join(', ')}`}
@@ -221,6 +226,24 @@ export function Progress({ go }: { go: (r: Route) => void }) {
             <span>{retention === null ? '—' : `${retention}%`}</span>
           </li>
         </ul>
+      </div>
+      <div className="card">
+        <p className="card-title">Acento de las voces</p>
+        <p className="small">Usa las voces que tenga instaladas tu teléfono. "Variado" entrena el oído con muchas voces distintas.</p>
+        <div className="options">
+          {(Object.keys(ACCENT_LABEL) as Accent[]).map((a) => (
+            <button
+              key={a}
+              className={`option ${s.settings.accent === a ? 'right' : ''}`}
+              onClick={() => {
+                setState((st) => ({ ...st, settings: { ...st.settings, accent: a } }));
+                say('Hello! This is how I sound.', { accent: a });
+              }}
+            >
+              {ACCENT_LABEL[a]}
+            </button>
+          ))}
+        </div>
       </div>
       <button
         className="link"

@@ -2,16 +2,18 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
-## Qué hace la versión 0.1
+## Qué hace la versión 0.2
 
 - **Test de nivel adaptativo** (A1–C1). Empieza en B1 y sube o baja según las respuestas. Mide gramática, vocabulario y lectura, y se puede repetir: se sugiere cada 4 semanas.
-- **Camino escalonado**: 15 unidades de tiempos verbales con prerrequisitos. Una unidad se desbloquea al dominar las anteriores (85% de aciertos al primer intento).
+- **Camino escalonado**: 35 unidades de A1 a C1 en cinco ejes (estructura, verbos, vocabulario, sonidos y escucha), con prerrequisitos entre ellos. Una unidad se desbloquea al dominar lo que necesita antes (85% bien al primer intento) y un nivel se abre al completar el anterior.
+- **Escuchar y hablar** con los motores de voz del propio teléfono: dictados, pares de sonidos con voces variadas (ship/sheep) y ejercicios para decir en voz alta, donde se comprueba si se te entiende. No descarga modelos y gasta muy poca batería.
+- **Diccionario integrado**: tocás cualquier palabra en inglés y ves su significado, su forma base, ejemplos y cómo suena. Con internet, también la definición en inglés.
 - **Repaso espaciado con FSRS**, el algoritmo de Anki. Mezcla ejercicios de distintas unidades.
 - **Recuperación activa**: siempre tenés que producir o elegir la respuesta, nunca solo releer.
 - **Corrección que hace pensar**: si fallás, primero recibís una pista y un segundo intento, y recién después la respuesta.
 - **Trampas para hispanohablantes**: cada unidad explica el error típico que viene del español.
 - **Registro de errores** con práctica dirigida.
-- **Progreso real**: muestra tu nivel según el camino y según el test, no puntos.
+- **Progreso real**: muestra tu nivel según el camino y según el test, no puntos. Cada ejercicio indica "Pregunta X de N".
 
 Todo se guarda en el teléfono. No necesita internet ni cuenta.
 
@@ -45,4 +47,4 @@ Para compilar en tu computadora necesitás Android Studio: `npx cap open android
 
 ## Próximos pasos
 
-Escucha y entrenamiento de sonidos con varias voces, hablar con corrección por IA, ejes de vocabulario y frases hechas, y módulos para superar el estancamiento de B2.
+Más contenido por unidad, vocabulario por bandas de frecuencia, lectura graduada y conversación con corrección por IA (en servidor, para no gastar batería).

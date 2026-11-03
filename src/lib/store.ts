@@ -1,13 +1,15 @@
 import { useSyncExternalStore } from 'react';
 import { createEmptyCard, fsrs, Rating, type Card, type Grade } from 'ts-fsrs';
 import type { Level, Skill } from '../content/types';
-import { UNITS } from '../content/units';
+import type { Accent } from './speech';
+import { UNITS } from '../content/curriculum';
 
 /** FSRS: el mismo algoritmo de repaso espaciado que usa Anki. Retención objetivo 90%. */
 const scheduler = fsrs({ request_retention: 0.9, enable_fuzz: true });
 
-export type Outcome = 'good' | 'hard' | 'again';
-const RATING: Record<Outcome, Grade> = { good: Rating.Good, hard: Rating.Hard, again: Rating.Again };
+/** skip = el usuario no pudo hacer el ejercicio (por ejemplo, hablar en voz alta): no se califica. */
+export type Outcome = 'good' | 'hard' | 'again' | 'skip';
+const RATING: Record<Exclude<Outcome, 'skip'>, Grade> = { good: Rating.Good, hard: Rating.Hard, again: Rating.Again };
 
 type StoredCard = Omit<Card, 'due' | 'last_review'> & { due: string; last_review?: string };
 
@@ -42,6 +44,7 @@ export interface AppState {
   tests: TestResult[];
   activity: string[];
   stats: { reviews: number; correct: number };
+  settings: { accent: Accent };
 }
 
 const KEY = 'ingles-progresivo-v1';
@@ -54,12 +57,16 @@ const empty = (): AppState => ({
   tests: [],
   activity: [],
   stats: { reviews: 0, correct: 0 },
+  settings: { accent: 'variado' },
 });
 
 function load(): AppState {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { ...empty(), ...JSON.parse(raw) };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...empty(), ...parsed, settings: { ...empty().settings, ...parsed.settings } };
+    }
   } catch {
     /* almacenamiento no disponible */
   }
@@ -118,6 +125,7 @@ const fromStored = (c: StoredCard): Card => ({
 
 /** Califica una tarjeta (la crea si no existe) y la reprograma con FSRS. */
 export function gradeCard(s: AppState, key: string, outcome: Outcome, now = new Date()): AppState {
+  if (outcome === 'skip') return s;
   const current = s.cards[key] ? fromStored(s.cards[key]) : createEmptyCard(now);
   const next = scheduler.next(current, now, RATING[outcome]).card;
   return { ...s, cards: { ...s.cards, [key]: toStored(next) } };

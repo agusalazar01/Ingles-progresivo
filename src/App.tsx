@@ -4,6 +4,9 @@ import { Placement } from './screens/Placement';
 import { Review } from './screens/Review';
 import { Errors, Home, Path, Progress, Welcome } from './screens/Tabs';
 import { markActive, setState, useAppState } from './lib/store';
+import { syncPlacedUnits } from './lib/actions';
+import { WordContext } from './components/Words';
+import { WordSheet } from './components/WordSheet';
 import './App.css';
 
 export type Route =
@@ -25,6 +28,7 @@ const TABS: { name: 'home' | 'path' | 'errors' | 'progress'; label: string }[] =
 export default function App() {
   const s = useAppState();
   const [route, setRoute] = useState<Route>({ name: 'home' });
+  const [word, setWord] = useState<{ word: string; sentence: string } | null>(null);
   const isNew = s.tests.length === 0 && Object.keys(s.units).length === 0 && s.activity.length === 0;
 
   const go = (r: Route) => {
@@ -35,6 +39,10 @@ export default function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [route]);
+
+  useEffect(() => {
+    syncPlacedUnits();
+  }, []);
 
   const home = () => setRoute({ name: 'home' });
 
@@ -65,6 +73,7 @@ export default function App() {
   const showTabs = ['home', 'path', 'errors', 'progress'].includes(route.name) && !(route.name === 'home' && isNew);
 
   return (
+    <WordContext.Provider value={(w, sentence) => setWord({ word: w, sentence })}>
     <div className="app">
       <main>{body}</main>
       {showTabs && (
@@ -76,6 +85,8 @@ export default function App() {
           ))}
         </nav>
       )}
+      {word && <WordSheet word={word.word} sentence={word.sentence} onClose={() => setWord(null)} />}
     </div>
+    </WordContext.Provider>
   );
 }

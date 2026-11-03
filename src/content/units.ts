@@ -4,13 +4,14 @@ import type { Unit } from './types';
  * Eje piloto: tiempos verbales, de A1 a C1.
  * Cada unidad declara sus prerrequisitos; se desbloquea cuando están dominados.
  */
-export const UNITS: Unit[] = [
+export const VERB_UNITS: Unit[] = [
   // ───────────── A1 ─────────────
   {
     id: 'pres-simple',
     level: 'A1',
+    axis: 'Verbos',
     title: 'Presente simple',
-    prereqs: [],
+    prereqs: ['to-be'],
     explanation: [
       'Se usa para hábitos, rutinas y cosas que son siempre verdad.',
       'Con I / you / we / they el verbo va igual: I work. Con he / she / it se agrega -s o -es: she works, he watches. (have → has)',
@@ -36,6 +37,7 @@ export const UNITS: Unit[] = [
   {
     id: 'pres-cont',
     level: 'A1',
+    axis: 'Verbos',
     title: 'Presente continuo',
     prereqs: ['pres-simple'],
     explanation: [
@@ -62,6 +64,7 @@ export const UNITS: Unit[] = [
   {
     id: 'can',
     level: 'A1',
+    axis: 'Verbos',
     title: 'can / can\'t',
     prereqs: ['pres-simple'],
     explanation: [
@@ -89,6 +92,7 @@ export const UNITS: Unit[] = [
   {
     id: 'past-simple',
     level: 'A2',
+    axis: 'Verbos',
     title: 'Pasado simple',
     prereqs: ['pres-simple'],
     explanation: [
@@ -115,6 +119,7 @@ export const UNITS: Unit[] = [
   {
     id: 'future',
     level: 'A2',
+    axis: 'Verbos',
     title: 'Futuro: will / going to',
     prereqs: ['pres-cont'],
     explanation: [
@@ -140,6 +145,7 @@ export const UNITS: Unit[] = [
   {
     id: 'past-cont',
     level: 'A2',
+    axis: 'Verbos',
     title: 'Pasado continuo',
     prereqs: ['past-simple', 'pres-cont'],
     explanation: [
@@ -167,6 +173,7 @@ export const UNITS: Unit[] = [
   {
     id: 'pres-perfect',
     level: 'B1',
+    axis: 'Verbos',
     title: 'Presente perfecto',
     prereqs: ['past-simple'],
     explanation: [
@@ -195,6 +202,7 @@ export const UNITS: Unit[] = [
   {
     id: 'cond-1-2',
     level: 'B1',
+    axis: 'Verbos',
     title: 'Condicionales 1 y 2',
     prereqs: ['future', 'past-simple'],
     explanation: [
@@ -220,6 +228,7 @@ export const UNITS: Unit[] = [
   {
     id: 'passive',
     level: 'B1',
+    axis: 'Verbos',
     title: 'Voz pasiva',
     prereqs: ['past-simple'],
     explanation: [
@@ -247,6 +256,7 @@ export const UNITS: Unit[] = [
   {
     id: 'pres-perf-cont',
     level: 'B2',
+    axis: 'Verbos',
     title: 'Presente perfecto continuo',
     prereqs: ['pres-perfect', 'pres-cont'],
     explanation: [
@@ -273,6 +283,7 @@ export const UNITS: Unit[] = [
   {
     id: 'past-perfect',
     level: 'B2',
+    axis: 'Verbos',
     title: 'Pasado perfecto',
     prereqs: ['pres-perfect', 'past-simple'],
     explanation: [
@@ -297,6 +308,7 @@ export const UNITS: Unit[] = [
   {
     id: 'reported',
     level: 'B2',
+    axis: 'Verbos',
     title: 'Estilo indirecto',
     prereqs: ['past-perfect', 'past-cont'],
     explanation: [
@@ -324,6 +336,7 @@ export const UNITS: Unit[] = [
   {
     id: 'cond-3',
     level: 'C1',
+    axis: 'Verbos',
     title: 'Condicional 3 y mixtos',
     prereqs: ['cond-1-2', 'past-perfect'],
     explanation: [
@@ -347,6 +360,7 @@ export const UNITS: Unit[] = [
   {
     id: 'past-modals',
     level: 'C1',
+    axis: 'Verbos',
     title: 'Modales en pasado',
     prereqs: ['pres-perfect', 'can'],
     explanation: [
@@ -370,6 +384,7 @@ export const UNITS: Unit[] = [
   {
     id: 'future-perf',
     level: 'C1',
+    axis: 'Verbos',
     title: 'Futuro perfecto y continuo',
     prereqs: ['pres-perfect', 'future'],
     explanation: [
@@ -392,4 +407,3 @@ export const UNITS: Unit[] = [
   },
 ];
 
-export const unitById = (id: string) => UNITS.find((u) => u.id === id)!;

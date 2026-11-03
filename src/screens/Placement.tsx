@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { LEVELS } from '../content/types';
+import { Words } from '../components/Words';
+import { ITEMS_PER_LEVEL } from '../lib/progress';
 import { applyPlacement } from '../lib/actions';
 import { answerPlacement, placementResult, startPlacement, type PlacementRun } from '../lib/progress';
 import type { TestResult } from '../lib/store';
@@ -82,9 +84,18 @@ export function Placement({ onExit, retest }: { onExit: () => void; retest: bool
 
   return (
     <div className="screen">
-      <p className="eyebrow">Pregunta {count + 1} · nivel {run.current}</p>
-      {item.text && <p className="reading">{item.text}</p>}
-      <p className="prompt">{item.prompt}</p>
+      <div className="counter">
+        <span>Pregunta {count + 1}</span>
+        <span className="small">
+          {run.index + 1} de {ITEMS_PER_LEVEL} · nivel {run.current}
+        </span>
+      </div>
+      <div className="bar">
+        <div className="bar-fill" style={{ width: `${(run.index / ITEMS_PER_LEVEL) * 100}%` }} />
+      </div>
+      <p className="small">El test se adapta: según tus respuestas sube o baja de nivel (entre 8 y 16 preguntas en total).</p>
+      {item.text && <Words text={item.text} className="reading" />}
+      <Words text={item.prompt} className="prompt" />
       <div className="options">
         {item.options.map((o, i) => (
           <button key={o} className="option" onClick={() => answer(i)}>
