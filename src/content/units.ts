@@ -1,0 +1,395 @@
+import type { Unit } from './types';
+
+/**
+ * Eje piloto: tiempos verbales, de A1 a C1.
+ * Cada unidad declara sus prerrequisitos; se desbloquea cuando están dominados.
+ */
+export const UNITS: Unit[] = [
+  // ───────────── A1 ─────────────
+  {
+    id: 'pres-simple',
+    level: 'A1',
+    title: 'Presente simple',
+    prereqs: [],
+    explanation: [
+      'Se usa para hábitos, rutinas y cosas que son siempre verdad.',
+      'Con I / you / we / they el verbo va igual: I work. Con he / she / it se agrega -s o -es: she works, he watches. (have → has)',
+      'Negación: don\'t / doesn\'t + verbo base. Pregunta: Do / Does + sujeto + verbo base.',
+    ],
+    examples: [
+      ['She works in a hospital.', 'Ella trabaja en un hospital.'],
+      ['We don\'t eat meat.', 'No comemos carne.'],
+      ['Does he play football?', '¿Él juega al fútbol?'],
+    ],
+    trap: 'En español no existe el "do" auxiliar, y es muy común olvidar la -s de la tercera persona. Ojo: con doesn\'t el verbo ya no lleva -s (she doesn\'t work).',
+    exercises: [
+      { kind: 'type', prompt: 'She ___ (work) in a hospital.', answers: ['works'] },
+      { kind: 'type', prompt: 'They ___ (not / like) coffee.', answers: ["don't like"] },
+      { kind: 'choice', prompt: '___ he play football on Sundays?', options: ['Do', 'Does', 'Is'], answer: 1, explain: 'Con he / she / it la pregunta lleva Does.' },
+      { kind: 'fix', prompt: 'My brother live in Montevideo.', answers: ['My brother lives in Montevideo.'], hint: 'Mirá la tercera persona.' },
+      { kind: 'type', prompt: 'Water ___ (boil) at 100 degrees.', answers: ['boils'] },
+      { kind: 'fix', prompt: "She doesn't works on Fridays.", answers: ["She doesn't work on Fridays."], hint: 'Después de doesn\'t, el verbo va sin -s.' },
+      { kind: 'translate', prompt: '¿Dónde vivís?', answers: ['Where do you live?'] },
+      { kind: 'choice', prompt: 'My parents ___ in Salto.', options: ['lives', 'live', 'living'], answer: 1 },
+    ],
+  },
+  {
+    id: 'pres-cont',
+    level: 'A1',
+    title: 'Presente continuo',
+    prereqs: ['pres-simple'],
+    explanation: [
+      'Se usa para lo que está pasando ahora o en este período.',
+      'Forma: am / is / are + verbo con -ing. I am working. She is reading.',
+      'Los verbos de estado (know, like, want, agree, understand) normalmente NO van en continuo.',
+    ],
+    examples: [
+      ['Look! It is raining.', '¡Mirá! Está lloviendo.'],
+      ['I\'m studying English this month.', 'Este mes estoy estudiando inglés.'],
+    ],
+    trap: '"Estoy de acuerdo" es I agree, no "I am agree". Y "lo sé" es I know, nunca "I am knowing".',
+    exercises: [
+      { kind: 'type', prompt: 'Look! It ___ (rain).', answers: ['is raining'] },
+      { kind: 'type', prompt: 'I ___ (study) English this month.', answers: ['am studying'] },
+      { kind: 'choice', prompt: 'Right now she ___ a book.', options: ['reads', 'is reading', 'read'], answer: 1 },
+      { kind: 'fix', prompt: 'I am knowing the answer.', answers: ['I know the answer.'], hint: 'know es un verbo de estado.' },
+      { kind: 'choice', prompt: 'Listen! The baby ___.', options: ['cries', 'is crying', 'cry'], answer: 1 },
+      { kind: 'type', prompt: 'They ___ (not / work) today.', answers: ["aren't working"] },
+      { kind: 'fix', prompt: 'I am agree with you.', answers: ['I agree with you.'], hint: 'agree ya es el verbo.' },
+      { kind: 'translate', prompt: '¿Qué estás haciendo?', answers: ['What are you doing?'] },
+    ],
+  },
+  {
+    id: 'can',
+    level: 'A1',
+    title: 'can / can\'t',
+    prereqs: ['pres-simple'],
+    explanation: [
+      'can = poder / saber hacer algo. Es igual para todas las personas: I can, she can (nunca "cans").',
+      'Después de can va el verbo base, sin "to": I can swim.',
+      'Negación: can\'t (cannot). Pregunta: Can you...?',
+    ],
+    examples: [
+      ['She can speak three languages.', 'Ella sabe hablar tres idiomas.'],
+      ['Can you help me?', '¿Me podés ayudar?'],
+    ],
+    trap: 'Por el español ("puedo manejar") sale "I can to drive". Con can nunca va "to".',
+    exercises: [
+      { kind: 'fix', prompt: 'She cans swim.', answers: ['She can swim.'] },
+      { kind: 'fix', prompt: 'I can to drive.', answers: ['I can drive.'] },
+      { kind: 'choice', prompt: '___ you help me, please?', options: ['Do', 'Can', 'Are'], answer: 1 },
+      { kind: 'type', prompt: 'He ___ (not / speak) French.', answers: ["can't speak"] },
+      { kind: 'translate', prompt: 'No puedo ir hoy.', answers: ["I can't go today."] },
+      { kind: 'choice', prompt: 'Penguins ___ fly.', options: ['can', "can't", "doesn't can"], answer: 1 },
+      { kind: 'type', prompt: '___ you swim? — Yes, I can.', answers: ['Can'] },
+    ],
+  },
+
+  // ───────────── A2 ─────────────
+  {
+    id: 'past-simple',
+    level: 'A2',
+    title: 'Pasado simple',
+    prereqs: ['pres-simple'],
+    explanation: [
+      'Acciones terminadas en un momento del pasado (yesterday, last week, in 2019).',
+      'Regulares: + -ed (worked, studied, stopped). Irregulares se aprenden de memoria: go → went, see → saw, buy → bought, have → had.',
+      'Negación: didn\'t + verbo base. Pregunta: Did + sujeto + verbo base.',
+    ],
+    examples: [
+      ['We went to Punta del Este last summer.', 'Fuimos a Punta del Este el verano pasado.'],
+      ['I didn\'t see the match.', 'No vi el partido.'],
+    ],
+    trap: 'Con didn\'t / did el verbo vuelve a la forma base: "I didn\'t went" está mal → I didn\'t go.',
+    exercises: [
+      { kind: 'type', prompt: 'Yesterday I ___ (walk) to work.', answers: ['walked'] },
+      { kind: 'type', prompt: 'We ___ (go) to Punta del Este last summer.', answers: ['went'] },
+      { kind: 'fix', prompt: "I didn't went to the party.", answers: ["I didn't go to the party."] },
+      { kind: 'choice', prompt: '___ you see the match last night?', options: ['Do', 'Did', 'Were'], answer: 1 },
+      { kind: 'type', prompt: 'She ___ (buy) a new phone last week.', answers: ['bought'] },
+      { kind: 'type', prompt: 'They ___ (study) all weekend.', answers: ['studied'] },
+      { kind: 'translate', prompt: '¿Qué hiciste ayer?', answers: ['What did you do yesterday?'] },
+      { kind: 'fix', prompt: 'Did she called you?', answers: ['Did she call you?'] },
+    ],
+  },
+  {
+    id: 'future',
+    level: 'A2',
+    title: 'Futuro: will / going to',
+    prereqs: ['pres-cont'],
+    explanation: [
+      'going to: planes ya decididos, o algo que se ve venir (Look at those clouds! It\'s going to rain).',
+      'will: decisiones en el momento, promesas y predicciones (I\'ll answer it. I won\'t tell anyone).',
+      'Después de will va el verbo base, sin "to".',
+    ],
+    examples: [
+      ['I\'m going to study medicine.', 'Voy a estudiar medicina (ya lo decidí).'],
+      ['The phone is ringing. — I\'ll get it.', 'Suena el teléfono. — Yo atiendo.'],
+    ],
+    trap: 'En español "voy a" sirve para todo. En inglés, si lo decidís en el momento, va will. Y nunca "will to".',
+    exercises: [
+      { kind: 'choice', prompt: "I've decided: I ___ study medicine.", options: ['will', 'am going to', 'going to'], answer: 1, explain: 'Plan ya decidido → going to.' },
+      { kind: 'choice', prompt: 'The phone is ringing. — I ___ answer it.', options: ['will', 'am going to', 'going'], answer: 0, explain: 'Decisión en el momento → will.' },
+      { kind: 'fix', prompt: 'I will to call you tomorrow.', answers: ['I will call you tomorrow.'] },
+      { kind: 'choice', prompt: 'Look at those clouds! It ___ rain.', options: ['will', 'is going to', 'goes to'], answer: 1, explain: 'Hay evidencia visible → going to.' },
+      { kind: 'type', prompt: "Don't worry, I ___ (not / tell) anyone.", answers: ["won't tell"] },
+      { kind: 'translate', prompt: 'Vamos a viajar a Australia el año que viene.', answers: ['We are going to travel to Australia next year.', 'We are going to go to Australia next year.'] },
+      { kind: 'fix', prompt: 'She going to buy a car.', answers: ['She is going to buy a car.'] },
+    ],
+  },
+  {
+    id: 'past-cont',
+    level: 'A2',
+    title: 'Pasado continuo',
+    prereqs: ['past-simple', 'pres-cont'],
+    explanation: [
+      'Acción en progreso en un momento del pasado: was / were + -ing.',
+      'Muy común con una acción corta que la interrumpe (pasado simple): I was sleeping when you called.',
+      'while + pasado continuo: While I was cooking, the lights went out.',
+    ],
+    examples: [
+      ['It was raining when I left.', 'Estaba lloviendo cuando salí.'],
+      ['What were you doing at 8?', '¿Qué estabas haciendo a las 8?'],
+    ],
+    trap: 'was va con I / he / she / it; were con you / we / they. "We was" está mal.',
+    exercises: [
+      { kind: 'type', prompt: 'I ___ (sleep) when you called.', answers: ['was sleeping'] },
+      { kind: 'type', prompt: 'They ___ (watch) TV at 9 last night.', answers: ['were watching'] },
+      { kind: 'choice', prompt: 'While I ___ dinner, the lights went out.', options: ['cooked', 'was cooking', 'am cooking'], answer: 1 },
+      { kind: 'choice', prompt: 'She ___ her keys while she was running.', options: ['lost', 'was losing', 'loses'], answer: 0, explain: 'La acción corta que interrumpe va en pasado simple.' },
+      { kind: 'fix', prompt: 'We was playing football.', answers: ['We were playing football.'] },
+      { kind: 'type', prompt: 'What ___ (you / do) at 8 o\'clock yesterday?', answers: ['were you doing'] },
+      { kind: 'translate', prompt: 'Estaba lloviendo cuando salí.', answers: ['It was raining when I left.', 'It was raining when I went out.'] },
+    ],
+  },
+
+  // ───────────── B1 ─────────────
+  {
+    id: 'pres-perfect',
+    level: 'B1',
+    title: 'Presente perfecto',
+    prereqs: ['past-simple'],
+    explanation: [
+      'Forma: have / has + participio (worked, been, seen, eaten).',
+      'Se usa para: experiencias sin fecha (Have you ever been to Brazil?), resultados que importan ahora (I\'ve lost my keys) y situaciones que empezaron en el pasado y siguen (I\'ve lived here since 2020).',
+      'Si decís CUÁNDO pasó (yesterday, in 2019, last week), va pasado simple.',
+      'for + período (for three years) · since + punto de inicio (since 2020).',
+    ],
+    examples: [
+      ['I\'ve lived here since 2020.', 'Vivo acá desde 2020.'],
+      ['Have you ever eaten sushi?', '¿Alguna vez comiste sushi?'],
+      ['I saw that movie yesterday.', 'Vi esa película ayer.'],
+    ],
+    trap: 'En Uruguay casi no usamos "he hecho": decimos "comí", "viví". Y "vivo acá desde 2020" va en presente perfecto, no en presente: I\'ve lived here since 2020.',
+    exercises: [
+      { kind: 'fix', prompt: 'I live here since 2020.', answers: ['I have lived here since 2020.', 'I have been living here since 2020.'], hint: 'Empezó en el pasado y sigue.' },
+      { kind: 'fix', prompt: 'I have seen that movie yesterday.', answers: ['I saw that movie yesterday.'], hint: 'Si decís cuándo, no va presente perfecto.' },
+      { kind: 'choice', prompt: 'She has worked here ___ three years.', options: ['since', 'for', 'during'], answer: 1, explain: 'Período de tiempo → for.' },
+      { kind: 'type', prompt: '___ (you / ever / be) to Brazil?', answers: ['Have you ever been'] },
+      { kind: 'choice', prompt: "I ___ my keys. I can't open the door.", options: ['lost', 'have lost', 'was losing'], answer: 1, explain: 'El resultado importa ahora.' },
+      { kind: 'choice', prompt: 'We ___ to Spain in 2019.', options: ['have gone', 'went', 'have been'], answer: 1, explain: 'Hay fecha (in 2019) → pasado simple.' },
+      { kind: 'type', prompt: 'He ___ (not / finish) his homework yet.', answers: ["hasn't finished"] },
+      { kind: 'translate', prompt: 'Nunca comí sushi.', answers: ['I have never eaten sushi.', 'I have never had sushi.'], explain: 'Experiencia de vida → presente perfecto.' },
+    ],
+  },
+  {
+    id: 'cond-1-2',
+    level: 'B1',
+    title: 'Condicionales 1 y 2',
+    prereqs: ['future', 'past-simple'],
+    explanation: [
+      'Condicional 1 (algo posible): If + presente, will + verbo. If it rains, we\'ll stay home.',
+      'Condicional 2 (algo imaginario o poco probable): If + pasado, would + verbo. If I had money, I would travel.',
+      'Después de if NO va will. En el condicional 2 se prefiere "If I were".',
+    ],
+    examples: [
+      ['If she studies, she will pass.', 'Si estudia, va a aprobar.'],
+      ['If I were you, I would accept.', 'Yo que vos, aceptaría.'],
+    ],
+    trap: '"Si llueve" no es "if it will rain": después de if va presente → if it rains.',
+    exercises: [
+      { kind: 'fix', prompt: 'If it will rain, we will stay home.', answers: ['If it rains, we will stay home.'] },
+      { kind: 'type', prompt: 'If I ___ (have) more time, I would learn the guitar.', answers: ['had'] },
+      { kind: 'choice', prompt: 'If you heat ice, it ___.', options: ['melts', 'would melt', 'melted'], answer: 0, explain: 'Verdad general: presente + presente.' },
+      { kind: 'type', prompt: 'If she studies, she ___ (pass) the exam.', answers: ['will pass'] },
+      { kind: 'choice', prompt: 'If I ___ you, I would accept the job.', options: ['am', 'will be', 'were'], answer: 2 },
+      { kind: 'type', prompt: 'What ___ (you / do) if you won the lottery?', answers: ['would you do'] },
+      { kind: 'translate', prompt: 'Si tuviera dinero, viajaría por el mundo.', answers: ['If I had money, I would travel around the world.', 'If I had money, I would travel the world.'] },
+    ],
+  },
+  {
+    id: 'passive',
+    level: 'B1',
+    title: 'Voz pasiva',
+    prereqs: ['past-simple'],
+    explanation: [
+      'Cuando importa la acción y no quién la hace: be + participio.',
+      'Presente: English is spoken here. Pasado: The house was built in 1990.',
+      'Si querés decir quién lo hizo, va by: It was painted by my father.',
+    ],
+    examples: [
+      ['Tannat wine is made in Uruguay.', 'El vino Tannat se hace en Uruguay.'],
+      ['The thief was caught yesterday.', 'Al ladrón lo atraparon ayer.'],
+    ],
+    trap: 'El "se" impersonal del español ("se habla inglés", "se venden autos") muchas veces se traduce con pasiva: English is spoken, cars are sold.',
+    exercises: [
+      { kind: 'type', prompt: 'This house ___ (build) in 1990.', answers: ['was built'] },
+      { kind: 'type', prompt: 'English ___ (speak) all over the world.', answers: ['is spoken'] },
+      { kind: 'fix', prompt: 'The letter was wrote by my grandfather.', answers: ['The letter was written by my grandfather.'], hint: 'Hace falta el participio.' },
+      { kind: 'choice', prompt: 'The thief ___ by the police yesterday.', options: ['caught', 'was caught', 'is caught'], answer: 1 },
+      { kind: 'type', prompt: 'Tannat wine ___ (make) in Uruguay.', answers: ['is made'] },
+      { kind: 'type', prompt: 'The emails ___ (send) every morning.', answers: ['are sent'] },
+      { kind: 'translate', prompt: 'Acá se habla inglés.', answers: ['English is spoken here.'] },
+    ],
+  },
+
+  // ───────────── B2 ─────────────
+  {
+    id: 'pres-perf-cont',
+    level: 'B2',
+    title: 'Presente perfecto continuo',
+    prereqs: ['pres-perfect', 'pres-cont'],
+    explanation: [
+      'have / has been + -ing: actividad que empezó en el pasado y sigue, con énfasis en la duración.',
+      'How long have you been learning English? — I\'ve been learning it for two years.',
+      'Si contás cantidades terminadas (three books, five times), va presente perfecto simple.',
+      'Los verbos de estado (know, like) van en presente perfecto simple: We\'ve known each other for years.',
+    ],
+    examples: [
+      ['I\'ve been waiting for two hours.', 'Hace dos horas que espero.'],
+      ['It has been raining since this morning.', 'Llueve desde esta mañana.'],
+    ],
+    trap: '"Hace dos horas que espero" no es "I wait since two hours". Va: I\'ve been waiting for two hours.',
+    exercises: [
+      { kind: 'fix', prompt: 'I am waiting since two hours.', answers: ['I have been waiting for two hours.'] },
+      { kind: 'type', prompt: 'How long ___ (you / learn) English?', answers: ['have you been learning'] },
+      { kind: 'choice', prompt: "She's tired because she ___ all day.", options: ['has worked', 'has been working', 'works'], answer: 1 },
+      { kind: 'choice', prompt: 'I ___ three books this month.', options: ['have been reading', 'have read', 'am reading'], answer: 1, explain: 'Cantidad terminada → presente perfecto simple.' },
+      { kind: 'type', prompt: 'It ___ (rain) since this morning.', answers: ['has been raining'] },
+      { kind: 'translate', prompt: 'Hace un año que vivo en Australia.', answers: ['I have been living in Australia for a year.', 'I have lived in Australia for a year.', 'I have been living in Australia for one year.', 'I have lived in Australia for one year.'] },
+      { kind: 'fix', prompt: 'We have been knowing each other for years.', answers: ['We have known each other for years.'], hint: 'know es un verbo de estado.' },
+    ],
+  },
+  {
+    id: 'past-perfect',
+    level: 'B2',
+    title: 'Pasado perfecto',
+    prereqs: ['pres-perfect', 'past-simple'],
+    explanation: [
+      'had + participio: algo que pasó ANTES de otro momento del pasado.',
+      'When I arrived, the train had already left (primero se fue el tren, después llegué).',
+      'Muy usado con by the time, already, never ... before.',
+    ],
+    examples: [
+      ['I had already finished when you called.', 'Ya había terminado cuando llamaste.'],
+      ['She had never flown before.', 'Nunca había volado antes.'],
+    ],
+    trap: 'Al contar una historia en pasado, si algo es anterior, pasá a had + participio (no al presente perfecto).',
+    exercises: [
+      { kind: 'type', prompt: 'When I arrived, the train ___ (already / leave).', answers: ['had already left'] },
+      { kind: 'choice', prompt: 'She was nervous because she ___ never flown before.', options: ['has', 'had', 'was'], answer: 1 },
+      { kind: 'type', prompt: 'I ___ (not / eat) all day, so I was starving.', answers: ["hadn't eaten"] },
+      { kind: 'choice', prompt: 'By the time we got there, the film ___.', options: ['started', 'had started', 'has started'], answer: 1 },
+      { kind: 'fix', prompt: 'I realized I have forgotten my wallet.', answers: ['I realized I had forgotten my wallet.', 'I realised I had forgotten my wallet.'] },
+      { kind: 'translate', prompt: 'Ya había terminado cuando llamaste.', answers: ['I had already finished when you called.'] },
+    ],
+  },
+  {
+    id: 'reported',
+    level: 'B2',
+    title: 'Estilo indirecto',
+    prereqs: ['past-perfect', 'past-cont'],
+    explanation: [
+      'Al contar lo que dijo alguien, los tiempos "retroceden": am → was, will → would, can → could, pasado → had + participio.',
+      'say algo · tell a alguien algo: She told me (that) she was busy.',
+      'Preguntas indirectas sin inversión ni do: He asked me where I lived.',
+    ],
+    examples: [
+      ['"I\'m tired." → She said she was tired.', '"Estoy cansada." → Dijo que estaba cansada.'],
+      ['He asked me if I wanted to go.', 'Me preguntó si quería ir.'],
+    ],
+    trap: '"Me dijo que..." es She told me that..., no "She said me". Y en la pregunta indirecta no va "did": where I lived, no "where did I live".',
+    exercises: [
+      { kind: 'type', prompt: '"I am tired." → She said she ___ tired.', answers: ['was'] },
+      { kind: 'type', prompt: '"I will help you." → He said he ___ help me.', answers: ['would'] },
+      { kind: 'fix', prompt: 'She said me that she was busy.', answers: ['She told me that she was busy.', 'She told me she was busy.'] },
+      { kind: 'fix', prompt: 'He asked me where did I live.', answers: ['He asked me where I lived.'] },
+      { kind: 'type', prompt: '"I lost my keys." → She said she ___ her keys.', answers: ['had lost'] },
+      { kind: 'choice', prompt: 'They ___ us they were coming.', options: ['said', 'told', 'asked'], answer: 1 },
+      { kind: 'translate', prompt: 'Me preguntó si quería ir.', answers: ['He asked me if I wanted to go.', 'She asked me if I wanted to go.', 'He asked me whether I wanted to go.', 'She asked me whether I wanted to go.'] },
+    ],
+  },
+
+  // ───────────── C1 ─────────────
+  {
+    id: 'cond-3',
+    level: 'C1',
+    title: 'Condicional 3 y mixtos',
+    prereqs: ['cond-1-2', 'past-perfect'],
+    explanation: [
+      'Condicional 3 (pasado que no ocurrió): If + had + participio, would have + participio. If I had known, I would have told you.',
+      'Mixto (pasado → consecuencia presente): If + had + participio, would + verbo. If I had taken the job, I would be in Sydney now.',
+      'Nunca "would have" en la parte del if.',
+    ],
+    examples: [
+      ['If I\'d left earlier, I wouldn\'t have missed the bus.', 'Si hubiera salido antes, no habría perdido el ómnibus.'],
+    ],
+    trap: 'Por "si hubiera sabido" sale "if I would have known". Lo correcto es If I had known.',
+    exercises: [
+      { kind: 'type', prompt: 'If I ___ (know), I would have told you.', answers: ['had known'] },
+      { kind: 'fix', prompt: 'If I would have known, I would have come.', answers: ['If I had known, I would have come.'] },
+      { kind: 'type', prompt: 'If she had studied, she ___ (pass) the exam.', answers: ['would have passed'] },
+      { kind: 'choice', prompt: 'If I had taken that job, I ___ in Sydney now.', options: ['would have been', 'would be', 'will be'], answer: 1, explain: 'Pasado → consecuencia ahora: mixto.' },
+      { kind: 'translate', prompt: 'Si hubiera salido antes, no habría perdido el ómnibus.', answers: ["If I had left earlier, I wouldn't have missed the bus.", "If I had left earlier, I would not have missed the bus."] },
+      { kind: 'choice', prompt: 'We ___ the match if we had played better.', options: ['would win', 'would have won', 'had won'], answer: 1 },
+    ],
+  },
+  {
+    id: 'past-modals',
+    level: 'C1',
+    title: 'Modales en pasado',
+    prereqs: ['pres-perfect', 'can'],
+    explanation: [
+      'modal + have + participio para hablar del pasado:',
+      'should have = debería haber · could have = podría haber · must have = seguro que · can\'t have = no puede ser que · might have = quizás.',
+    ],
+    examples: [
+      ['You should have told me.', 'Me tendrías que haber avisado.'],
+      ['They must have gone to bed.', 'Seguro que se fueron a dormir.'],
+    ],
+    trap: 'Siempre "have" + participio, nunca "had": should have called, no "should had called".',
+    exercises: [
+      { kind: 'type', prompt: 'You ___ (should / tell) me earlier!', answers: ['should have told'] },
+      { kind: 'choice', prompt: 'The lights are off. They ___ gone to bed.', options: ['must have', 'should have', 'can have'], answer: 0 },
+      { kind: 'fix', prompt: 'You should had called me.', answers: ['You should have called me.'] },
+      { kind: 'choice', prompt: "She ___ seen me — I wasn't there!", options: ['must have', "can't have", 'should have'], answer: 1 },
+      { kind: 'translate', prompt: 'Me podrías haber avisado.', answers: ['You could have told me.', 'You could have warned me.', 'You could have let me know.'] },
+      { kind: 'type', prompt: "I'm not sure where he is. He ___ (might / miss) the bus.", answers: ['might have missed'] },
+    ],
+  },
+  {
+    id: 'future-perf',
+    level: 'C1',
+    title: 'Futuro perfecto y continuo',
+    prereqs: ['pres-perfect', 'future'],
+    explanation: [
+      'will have + participio: algo terminado antes de un momento futuro. By May, I will have finished.',
+      'will be + -ing: algo en progreso en un momento futuro. This time tomorrow, I\'ll be flying.',
+    ],
+    examples: [
+      ['I\'ll have finished it by Friday.', 'Para el viernes ya lo habré terminado.'],
+      ['Don\'t call at 9 — I\'ll be having dinner.', 'No llames a las 9, voy a estar cenando.'],
+    ],
+    trap: '"Para el viernes" = by Friday (no "for Friday").',
+    exercises: [
+      { kind: 'type', prompt: 'By May, I ___ (finish) the course.', answers: ['will have finished'] },
+      { kind: 'type', prompt: 'This time tomorrow, I ___ (fly) to Sydney.', answers: ['will be flying'] },
+      { kind: 'choice', prompt: 'By 2030, they ___ the new bridge.', options: ['will build', 'will have built', 'will be building'], answer: 1 },
+      { kind: 'choice', prompt: "Don't call me at 9 — I ___ dinner.", options: ['will have', 'will be having', 'have had'], answer: 1 },
+      { kind: 'translate', prompt: 'Para el viernes ya lo habré terminado.', answers: ['I will have finished it by Friday.', 'By Friday I will have finished it.', 'I will have already finished it by Friday.'] },
+      { kind: 'type', prompt: 'Next year she ___ (work) here for ten years.', answers: ['will have worked', 'will have been working'] },
+    ],
+  },
+];
+
+export const unitById = (id: string) => UNITS.find((u) => u.id === id)!;

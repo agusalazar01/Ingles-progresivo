@@ -1,0 +1,185 @@
+import { useSyncExternalStore } from 'react';
+import { createEmptyCard, fsrs, Rating, type Card, type Grade } from 'ts-fsrs';
+import type { Level, Skill } from '../content/types';
+import { UNITS } from '../content/units';
+
+/** FSRS: el mismo algoritmo de repaso espaciado que usa Anki. Retención objetivo 90%. */
+const scheduler = fsrs({ request_retention: 0.9, enable_fuzz: true });
+
+export type Outcome = 'good' | 'hard' | 'again';
+const RATING: Record<Outcome, Grade> = { good: Rating.Good, hard: Rating.Hard, again: Rating.Again };
+
+type StoredCard = Omit<Card, 'due' | 'last_review'> & { due: string; last_review?: string };
+
+export interface ErrorEntry {
+  key: string;
+  unitId: string;
+  prompt: string;
+  given: string;
+  correct: string;
+  count: number;
+  last: string;
+}
+
+export interface TestResult {
+  date: string;
+  level: Level | null;
+  perLevel: Partial<Record<Level, { correct: number; total: number }>>;
+  perSkill: Partial<Record<Skill, { correct: number; total: number }>>;
+}
+
+export interface UnitProgress {
+  status: 'mastered' | 'placed';
+  date: string;
+  score?: number;
+}
+
+export interface AppState {
+  version: 1;
+  units: Record<string, UnitProgress>;
+  cards: Record<string, StoredCard>;
+  errors: Record<string, ErrorEntry>;
+  tests: TestResult[];
+  activity: string[];
+  stats: { reviews: number; correct: number };
+}
+
+const KEY = 'ingles-progresivo-v1';
+
+const empty = (): AppState => ({
+  version: 1,
+  units: {},
+  cards: {},
+  errors: {},
+  tests: [],
+  activity: [],
+  stats: { reviews: 0, correct: 0 },
+});
+
+function load(): AppState {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) return { ...empty(), ...JSON.parse(raw) };
+  } catch {
+    /* almacenamiento no disponible */
+  }
+  return empty();
+}
+
+let state: AppState = load();
+const listeners = new Set<() => void>();
+
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch {
+    /* sin persistencia */
+  }
+}
+
+export function setState(fn: (s: AppState) => AppState) {
+  state = fn(state);
+  save();
+  listeners.forEach((l) => l());
+}
+
+export function getState() {
+  return state;
+}
+
+export function useAppState(): AppState {
+  return useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+    () => state,
+  );
+}
+
+export function resetAll() {
+  setState(() => empty());
+}
+
+// ───── Tarjetas (repaso espaciado) ─────
+
+export const cardKey = (unitId: string, index: number) => `${unitId}#${index}`;
+
+const toStored = (c: Card): StoredCard => ({
+  ...c,
+  due: c.due.toISOString(),
+  last_review: c.last_review ? new Date(c.last_review).toISOString() : undefined,
+});
+const fromStored = (c: StoredCard): Card => ({
+  ...c,
+  due: new Date(c.due),
+  last_review: c.last_review ? new Date(c.last_review) : undefined,
+});
+
+/** Califica una tarjeta (la crea si no existe) y la reprograma con FSRS. */
+export function gradeCard(s: AppState, key: string, outcome: Outcome, now = new Date()): AppState {
+  const current = s.cards[key] ? fromStored(s.cards[key]) : createEmptyCard(now);
+  const next = scheduler.next(current, now, RATING[outcome]).card;
+  return { ...s, cards: { ...s.cards, [key]: toStored(next) } };
+}
+
+/** Siembra tarjetas de una unidad "ubicada" por el test: se reparten en los próximos días para detectar huecos sin saturar. */
+export function seedPlacedCards(s: AppState, unitId: string, startDay: number, now = new Date()): AppState {
+  const unit = UNITS.find((u) => u.id === unitId)!;
+  const cards = { ...s.cards };
+  unit.exercises.forEach((_, i) => {
+    const key = cardKey(unitId, i);
+    if (cards[key]) return;
+    const c = createEmptyCard(now);
+    c.due = new Date(now.getTime() + (startDay + (i % 3)) * 86_400_000);
+    cards[key] = toStored(c);
+  });
+  return { ...s, cards };
+}
+
+export function dueKeys(s: AppState, now = new Date()): string[] {
+  return Object.entries(s.cards)
+    .filter(([, c]) => new Date(c.due) <= now)
+    .sort((a, b) => a[1].due.localeCompare(b[1].due))
+    .map(([k]) => k);
+}
+
+// ───── Errores ─────
+
+export function logError(s: AppState, e: Omit<ErrorEntry, 'count' | 'last'>): AppState {
+  const prev = s.errors[e.key];
+  return {
+    ...s,
+    errors: { ...s.errors, [e.key]: { ...e, count: (prev?.count ?? 0) + 1, last: new Date().toISOString() } },
+  };
+}
+
+export function clearError(s: AppState, key: string): AppState {
+  const errors = { ...s.errors };
+  delete errors[key];
+  return { ...s, errors };
+}
+
+// ───── Actividad / racha ─────
+
+export const today = (d = new Date()) => {
+  const z = new Date(d.getTime() - d.getTimezoneOffset() * 60_000);
+  return z.toISOString().slice(0, 10);
+};
+
+export function markActive(s: AppState): AppState {
+  const t = today();
+  return s.activity.includes(t) ? s : { ...s, activity: [...s.activity, t] };
+}
+
+export function streak(s: AppState, now = new Date()): number {
+  const days = new Set(s.activity);
+  let n = 0;
+  const d = new Date(now);
+  if (!days.has(today(d))) d.setDate(d.getDate() - 1);
+  while (days.has(today(d))) {
+    n++;
+    d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
