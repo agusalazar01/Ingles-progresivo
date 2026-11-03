@@ -6,9 +6,9 @@ export type Axis = 'Estructura' | 'Verbos' | 'Vocabulario' | 'Sonidos' | 'Escuch
 
 /** Ejercicios de recuperación activa: el usuario siempre produce o elige la respuesta. */
 export type Exercise =
-  | { kind: 'choice'; prompt: string; options: string[]; answer: number; explain?: string }
+  | { kind: 'choice'; prompt: string; options: string[]; answer: number; explain?: string; context?: string }
   /** Completar el hueco (___). `answers` son las respuestas aceptadas. */
-  | { kind: 'type'; prompt: string; answers: string[]; hint?: string; explain?: string }
+  | { kind: 'type'; prompt: string; answers: string[]; hint?: string; explain?: string; context?: string }
   /** Corregir una oración con un error típico de hispanohablantes. */
   | { kind: 'fix'; prompt: string; answers: string[]; hint?: string; explain?: string }
   /** Traducir del español. Si no coincide exacto, se muestra la respuesta modelo y el usuario se autoevalúa. */

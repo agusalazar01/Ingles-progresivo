@@ -11,6 +11,8 @@ export interface Cloze {
   tr?: [string, string];
 }
 
+import { LOCAL_CLOZE } from './banks-local';
+
 const c = (s: string, alt: string[], es: string, extra: Partial<Cloze> = {}): Cloze => ({ s, alt, es, ...extra });
 const Q = 'Convertila en pregunta';
 const N = 'Pasala a negativa';
@@ -329,3 +331,9 @@ export const DICTATIONS: Record<string, string[]> = {
   'sounds-endings': ['She asked three questions.', 'I worked all day yesterday.', 'He wanted to stay.', 'We played football last week.', 'She works in a school.'],
   'sounds-vowels': ['I live in a big city.', 'Please sit on that seat.', 'The ship is full of sheep.', 'Look at that cute cat.'],
 };
+
+// Suma las frases con vida cotidiana de Uruguay y Australia (sin repetir).
+for (const [unit, items] of Object.entries(LOCAL_CLOZE)) {
+  const base = CLOZE[unit] ?? [];
+  CLOZE[unit] = [...base, ...items.filter((x) => !base.some((b) => b.s === x.s))];
+}

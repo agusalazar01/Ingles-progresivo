@@ -1,4 +1,10 @@
 import { CONTRACTIONS, FORMS, GLOSSARY, type GlossEntry } from '../content/glossary';
+import { NGSL } from '../content/ngsl';
+
+const NGSL_MAP = new Map(NGSL);
+/** Glosario propio primero; si no está, el significado de la lista NGSL (sin ejemplos). */
+const entryOf = (w: string): GlossEntry | undefined => GLOSSARY[w] ?? (NGSL_MAP.has(w) ? ['', NGSL_MAP.get(w)!, ''] : undefined);
+const known = (w: string) => !!GLOSSARY[w] || NGSL_MAP.has(w);
 
 export interface Lookup {
   word: string;
@@ -14,8 +20,8 @@ const clean = (w: string) => w.toLowerCase().replace(/’/g, "'");
 /** Busca la forma base (lema) de una palabra: worked → work, cities → city, went → go. */
 export function lemmaOf(raw: string): { lemma: string; note?: string } | null {
   const w = clean(raw).replace(/'s$/, '');
-  if (GLOSSARY[w]) return { lemma: w };
-  if (FORMS[w] && GLOSSARY[FORMS[w]]) return { lemma: FORMS[w], note: `forma de "${FORMS[w]}"` };
+  if (known(w)) return { lemma: w };
+  if (FORMS[w] && known(FORMS[w])) return { lemma: FORMS[w], note: `forma de "${FORMS[w]}"` };
   const tries: [RegExp, string, string][] = [
     [/ies$/, 'y', 'plural o 3.ª persona de'],
     [/ied$/, 'y', 'pasado de'],
@@ -34,11 +40,11 @@ export function lemmaOf(raw: string): { lemma: string; note?: string } | null {
   for (const [re, rep, note] of tries) {
     if (!re.test(w)) continue;
     let base = w.replace(re, rep);
-    if (GLOSSARY[base]) return { lemma: base, note: `${note} "${base}"` };
+    if (known(base)) return { lemma: base, note: `${note} "${base}"` };
     // consonante duplicada: stopped → stop, bigger → big, running → run
     if (/(.)\1$/.test(base)) {
       base = base.slice(0, -1);
-      if (GLOSSARY[base]) return { lemma: base, note: `${note} "${base}"` };
+      if (known(base)) return { lemma: base, note: `${note} "${base}"` };
     }
   }
   return null;
@@ -49,7 +55,7 @@ export function lookup(raw: string): Lookup {
   if (CONTRACTIONS[w]) return { word: raw, contraction: CONTRACTIONS[w] };
   const found = lemmaOf(w);
   if (!found) return { word: raw };
-  return { word: raw, lemma: found.lemma, entry: GLOSSARY[found.lemma], note: found.note };
+  return { word: raw, lemma: found.lemma, entry: entryOf(found.lemma), note: found.note };
 }
 
 /** Respaldo con internet: definición en inglés de un diccionario abierto (Free Dictionary API). */

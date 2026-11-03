@@ -4,12 +4,12 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
-## Qué hace la versión 0.4
+## Qué hace la versión 0.5
 
 Se centra en una sola cosa: **armar oraciones correctas, rápido y sin traducir en la cabeza**. La escucha y la conversación se practican fuera de la app.
 
 - **Test de nivel adaptativo** (A1–C1): empieza en B1 y sube o baja según las respuestas. Se puede repetir.
-- **35 unidades en 5 ejes**: estructura, verbos, vocabulario, sonidos y escucha. Cada unidad tiene prerrequisitos.
+- **36 unidades en 5 ejes**: estructura, verbos, vocabulario, sonidos y escucha. Cada unidad tiene prerrequisitos.
 - **Escalera de 6 escalones por unidad**, de muy fácil a difícil: explicación → reconocer → completar → transformar → construir (ordenar y traducir) → fluidez contra reloj. Cada escalón se aprueba con 80% al primer intento.
 - **Ejercicios que no se repiten**: un generador de oraciones (inglés y español) y bancos por unidad crean oraciones nuevas cada vez, así se aprende la regla y no la frase.
 - **Modo fluidez**: en el último escalón y en los repasos, una respuesta correcta pero lenta vuelve antes.
@@ -18,6 +18,9 @@ Se centra en una sola cosa: **armar oraciones correctas, rápido y sin traducir 
 - **Avance automático**: al aprobar un escalón sigue el próximo, y al dominar una unidad pasa sola a la siguiente. «Volver» lleva al menú.
 - **Taller de verbos**: 63 verbos ordenados del más usado al menos, cada uno en 4 etapas: formas (opción múltiple) → conjugar → completar oraciones en todos los tiempos → crear tus propias oraciones.
 - **Prueba de práctica por nivel**: debajo de cada nivel terminado, todo lo del nivel mezclado (3 preguntas por tema + vocabulario). Explica cada error y permite practicar los temas fallados. No bloquea nada; se repite cuando quieras.
+- **Frases con sabor local**: oraciones con tono uruguayo en español (vos, laburo, la rambla, el mate) y vida cotidiana australiana en inglés (arvo, servo, mate, the ute to the vineyard). Unidad nueva **Inglés de Australia**.
+- **Contexto en cada hueco**: los ejercicios de completar muestran la oración en español, así no hay dos respuestas posibles.
+- **Explicación siempre a mano**: en el menú de la unidad (también después de terminarla) y con el botón «📖 Explicación» durante los ejercicios. Puntos numerados, inglés resaltado y «trampas» en color.
 - **Repaso espaciado con FSRS**, corrección con pista y segundo intento, registro de errores, diccionario al tocar cualquier palabra y voces del teléfono.
 
 Todo se guarda en el teléfono. No necesita internet ni cuenta.

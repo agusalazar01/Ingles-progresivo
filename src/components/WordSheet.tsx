@@ -49,9 +49,9 @@ export function WordSheet({ word, sentence, onClose }: { word: string; sentence:
 
         {info.entry && (
           <>
-            <p className="small">{pos}</p>
+            {pos && <p className="small">{pos}</p>}
             <p className="meaning">{meaning}</p>
-            <p className="eyebrow">Ejemplos</p>
+            {(ex1 || ex2) && <p className="eyebrow">Ejemplos</p>}
             {[ex1, ex2].filter(Boolean).map((ex) => (
               <button key={ex} className="example-line" onClick={() => say(ex!, { accent })}>
                 ▶ {ex}

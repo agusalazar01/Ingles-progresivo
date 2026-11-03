@@ -15,7 +15,7 @@ const ORDER = [
   // A2 — contar el pasado y planes, describir y comparar
   'past-simple', 'countables', 'sounds-endings', 'future', 'comparatives', 'past-cont', 'collocations',
   // B1 — experiencias, hipótesis y conectar ideas
-  'pres-perfect', 'phrasal-1', 'relatives', 'cond-1-2', 'passive', 'connectors', 'connected-speech',
+  'pres-perfect', 'phrasal-1', 'relatives', 'cond-1-2', 'passive', 'connectors', 'aussie', 'connected-speech',
   // B2 — precisión y naturalidad (romper el techo de B2)
   'pres-perf-cont', 'past-perfect', 'false-friends', 'gerund-inf', 'reported', 'register',
   // C1

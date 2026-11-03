@@ -189,6 +189,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
         </div>
       )}
       {showPromptText && <Words text={ex.prompt} className="prompt" />}
+      {(ex.kind === 'type' || ex.kind === 'choice') && ex.context && <p className="context">🇺🇾 {ex.context}</p>}
       {ex.kind === 'transform' && <p className="task">→ {ex.task}</p>}
       {ex.kind === 'order' && ex.prompt && <p className="prompt-es">{ex.prompt}</p>}
       {ex.kind === 'translate' && <p className="prompt">{ex.prompt}</p>}

@@ -105,6 +105,35 @@ export const ADVANCED_UNITS: Unit[] = [
     ],
   },
 
+  {
+    id: 'aussie',
+    level: 'B1',
+    axis: 'Vocabulario',
+    title: 'Inglés de Australia',
+    prereqs: ['phrasal-1'],
+    explanation: [
+      'En Australia el inglés de todos los días acorta las palabras y les agrega -o o -ie: afternoon → **arvo**, breakfast → **brekkie**, service station → **servo**, barbecue → **barbie**.',
+      'Saludos y respuestas típicas: **G\'day** (hola), **How are you going?** (¿cómo andás?), **No worries** (no pasa nada / de nada), **Cheers** (gracias / chau), **Good on ya** (¡bien ahí!).',
+      'Palabras del día a día: **mate** (amigo, como "bo"), **heaps** (pila de, re), **reckon** (me parece), **keen** (con ganas), **exy** (salado, caro), **crook** (enfermo), **knackered** (muerto de cansancio).',
+      'Cosas: **ute** (camioneta), **esky** (conservadora), **thongs** (chancletas), **sunnies** (lentes de sol), **snag** (chorizo), **footy** (fútbol australiano), **cuppa** (un té o café), **tradie** (técnico, albañil, electricista), **smoko** (descanso en el laburo).',
+    ],
+    examples: [
+      ["G'day mate, how are you going?", 'Hola, bo, ¿cómo andás?'],
+      ["Let's have a barbie this arvo.", 'Hagamos un asado esta tarde.'],
+      ['No worries, see you at the servo.', 'No pasa nada, nos vemos en la estación de servicio.'],
+    ],
+    trap: 'En Australia **thongs** son chancletas (no ropa interior) y **footy** no es el fútbol de pelota redonda: a ese le dicen **soccer**. Este registro es informal: en una entrevista de trabajo, mejor el inglés estándar.',
+    exercises: [
+      { kind: 'choice', prompt: '"See you this arvo" significa…', options: ['Nos vemos esta tarde', 'Nos vemos en el auto', 'Nos vemos mañana'], answer: 0 },
+      { kind: 'choice', prompt: 'Para ir a la playa en Australia te ponés…', options: ['thongs', 'esky', 'ute'], answer: 0 },
+      { kind: 'choice', prompt: '"It\'s too exy" significa…', options: ['Es muy caro', 'Es muy emocionante', 'Está muy lejos'], answer: 0 },
+      { kind: 'choice', prompt: 'Alguien te dice "Cheers, mate!" después de que lo ayudaste. Respondés…', options: ['No worries!', 'Good day!', 'Crikey!'], answer: 0 },
+      { kind: 'translate', prompt: 'Hagamos un asado esta tarde.', answers: ["Let's have a barbie this arvo.", "Let's have a barbie this afternoon.", "Let's have a barbecue this afternoon."] },
+      { kind: 'translate', prompt: 'Estoy muerto de cansancio.', answers: ["I'm knackered.", 'I am knackered.', "I'm exhausted.", 'I am exhausted.'] },
+      { kind: 'listen', prompt: "G'day mate, how are you going?", answers: ["G'day mate, how are you going?"] },
+    ],
+  },
+
   // ───────────── B2 ─────────────
   {
     id: 'false-friends',

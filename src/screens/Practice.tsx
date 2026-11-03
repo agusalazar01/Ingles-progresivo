@@ -7,6 +7,7 @@ import { recordReview, saveLevelScore, type ItemResult } from '../lib/actions';
 import { isDone, nextUnit } from '../lib/progress';
 import { getState } from '../lib/store';
 import { vocabExamItems } from '../lib/vocab';
+import { Explanation } from '../components/Explanation';
 
 const shuffle = <T,>(a: T[]) => a.map((x) => ({ x, k: Math.random() })).sort((p, q) => p.k - q.k).map((p) => p.x);
 
@@ -258,13 +259,7 @@ export function Remedial({ unitIds, onExit }: { unitIds: string[]; onExit: () =>
           </button>
         </div>
         <h1>{unit.title}</h1>
-        {unit.explanation.map((p) => (
-          <p key={p}>{p}</p>
-        ))}
-        <div className="trap">
-          <p className="trap-title">Trampa para hispanohablantes</p>
-          <p>{unit.trap}</p>
-        </div>
+        <Explanation unit={unit} />
         <button
           className="primary"
           onClick={() => {

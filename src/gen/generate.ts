@@ -19,10 +19,10 @@ const shuffle = <T,>(a: T[], r: Rng): T[] => a.map((x) => ({ x, k: r() })).sort(
 /** Expresiones de tiempo que piden cada tiempo verbal (la pista para elegir el tiempo correcto). */
 const TIMES: Record<Tense, [string, string][]> = {
   presSimple: [['every day', 'todos los días'], ['on Sundays', 'los domingos'], ['every week', 'todas las semanas']],
-  presCont: [['now', 'ahora'], ['at the moment', 'en este momento'], ['this week', 'esta semana']],
+  presCont: [['now', 'ahora'], ['at the moment', 'en este momento'], ['this week', 'esta semana'], ['this arvo', 'esta tarde']],
   pastSimple: [['yesterday', 'ayer'], ['last week', 'la semana pasada'], ['two days ago', 'hace dos días'], ['in 2019', 'en 2019']],
   pastCont: [['at 8 last night', 'anoche a las 8'], ['all afternoon', 'toda la tarde']],
-  will: [['tomorrow', 'mañana'], ['next week', 'la semana que viene'], ['later', 'más tarde']],
+  will: [['tomorrow', 'mañana'], ['next week', 'la semana que viene'], ['later', 'más tarde'], ['this arvo', 'esta tarde']],
   goingTo: [['tomorrow', 'mañana'], ['next week', 'la semana que viene'], ['next year', 'el año que viene']],
   presPerf: [['many times', 'muchas veces'], ['twice', 'dos veces'], ['this week', 'esta semana']],
   presPerfCont: [['for two hours', 'durante dos horas'], ['since this morning', 'desde esta mañana'], ['all day', 'todo el día']],
@@ -117,6 +117,7 @@ function tensePattern(tenses: Tense[], pattern: Pattern, r: Rng, fromTense?: Ten
           kind: 'type',
           prompt: `${subj} ___ ${cue} ${tail(p)}.`.replace(/\s+\./, '.'),
           answers: [verbPhrase(p.t, p.s, p.v, pol)],
+          context: es({ ...p, pol }),
           hint: `Mirá la pista de tiempo: va en ${label}.`,
           explain: en({ ...p, pol }),
         },
@@ -308,12 +309,12 @@ function clozePattern(unitId: string, pattern: Pattern, r: Rng): GenItem | null 
   switch (pattern) {
     case 'recognize': {
       const opts = shuffle([t, ...item.alt], r);
-      return { sig, exercise: { kind: 'choice', prompt: fill(item, '___'), options: opts, answer: opts.indexOf(t), explain: full(item) } };
+      return { sig, exercise: { kind: 'choice', prompt: fill(item, '___'), options: opts, answer: opts.indexOf(t), explain: full(item), context: item.es } };
     }
     case 'complete':
       return {
         sig,
-        exercise: { kind: 'type', prompt: `${fill(item, '___')}${item.cue ? ` (${item.cue})` : ''}`, answers: [t], hint: `Pensalo en español: «${item.es}»`, explain: full(item) },
+        exercise: { kind: 'type', prompt: `${fill(item, '___')}${item.cue ? ` (${item.cue})` : ''}`, answers: [t], hint: 'Fijate en la oración en español: te dice qué va en el espacio.', explain: full(item), context: item.es },
       };
     case 'transform':
       return { sig, exercise: { kind: 'transform', prompt: full(item), task: item.tr![0], answers: [item.tr![1]] } };

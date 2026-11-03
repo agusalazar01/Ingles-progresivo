@@ -1,10 +1,9 @@
 import { useRef, useState } from 'react';
 import { ExerciseRunner, type RunnerItem } from '../components/ExerciseRunner';
-import { Words } from '../components/Words';
+import { Explanation, ExplanationSheet, axisClass } from '../components/Explanation';
 import { unitById } from '../content/curriculum';
 import { completeStep, readExplanation, STEP_PASS, type ItemResult } from '../lib/actions';
 import { activeSteps, stepItems, type Step } from '../lib/ladder';
-import { say } from '../lib/speech';
 import { getState, useAppState } from '../lib/store';
 import { levelUnitsDone, nextUnit } from '../lib/progress';
 
@@ -27,9 +26,9 @@ export function Lesson({ unitId, banner, onExit, onNextUnit }: Props) {
   const [result, setResult] = useState<{ index: number; score: number; passed: boolean } | null>(null);
   const [notice, setNotice] = useState<string | undefined>(banner);
   const [showExplain, setShowExplain] = useState(done === 0);
+  const [sheet, setSheet] = useState(false);
   const firstTry = useRef<ItemResult[]>([]);
 
-  const accent = () => getState().settings.accent;
 
   const start = (index: number) => {
     firstTry.current = [];
@@ -63,10 +62,16 @@ export function Lesson({ unitId, banner, onExit, onNextUnit }: Props) {
           <p className="eyebrow">
             {unit.title} · escalón {running.index + 1} de {steps.length}: {step.title}
           </p>
-          <button className="link" onClick={onExit}>
-            Volver
-          </button>
+          <span className="row gap">
+            <button className="link" onClick={() => setSheet(true)}>
+              📖 Explicación
+            </button>
+            <button className="link" onClick={onExit}>
+              Volver
+            </button>
+          </span>
         </div>
+        {sheet && <ExplanationSheet unit={unit} onClose={() => setSheet(false)} />}
         {notice && <p className="notice">{notice}</p>}
         <ExerciseRunner
           key={`${running.index}-${running.items.length}-${notice ?? ''}`}
@@ -93,9 +98,14 @@ export function Lesson({ unitId, banner, onExit, onNextUnit }: Props) {
 
   return (
     <div className="screen">
-      <p className="eyebrow">
-        {unit.level} · {unit.axis}
-      </p>
+      <div className="row between">
+        <p className={`eyebrow axis-tag ${axisClass(unit)}`}>
+          {unit.level} · {unit.axis}
+        </p>
+        <button className="link" onClick={onExit}>
+          Volver
+        </button>
+      </div>
       <h1>{unit.title}</h1>
       {notice && !result && <p className="notice">{notice}</p>}
 
@@ -114,32 +124,13 @@ export function Lesson({ unitId, banner, onExit, onNextUnit }: Props) {
         </div>
       )}
 
-      <button className="link left" onClick={() => setShowExplain(!showExplain)}>
-        {showExplain ? 'Ocultar explicación' : 'Ver explicación'}
+      <button className={`explain-toggle ${axisClass(unit)}`} onClick={() => setShowExplain(!showExplain)}>
+        <span>📖 Explicación de la unidad</span>
+        <span className="small">{showExplain ? 'Ocultar ▲' : 'Ver ▼'}</span>
       </button>
       {showExplain && (
         <>
-          {unit.explanation.map((p) => (
-            <p key={p}>{p}</p>
-          ))}
-          <div className="examples">
-            {unit.examples.map(([en, es]) => (
-              <div key={en} className="example">
-                <div className="example-row">
-                  <Words text={en} className="en" />
-                  <button className="icon" onClick={() => say(en, { accent: accent() })} aria-label="Escuchar">
-                    ▶
-                  </button>
-                </div>
-                <p className="es">{es}</p>
-              </div>
-            ))}
-          </div>
-          <div className="trap">
-            <p className="trap-title">Trampa para hispanohablantes</p>
-            <p>{unit.trap}</p>
-          </div>
-          <p className="small">Tocá cualquier palabra en inglés para ver qué significa.</p>
+          <Explanation unit={unit} />
           {done === 0 && (
             <button
               className="primary"
