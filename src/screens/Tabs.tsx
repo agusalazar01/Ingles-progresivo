@@ -3,6 +3,7 @@ import { UNITS } from '../content/curriculum';
 import { daysSince, lastTest, nextUnit, pathLevel, previousLevelDone, unitStatus } from '../lib/progress';
 import { dueKeys, resetAll, setState, streak, useAppState } from '../lib/store';
 import { ACCENT_LABEL, say, type Accent } from '../lib/speech';
+import { APP_VERSION, BUILD } from '../lib/update';
 import type { Route } from '../App';
 
 const REVIEW_BATCH = 20;
@@ -253,6 +254,10 @@ export function Progress({ go }: { go: (r: Route) => void }) {
       >
         Borrar mi progreso
       </button>
+      <p className="small center">
+        Versión {APP_VERSION}
+        {BUILD ? ` · compilación ${BUILD}` : ' · desarrollo'}
+      </p>
     </div>
   );
 }

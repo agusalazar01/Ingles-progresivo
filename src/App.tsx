@@ -5,6 +5,7 @@ import { Review } from './screens/Review';
 import { Errors, Home, Path, Progress, Welcome } from './screens/Tabs';
 import { markActive, setState, useAppState } from './lib/store';
 import { syncPlacedUnits } from './lib/actions';
+import { checkUpdate, type UpdateInfo } from './lib/update';
 import { WordContext } from './components/Words';
 import { WordSheet } from './components/WordSheet';
 import './App.css';
@@ -29,6 +30,7 @@ export default function App() {
   const s = useAppState();
   const [route, setRoute] = useState<Route>({ name: 'home' });
   const [word, setWord] = useState<{ word: string; sentence: string } | null>(null);
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
   const isNew = s.tests.length === 0 && Object.keys(s.units).length === 0 && s.activity.length === 0;
 
   const go = (r: Route) => {
@@ -42,6 +44,7 @@ export default function App() {
 
   useEffect(() => {
     syncPlacedUnits();
+    checkUpdate().then(setUpdate);
   }, []);
 
   const home = () => setRoute({ name: 'home' });
@@ -75,6 +78,19 @@ export default function App() {
   return (
     <WordContext.Provider value={(w, sentence) => setWord({ word: w, sentence })}>
     <div className="app">
+      {update && showTabs && (
+        <div className="update">
+          <p>
+            Hay una versión nueva: <b>{update.version}</b> (compilación {update.build}).
+          </p>
+          <a className="primary" href={update.apkUrl} target="_blank" rel="noreferrer">
+            Descargar e instalar
+          </a>
+          <button className="link" onClick={() => setUpdate(null)}>
+            Más tarde
+          </button>
+        </div>
+      )}
       <main>{body}</main>
       {showTabs && (
         <nav className="tabs">

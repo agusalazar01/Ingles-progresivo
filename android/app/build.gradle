@@ -7,8 +7,9 @@ android {
         applicationId "uy.agustin.inglesprogresivo"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // En GitHub Actions: versionCode = número de compilación (siempre crece), versionName = versión de package.json.
+        versionCode((System.getenv("BUILD_NUMBER") ?: "1").toInteger())
+        versionName(System.getenv("VERSION_NAME") ?: "0.0.0-dev")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +17,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Firma fija: con la misma clave, cada APK nueva se instala encima de la anterior sin perder el progreso.
+    def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+    signingConfigs {
+        release {
+            if (keystorePath) {
+                storeFile file(keystorePath)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
+            if (keystorePath) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

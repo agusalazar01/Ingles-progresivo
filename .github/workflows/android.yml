@@ -1,11 +1,19 @@
 name: Compilar APK
 
+# - Cada push a main compila la APK y la deja en Actions → Artifacts (para probar).
+# - Para PUBLICAR una versión (la que la app detecta como actualización): Actions → "Compilar APK" →
+#   "Run workflow" → marcar "publicar". Crea un Release con la APK firmada.
+
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      publicar:
+        description: 'Publicar esta versión como actualización'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -13,6 +21,9 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -20,6 +31,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      - name: Versión
+        run: echo "VERSION_NAME=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
 
       - name: Instalar dependencias
         run: npm ci
@@ -35,15 +49,27 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Compilar APK (debug, instalable directamente)
+      - name: Preparar la clave de firma
+        if: env.HAS_KEY == 'true'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> "$GITHUB_ENV"
+
+      - name: Compilar APK
         working-directory: android
         run: |
           chmod +x gradlew
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          ./gradlew assembleDebug --no-daemon
-
-      - name: Renombrar APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk ingles-progresivo.apk
+          if [ "$HAS_KEY" = "true" ]; then
+            ./gradlew assembleRelease --no-daemon
+            cp app/build/outputs/apk/release/app-release.apk ../ingles-progresivo.apk
+          else
+            echo "::warning::Sin clave de firma: APK de prueba (debug). No se instala encima de versiones firmadas."
+            ./gradlew assembleDebug --no-daemon
+            cp app/build/outputs/apk/debug/app-debug.apk ../ingles-progresivo.apk
+          fi
 
       - name: Subir APK como artefacto
         uses: actions/upload-artifact@v5
@@ -51,8 +77,14 @@ jobs:
           name: ingles-progresivo-apk
           path: ingles-progresivo.apk
 
-      - name: Publicar release (solo en tags v*)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publicar versión
+        if: github.event_name == 'workflow_dispatch' && inputs.publicar && env.HAS_KEY == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ env.VERSION_NAME }}-build${{ github.run_number }}
+          name: Inglés Progresivo ${{ env.VERSION_NAME }} (compilación ${{ github.run_number }})
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          body: |
+            Descargá ingles-progresivo.apk desde el celular e instalala encima de la anterior: se conserva tu progreso.
           files: ingles-progresivo.apk
