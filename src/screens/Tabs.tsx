@@ -1,10 +1,13 @@
 import { LEVELS } from '../content/types';
 import { UNITS } from '../content/curriculum';
-import { daysSince, lastTest, nextUnit, pathLevel, previousLevelDone, unitStatus } from '../lib/progress';
+import { daysSince, isDone, lastTest, nextUnit, pathLevel, previousLevelDone, unitStatus } from '../lib/progress';
 import { dueKeys, resetAll, setState, streak, useAppState } from '../lib/store';
 import { ACCENT_LABEL, say, type Accent } from '../lib/speech';
 import { APP_VERSION, BUILD } from '../lib/update';
 import type { Route } from '../App';
+import { availableFamilies } from './Practice';
+import { levelUnitsDone } from '../lib/progress';
+import { bandProgress, defaultBand, nextNewWords } from '../lib/vocab';
 
 const REVIEW_BATCH = 20;
 const RETEST_DAYS = 28;
@@ -61,9 +64,42 @@ export function Home({ go }: { go: (r: Route) => void }) {
           <p>No hay unidades nuevas disponibles por ahora: repasá para afianzar lo aprendido.</p>
         )}
       </div>
+      <div className="card">
+        <p className="card-title">3. Palabras nuevas</p>
+        {(() => {
+          const b = defaultBand(s);
+          const fresh = nextNewWords(s, b, s.settings.newWords).length;
+          const bp = bandProgress(s, b);
+          return (
+            <>
+              <p>
+                Banda {b}: {bp.added} de {bp.total} palabras vistas.
+              </p>
+              {fresh > 0 && (
+                <button className="secondary" onClick={() => go({ name: 'vocab' })}>
+                  Aprender {fresh} palabras
+                </button>
+              )}
+            </>
+          );
+        })()}
+      </div>
+      {availableFamilies().length > 0 && (
+        <div className="card">
+          <p className="card-title">4. Práctica mezclada</p>
+          <p className="small">Reglas parecidas mezcladas y contra reloj: hay que elegir la correcta sin la pista de la unidad.</p>
+          <div className="chips">
+            {availableFamilies().map((f) => (
+              <button key={f.name} className="chip" onClick={() => go({ name: 'mixed', family: f.name })}>
+                {f.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {errorCount > 0 && (
         <div className="card">
-          <p className="card-title">3. Tus errores</p>
+          <p className="card-title">Tus errores</p>
           <p>{errorCount} ejercicios que te costaron.</p>
           <button className="secondary" onClick={() => go({ name: 'errors' })}>
             Ver y practicar
@@ -83,7 +119,7 @@ export function Home({ go }: { go: (r: Route) => void }) {
   );
 }
 
-const STATUS_LABEL = { locked: 'Bloqueada', available: 'Disponible', mastered: 'Dominada', placed: 'Ubicada por test' } as const;
+const STATUS_LABEL = { locked: 'Bloqueada', available: 'Disponible', progress: 'En curso', mastered: 'Dominada', placed: 'Ubicada por test' } as const;
 
 export function Path({ go }: { go: (r: Route) => void }) {
   const s = useAppState();
@@ -91,14 +127,14 @@ export function Path({ go }: { go: (r: Route) => void }) {
     <div className="screen">
       <h1>Tu camino</h1>
       <p className="small">
-        Cada unidad se desbloquea cuando dominás lo que necesita antes. Un nivel se abre al completar el anterior.
+        Cada unidad tiene una escalera de 6 escalones. Un nivel se abre al dominar el anterior y aprobar su examen de cierre.
       </p>
       {LEVELS.map((L) => (
         <section key={L} className="level-block">
           <h2>{L}</h2>
           {UNITS.filter((u) => u.level === L).map((u) => {
             const st = unitStatus(s, u.id);
-            const needs = u.prereqs.filter((p) => !s.units[p]).map((p) => UNITS.find((x) => x.id === p)!.title);
+            const needs = u.prereqs.filter((p) => !isDone(s, p)).map((p) => UNITS.find((x) => x.id === p)!.title);
             if (!previousLevelDone(s, u.level)) needs.push(`completar ${LEVELS[LEVELS.indexOf(u.level) - 1]}`);
             return (
               <button key={u.id} className={`unit ${st}`} disabled={st === 'locked'} onClick={() => go({ name: 'lesson', unitId: u.id })}>
@@ -107,11 +143,21 @@ export function Path({ go }: { go: (r: Route) => void }) {
                 </span>
                 <span className="unit-status">
                   {STATUS_LABEL[st]}
+                  {st === 'progress' && ` · escalón ${s.units[u.id]?.step ?? 0}`}
                   {st === 'locked' && needs.length > 0 && ` · antes: ${needs.join(', ')}`}
                 </span>
               </button>
             );
           })}
+          {s.levels[L] ? (
+            <p className="small level-ok">✓ Nivel {L} cerrado{s.levels[L]!.score < 1 ? ` con ${Math.round(s.levels[L]!.score * 100)}% en el examen` : ''}</p>
+          ) : levelUnitsDone(s, L) ? (
+            <button className="primary" onClick={() => go({ name: 'exam', level: L })}>
+              Examen de cierre de {L}
+            </button>
+          ) : (
+            <p className="small">Al dominar todas las unidades se habilita el examen de cierre de {L}.</p>
+          )}
         </section>
       ))}
     </div>

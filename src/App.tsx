@@ -3,6 +3,9 @@ import { Lesson } from './screens/Lesson';
 import { Placement } from './screens/Placement';
 import { Review } from './screens/Review';
 import { Errors, Home, Path, Progress, Welcome } from './screens/Tabs';
+import { Exam, Mixed } from './screens/Practice';
+import { Vocab } from './screens/Vocab';
+import type { Level } from './content/types';
 import { markActive, setState, useAppState } from './lib/store';
 import { syncPlacedUnits } from './lib/actions';
 import { checkUpdate, type UpdateInfo } from './lib/update';
@@ -15,13 +18,17 @@ export type Route =
   | { name: 'path' }
   | { name: 'errors' }
   | { name: 'progress' }
+  | { name: 'vocab' }
+  | { name: 'mixed'; family: string }
+  | { name: 'exam'; level: Level }
   | { name: 'placement'; retest: boolean }
   | { name: 'lesson'; unitId: string }
   | { name: 'review'; keys: string[]; title: string };
 
-const TABS: { name: 'home' | 'path' | 'errors' | 'progress'; label: string }[] = [
+const TABS: { name: 'home' | 'path' | 'vocab' | 'errors' | 'progress'; label: string }[] = [
   { name: 'home', label: 'Hoy' },
   { name: 'path', label: 'Camino' },
+  { name: 'vocab', label: 'Palabras' },
   { name: 'errors', label: 'Errores' },
   { name: 'progress', label: 'Progreso' },
 ];
@@ -63,6 +70,15 @@ export default function App() {
     case 'path':
       body = <Path go={go} />;
       break;
+    case 'vocab':
+      body = <Vocab go={go} />;
+      break;
+    case 'mixed':
+      body = <Mixed family={route.family} onExit={home} />;
+      break;
+    case 'exam':
+      body = <Exam level={route.level} onExit={() => setRoute({ name: 'path' })} />;
+      break;
     case 'errors':
       body = <Errors go={go} />;
       break;
@@ -73,7 +89,7 @@ export default function App() {
       body = isNew ? <Welcome go={go} /> : <Home go={go} />;
   }
 
-  const showTabs = ['home', 'path', 'errors', 'progress'].includes(route.name) && !(route.name === 'home' && isNew);
+  const showTabs = ['home', 'path', 'vocab', 'errors', 'progress'].includes(route.name) && !(route.name === 'home' && isNew);
 
   return (
     <WordContext.Provider value={(w, sentence) => setWord({ word: w, sentence })}>

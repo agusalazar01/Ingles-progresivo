@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { TIME_LIMIT } from '../lib/ladder';
 import type { Exercise, Unit } from '../content/types';
 import { matches, nearMiss } from '../lib/answer';
 import type { ItemResult } from '../lib/actions';
@@ -22,6 +23,8 @@ const KIND_LABEL: Record<Exercise['kind'], string> = {
   listen: 'Escuchá y escribí lo que oís',
   sound: '¿Qué palabra escuchaste?',
   speak: 'Decilo en voz alta',
+  order: 'Ordená las palabras',
+  transform: 'Transformá la oración',
 };
 
 export const correctText = (e: Exercise) =>
@@ -36,9 +39,11 @@ interface Props {
   onItem: (r: ItemResult, firstAttempt: boolean) => void;
   onDone: () => void;
   showUnit?: boolean;
+  /** Modo fluidez: muestra el tiempo y una respuesta correcta pero lenta cuenta como "difícil". */
+  timed?: boolean;
 }
 
-export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUnit }: Props) {
+export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUnit, timed = false }: Props) {
   const [queue, setQueue] = useState<{ item: RunnerItem; first: boolean }[]>(() => items.map((item) => ({ item, first: true })));
   const [pos, setPos] = useState(0);
   const [phase, setPhase] = useState<Phase>('answer');
@@ -48,6 +53,9 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   const [chosen, setChosen] = useState<number | null>(null);
   const [micOk, setMicOk] = useState<boolean | null>(null);
   const [listening, setListening] = useState(false);
+  const [picked, setPicked] = useState<number[]>([]);
+  const [slow, setSlow] = useState(false);
+  const started = useRef(Date.now());
 
   const current = queue[pos];
   const ex = current?.item.exercise;
@@ -58,6 +66,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
     if (ex.kind === 'listen') say(ex.prompt, { accent: accent() });
     if (ex.kind === 'sound') say(ex.options[ex.answer], { varied: true });
     if (ex.kind === 'speak') canListen().then(setMicOk);
+    started.current = Date.now();
     return () => {
       stopSpeaking();
     };
@@ -66,11 +75,15 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   if (!current || !ex) return null;
   const { item, first } = current;
 
-  const finish = (outcome: Outcome, given: string) => {
+  const finish = (raw: Outcome, given: string) => {
+    const ms = Date.now() - started.current;
+    const tooSlow = timed && raw === 'good' && ms > TIME_LIMIT[ex.kind] * 1000;
+    const outcome: Outcome = tooSlow ? 'hard' : raw;
+    setSlow(tooSlow);
     setVerdict(outcome);
     setPhase('feedback');
-    onItem({ key: item.key, unitId: item.unit.id, prompt: ex.prompt, given, correct: correctText(ex), outcome }, first);
-    if (requeue && outcome === 'again') setQueue((q) => [...q, { item, first: false }]);
+    onItem({ key: item.key, unitId: item.unit.id, prompt: ex.prompt, given, correct: correctText(ex), outcome, ms }, first);
+    if (requeue && first && outcome === 'again') setQueue((q) => [...q, { item, first: false }]);
   };
 
   const next = () => {
@@ -81,6 +94,8 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
     setMessage(null);
     setVerdict(null);
     setChosen(null);
+    setPicked([]);
+    setSlow(false);
   };
 
   const choose = (i: number) => {
@@ -89,22 +104,28 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
     finish(i === ex.answer ? 'good' : 'again', ex.options[i]);
   };
 
+  const orderText = ex.kind === 'order' ? picked.map((i) => ex.words[i]).join(' ') : '';
+  const given = ex.kind === 'order' ? orderText : input;
+
   const check = () => {
-    if (!('answers' in ex) || !input.trim()) return;
-    if (matches(input, ex.answers)) return finish(phase === 'retry' ? 'hard' : 'good', input);
+    if (!('answers' in ex) || !given.trim()) return;
+    if (matches(given, ex.answers)) return finish(phase === 'retry' ? 'hard' : 'good', given);
     if (ex.kind === 'translate' && phase === 'answer') return setPhase('selfcheck');
     if (phase === 'answer') {
       // Corrección que hace pensar: en vez de dar la respuesta, se pide un segundo intento con una pista.
       setMessage(
-        nearMiss(input, ex.answers)
+        nearMiss(given, ex.answers)
           ? 'Casi: revisá la ortografía e intentá de nuevo.'
           : ex.kind === 'listen'
             ? 'No es exactamente eso. Escuchalo de nuevo (podés ponerlo más lento) e intentá otra vez.'
-            : `No es correcto. ${ex.hint ?? 'Revisá el tiempo verbal y la forma del verbo.'} Intentá de nuevo.`,
+            : ex.kind === 'order'
+              ? 'El orden no es correcto. Pensá: sujeto, verbo y después el resto. Intentá de nuevo.'
+              : `No es correcto. ${('hint' in ex && ex.hint) || 'Revisá el tiempo verbal y la forma del verbo.'} Intentá de nuevo.`,
       );
+      if (ex.kind === 'order') setPicked([]);
       return setPhase('retry');
     }
-    finish('again', input);
+    finish('again', given);
   };
 
   const speakNow = async () => {
@@ -128,7 +149,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   };
 
   const isAudio = ex.kind === 'listen' || ex.kind === 'sound';
-  const showPromptText = !isAudio && ex.kind !== 'translate';
+  const showPromptText = !isAudio && ex.kind !== 'translate' && ex.kind !== 'order';
 
   return (
     <div className="runner">
@@ -148,7 +169,14 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
       )}
       <p className="kind">{KIND_LABEL[ex.kind]}</p>
 
+      {timed && phase !== 'feedback' && (
+        <div className="timer" key={`t${pos}`}>
+          <div className="timer-fill" style={{ animationDuration: `${TIME_LIMIT[ex.kind]}s` }} />
+        </div>
+      )}
       {showPromptText && <Words text={ex.prompt} className="prompt" />}
+      {ex.kind === 'transform' && <p className="task">→ {ex.task}</p>}
+      {ex.kind === 'order' && ex.prompt && <p className="prompt-es">{ex.prompt}</p>}
       {ex.kind === 'translate' && <p className="prompt">{ex.prompt}</p>}
       {ex.kind === 'speak' && ex.es && <p className="small">{ex.es}</p>}
 
@@ -185,7 +213,37 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
         </div>
       )}
 
-      {'answers' in ex && (
+      {ex.kind === 'order' && (
+        <div className="order">
+          <div className="order-line">
+            {picked.length === 0 && <span className="small">Tocá las palabras en orden</span>}
+            {picked.map((i, j) => (
+              <button
+                key={`${i}-${j}`}
+                className="chip chosen"
+                disabled={phase === 'feedback'}
+                onClick={() => setPicked(picked.filter((_, k) => k !== j))}
+              >
+                {ex.words[i]}
+              </button>
+            ))}
+          </div>
+          <div className="order-bank">
+            {ex.words.map((w, i) => (
+              <button key={`${w}-${i}`} className="chip" disabled={picked.includes(i) || phase === 'feedback'} onClick={() => setPicked([...picked, i])}>
+                {w}
+              </button>
+            ))}
+          </div>
+          {(phase === 'answer' || phase === 'retry') && (
+            <button className="primary" onClick={check} disabled={picked.length !== ex.words.length}>
+              Comprobar
+            </button>
+          )}
+        </div>
+      )}
+
+      {'answers' in ex && ex.kind !== 'order' && (
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -248,7 +306,9 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
       {phase === 'feedback' && (
         <div className={`feedback ${verdict === 'again' ? 'bad' : verdict === 'skip' ? 'neutral' : 'good'}`}>
           <p className="verdict">
-            {verdict === 'again'
+            {slow
+              ? 'Correcto, pero lento: va a volver antes para ganar fluidez.'
+              : verdict === 'again'
               ? 'La respuesta correcta es:'
               : verdict === 'skip'
                 ? 'Lo salteamos por ahora.'
@@ -256,7 +316,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
                   ? 'Bien, en el segundo intento.'
                   : '¡Correcto!'}
           </p>
-          {(verdict === 'again' || isAudio) && <Words text={correctText(ex)} className="model" />}
+          {(verdict === 'again' || isAudio || ex.kind === 'translate' || ex.kind === 'transform') && <Words text={correctText(ex)} className="model" />}
           {ex.explain && <p>{ex.explain}</p>}
           {verdict === 'again' && requeue && <p className="small">Te la vuelvo a preguntar al final.</p>}
           <button className="primary" onClick={next}>

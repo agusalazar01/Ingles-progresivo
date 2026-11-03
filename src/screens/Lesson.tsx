@@ -1,120 +1,146 @@
-import { useMemo, useRef, useState } from 'react';
-import { ExerciseRunner } from '../components/ExerciseRunner';
-import { unitById } from '../content/curriculum';
-import { finishLesson, MASTERY, type ItemResult } from '../lib/actions';
-import { cardKey, getState } from '../lib/store';
+import { useRef, useState } from 'react';
+import { ExerciseRunner, type RunnerItem } from '../components/ExerciseRunner';
 import { Words } from '../components/Words';
+import { unitById } from '../content/curriculum';
+import { completeStep, readExplanation, STEP_PASS, type ItemResult } from '../lib/actions';
+import { activeSteps, stepItems, type Step } from '../lib/ladder';
 import { say } from '../lib/speech';
+import { getState, useAppState } from '../lib/store';
 
-const shuffle = <T,>(a: T[]) => a.map((x) => ({ x, k: Math.random() })).sort((p, q) => p.k - q.k).map((p) => p.x);
-
+/** Una unidad: la escalera de muy fácil a difícil. */
 export function Lesson({ unitId, onExit }: { unitId: string; onExit: () => void }) {
   const unit = unitById(unitId);
-  const [step, setStep] = useState<'learn' | 'practice' | 'result'>('learn');
-  const [attempt, setAttempt] = useState(0);
+  const s = useAppState();
+  const steps = activeSteps(unit);
+  const progress = s.units[unitId];
+  const done = progress?.status ? steps.length : (progress?.step ?? 0);
+  const [running, setRunning] = useState<{ index: number; items: RunnerItem[] } | null>(null);
+  const [result, setResult] = useState<{ index: number; score: number; passed: boolean } | null>(null);
+  const [showExplain, setShowExplain] = useState(done === 0);
   const firstTry = useRef<ItemResult[]>([]);
-  const [score, setScore] = useState(0);
 
-  const items = useMemo(
-    () => shuffle(unit.exercises.map((exercise, i) => ({ key: cardKey(unit.id, i), unit, exercise }))),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [unit, attempt],
-  );
+  const accent = () => getState().settings.accent;
 
-  if (step === 'learn') {
+  const start = (index: number) => {
+    firstTry.current = [];
+    setResult(null);
+    setRunning({ index, items: stepItems(unit, steps[index].id) });
+  };
+
+  if (running) {
+    const step = steps[running.index];
     return (
       <div className="screen">
         <p className="eyebrow">
-          {unit.level} · {unit.axis}
+          {unit.title} · escalón {running.index + 1}: {step.title}
         </p>
-        <h1>{unit.title}</h1>
-        {unit.explanation.map((p) => (
-          <p key={p}>{p}</p>
-        ))}
-        <div className="examples">
-          {unit.examples.map(([en, es]) => (
-            <div key={en} className="example">
-              <div className="example-row">
-                <Words text={en} className="en" />
-                <button className="icon" onClick={() => say(en, { accent: getState().settings.accent })} aria-label="Escuchar">
-                  ▶
-                </button>
-              </div>
-              <p className="es">{es}</p>
-            </div>
-          ))}
-        </div>
-        <div className="trap">
-          <p className="trap-title">Trampa para hispanohablantes</p>
-          <p>{unit.trap}</p>
-        </div>
-        <p className="small">Tocá cualquier palabra en inglés para ver qué significa.</p>
-        <div className="row">
-          <button className="secondary" onClick={onExit}>
-            Volver
-          </button>
-          <button
-            className="primary"
-            onClick={() => {
-              firstTry.current = [];
-              setStep('practice');
-            }}
-          >
-            Practicar ({unit.exercises.length})
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === 'practice') {
-    return (
-      <div className="screen">
         <ExerciseRunner
-          key={attempt}
-          items={items}
+          key={`${running.index}-${result?.score ?? ''}`}
+          items={running.items}
           requeue
+          timed={step.id === 'fluency'}
           onItem={(r, first) => {
             if (first) firstTry.current.push(r);
           }}
           onDone={() => {
             const graded = firstTry.current.filter((r) => r.outcome !== 'skip');
-            const ok = graded.length ? graded.filter((r) => r.outcome === 'good').length / graded.length : 1;
-            setScore(ok);
-            finishLesson(unit.id, firstTry.current, ok >= MASTERY);
-            setStep('result');
+            const score = graded.length ? graded.filter((r) => r.outcome === 'good').length / graded.length : 1;
+            const passed = score >= STEP_PASS;
+            completeStep(unit.id, running.index, steps.length - 1, firstTry.current, passed);
+            setRunning(null);
+            setResult({ index: running.index, score, passed });
           }}
         />
       </div>
     );
   }
 
-  const mastered = score >= MASTERY;
   return (
     <div className="screen">
-      <h1>{mastered ? 'Unidad dominada' : 'Todavía no'}</h1>
-      <p className="big">{Math.round(score * 100)}% bien al primer intento</p>
-      <p>
-        {mastered
-          ? 'Se desbloquean las unidades que dependen de esta. Sus ejercicios van a volver en tus repasos, espaciados en el tiempo, para que no se olviden.'
-          : `Para dominarla necesitás ${Math.round(MASTERY * 100)}% al primer intento. Lo que fallaste quedó en tu registro de errores. Releé la explicación y volvé a intentar; mejor si es mañana.`}
+      <p className="eyebrow">
+        {unit.level} · {unit.axis}
       </p>
-      <div className="row">
-        {!mastered && (
-          <button
-            className="secondary"
-            onClick={() => {
-              setAttempt(attempt + 1);
-              setStep('learn');
-            }}
-          >
-            Repetir
-          </button>
-        )}
-        <button className="primary" onClick={onExit}>
-          Volver al inicio
-        </button>
+      <h1>{unit.title}</h1>
+
+      {result && (
+        <div className={`feedback ${result.passed ? 'good' : 'bad'}`}>
+          <p className="verdict">
+            {result.passed ? `¡Escalón «${steps[result.index].title}» superado!` : `Todavía no: ${Math.round(result.score * 100)}% bien al primer intento`}
+          </p>
+          <p>
+            {result.passed
+              ? result.index === steps.length - 1
+                ? 'Dominaste la unidad. Va a volver en tus repasos para que no se olvide.'
+                : `${Math.round(result.score * 100)}% bien al primer intento${steps[result.index].id === 'fluency' ? ' y a tiempo' : ''}. Se abre el siguiente escalón.`
+              : `Necesitás ${Math.round(STEP_PASS * 100)}%${steps[result.index].id === 'fluency' ? ', respondiendo a tiempo' : ''}. Repetilo: las oraciones van a ser otras.`}
+          </p>
+        </div>
+      )}
+
+      <button className="link left" onClick={() => setShowExplain(!showExplain)}>
+        {showExplain ? 'Ocultar explicación' : 'Ver explicación'}
+      </button>
+      {showExplain && (
+        <>
+          {unit.explanation.map((p) => (
+            <p key={p}>{p}</p>
+          ))}
+          <div className="examples">
+            {unit.examples.map(([en, es]) => (
+              <div key={en} className="example">
+                <div className="example-row">
+                  <Words text={en} className="en" />
+                  <button className="icon" onClick={() => say(en, { accent: accent() })} aria-label="Escuchar">
+                    ▶
+                  </button>
+                </div>
+                <p className="es">{es}</p>
+              </div>
+            ))}
+          </div>
+          <div className="trap">
+            <p className="trap-title">Trampa para hispanohablantes</p>
+            <p>{unit.trap}</p>
+          </div>
+          <p className="small">Tocá cualquier palabra en inglés para ver qué significa.</p>
+          {done === 0 && (
+            <button
+              className="primary"
+              onClick={() => {
+                readExplanation(unit.id);
+                setShowExplain(false);
+              }}
+            >
+              Entendido, empezar a practicar
+            </button>
+          )}
+        </>
+      )}
+
+      <h2>Escalera</h2>
+      <div className="ladder">
+        {steps.map((st: Step, i) => {
+          const state = i < done ? 'done' : i === done ? 'current' : 'locked';
+          return (
+            <button
+              key={st.id}
+              className={`rung ${state}`}
+              disabled={state === 'locked' || st.id === 'explain'}
+              onClick={() => start(i)}
+            >
+              <span className="rung-num">{state === 'done' ? '✓' : i + 1}</span>
+              <span>
+                <span className="unit-title">{st.title}</span>
+                <span className="unit-status">{st.desc}</span>
+              </span>
+            </button>
+          );
+        })}
       </div>
+      {done >= steps.length && <p className="small">Podés repetir cualquier escalón: cada vez trae oraciones nuevas.</p>}
+      <button className="secondary" onClick={onExit}>
+        Volver
+      </button>
     </div>
   );
 }

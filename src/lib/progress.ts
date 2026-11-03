@@ -3,24 +3,31 @@ import { PLACEMENT } from '../content/placement';
 import { UNITS } from '../content/curriculum';
 import type { AppState, TestResult } from './store';
 
-export type UnitStatus = 'locked' | 'available' | 'mastered' | 'placed';
+export type UnitStatus = 'locked' | 'available' | 'progress' | 'mastered' | 'placed';
+
+export const isDone = (s: AppState, unitId: string) => !!s.units[unitId]?.status;
 
 export function unitStatus(s: AppState, unitId: string): UnitStatus {
   const p = s.units[unitId];
-  if (p) return p.status;
+  if (p?.status) return p.status;
   const unit = UNITS.find((u) => u.id === unitId)!;
-  return unit.prereqs.every((id) => s.units[id]) && previousLevelDone(s, unit.level) ? 'available' : 'locked';
+  const open = unit.prereqs.every((id) => isDone(s, id)) && previousLevelDone(s, unit.level);
+  if (!open) return 'locked';
+  return p?.step ? 'progress' : 'available';
 }
 
-/** Un nivel se abre recién cuando el anterior está completo: la progresión es estricta. */
+/** ¿Están todas las unidades del nivel dominadas o ubicadas? */
+export const levelUnitsDone = (s: AppState, level: Level) => UNITS.filter((u) => u.level === level).every((u) => isDone(s, u.id));
+
+/** Un nivel se abre cuando el anterior está completo Y aprobaste su examen de cierre. */
 export function previousLevelDone(s: AppState, level: Level): boolean {
   const prev = LEVELS[LEVELS.indexOf(level) - 1];
-  return !prev || UNITS.filter((u) => u.level === prev).every((u) => s.units[u.id]);
+  return !prev || (levelUnitsDone(s, prev) && !!s.levels[prev]);
 }
 
 /** Siguiente unidad recomendada: la primera disponible en el orden del camino. */
 export function nextUnit(s: AppState) {
-  return UNITS.find((u) => unitStatus(s, u.id) === 'available');
+  return UNITS.find((u) => unitStatus(s, u.id) === 'progress') ?? UNITS.find((u) => unitStatus(s, u.id) === 'available');
 }
 
 /** Nivel estimado según el camino: el nivel más alto con todas sus unidades dominadas, y el avance en el siguiente. */
@@ -28,13 +35,13 @@ export function pathLevel(s: AppState): { level: Level | null; next: Level | nul
   let level: Level | null = null;
   for (const L of LEVELS) {
     const units = UNITS.filter((u) => u.level === L);
-    if (units.every((u) => s.units[u.id])) level = L;
+    if (units.every((u) => isDone(s, u.id)) && s.levels[L]) level = L;
     else break;
   }
   const next = level ? (LEVELS[LEVELS.indexOf(level) + 1] ?? null) : 'A1';
   if (!next) return { level, next: null, progress: 1 };
   const units = UNITS.filter((u) => u.level === next);
-  return { level, next, progress: units.filter((u) => s.units[u.id]).length / units.length };
+  return { level, next, progress: units.filter((u) => isDone(s, u.id)).length / units.length };
 }
 
 export const lastTest = (s: AppState): TestResult | undefined => s.tests.at(-1);

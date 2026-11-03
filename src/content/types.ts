@@ -18,7 +18,11 @@ export type Exercise =
   /** Par mínimo: se escucha `options[answer]` con una voz al azar y se elige cuál fue. */
   | { kind: 'sound'; prompt: string; options: string[]; answer: number; explain?: string }
   /** Decir en voz alta `prompt`; el reconocimiento de voz comprueba si se entiende. */
-  | { kind: 'speak'; prompt: string; es?: string; explain?: string };
+  | { kind: 'speak'; prompt: string; es?: string; explain?: string }
+  /** Ordenar las palabras para armar la oración. `prompt` = significado en español (pista). */
+  | { kind: 'order'; prompt: string; words: string[]; answers: string[]; explain?: string }
+  /** Transformar una oración: `prompt` = oración de partida, `task` = qué cambiar. */
+  | { kind: 'transform'; prompt: string; task: string; answers: string[]; hint?: string; explain?: string };
 
 export interface Unit {
   id: string;

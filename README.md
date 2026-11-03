@@ -2,20 +2,25 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
-## Qué hace la versión 0.2
+## Qué hace la versión 0.3
 
-- **Test de nivel adaptativo** (A1–C1). Empieza en B1 y sube o baja según las respuestas. Mide gramática, vocabulario y lectura, y se puede repetir: se sugiere cada 4 semanas.
-- **Camino escalonado**: 35 unidades de A1 a C1 en cinco ejes (estructura, verbos, vocabulario, sonidos y escucha), con prerrequisitos entre ellos. Una unidad se desbloquea al dominar lo que necesita antes (85% bien al primer intento) y un nivel se abre al completar el anterior.
-- **Escuchar y hablar** con los motores de voz del propio teléfono: dictados, pares de sonidos con voces variadas (ship/sheep) y ejercicios para decir en voz alta, donde se comprueba si se te entiende. No descarga modelos y gasta muy poca batería.
-- **Diccionario integrado**: tocás cualquier palabra en inglés y ves su significado, su forma base, ejemplos y cómo suena. Con internet, también la definición en inglés.
-- **Repaso espaciado con FSRS**, el algoritmo de Anki. Mezcla ejercicios de distintas unidades.
-- **Recuperación activa**: siempre tenés que producir o elegir la respuesta, nunca solo releer.
-- **Corrección que hace pensar**: si fallás, primero recibís una pista y un segundo intento, y recién después la respuesta.
-- **Trampas para hispanohablantes**: cada unidad explica el error típico que viene del español.
-- **Registro de errores** con práctica dirigida.
-- **Progreso real**: muestra tu nivel según el camino y según el test, no puntos. Cada ejercicio indica "Pregunta X de N".
+Se centra en una sola cosa: **armar oraciones correctas, rápido y sin traducir en la cabeza**. La escucha y la conversación se practican fuera de la app.
+
+- **Test de nivel adaptativo** (A1–C1): empieza en B1 y sube o baja según las respuestas. Se puede repetir.
+- **35 unidades en 5 ejes**: estructura, verbos, vocabulario, sonidos y escucha. Cada unidad tiene prerrequisitos.
+- **Escalera de 6 escalones por unidad**, de muy fácil a difícil: explicación → reconocer → completar → transformar → construir (ordenar y traducir) → fluidez contra reloj. Cada escalón se aprueba con 80% al primer intento.
+- **Ejercicios que no se repiten**: un generador de oraciones (inglés y español) y bancos por unidad crean oraciones nuevas cada vez, así se aprende la regla y no la frase.
+- **Modo fluidez**: en el último escalón y en los repasos, una respuesta correcta pero lenta vuelve antes.
+- **Práctica mezclada**: reglas parecidas juntas (todos los pasados, todos los futuros…), para elegir la correcta sin la pista de la unidad.
+- **Vocabulario**: las 2801 palabras más usadas (NGSL) en bandas A1–B2, con traducción, audio y repaso espaciado.
+- **Examen de cierre de nivel**: para abrir el nivel siguiente hay que producir oraciones correctas (80%), no solo elegir opciones.
+- **Repaso espaciado con FSRS**, corrección con pista y segundo intento, registro de errores, diccionario al tocar cualquier palabra y voces del teléfono.
 
 Todo se guarda en el teléfono. No necesita internet ni cuenta.
+
+### Créditos
+
+Vocabulario: New General Service List (Browne, Culligan & Phillips, 2013), licencia Creative Commons Attribution-ShareAlike 4.0 — https://www.newgeneralservicelist.com
 
 ## Obtener la APK
 

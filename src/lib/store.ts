@@ -3,6 +3,7 @@ import { createEmptyCard, fsrs, Rating, type Card, type Grade } from 'ts-fsrs';
 import type { Level, Skill } from '../content/types';
 import type { Accent } from './speech';
 import { UNITS } from '../content/curriculum';
+import { PATTERNS, supports } from '../gen/generate';
 
 /** FSRS: el mismo algoritmo de repaso espaciado que usa Anki. Retención objetivo 90%. */
 const scheduler = fsrs({ request_retention: 0.9, enable_fuzz: true });
@@ -31,7 +32,10 @@ export interface TestResult {
 }
 
 export interface UnitProgress {
-  status: 'mastered' | 'placed';
+  /** Sin status = en curso (escalones parciales). */
+  status?: 'mastered' | 'placed';
+  /** Escalones aprobados (0–6). */
+  step?: number;
   date: string;
   score?: number;
 }
@@ -44,7 +48,11 @@ export interface AppState {
   tests: TestResult[];
   activity: string[];
   stats: { reviews: number; correct: number };
-  settings: { accent: Accent };
+  settings: { accent: Accent; newWords: number };
+  /** Exámenes de cierre de nivel aprobados. */
+  levels: Partial<Record<Level, { date: string; score: number }>>;
+  /** Vocabulario: palabra → estado. */
+  words: Record<string, { added: string; known?: boolean }>;
 }
 
 const KEY = 'ingles-progresivo-v1';
@@ -57,7 +65,9 @@ const empty = (): AppState => ({
   tests: [],
   activity: [],
   stats: { reviews: 0, correct: 0 },
-  settings: { accent: 'variado' },
+  settings: { accent: 'variado', newWords: 10 },
+  levels: {},
+  words: {},
 });
 
 function load(): AppState {
@@ -135,8 +145,11 @@ export function gradeCard(s: AppState, key: string, outcome: Outcome, now = new 
 export function seedPlacedCards(s: AppState, unitId: string, startDay: number, now = new Date()): AppState {
   const unit = UNITS.find((u) => u.id === unitId)!;
   const cards = { ...s.cards };
-  unit.exercises.forEach((_, i) => {
-    const key = cardKey(unitId, i);
+  const keys = [
+    ...unit.exercises.map((_, i) => cardKey(unitId, i)),
+    ...PATTERNS.filter((p) => supports(unitId, p)).map((p) => `${unitId}@${p}`),
+  ];
+  keys.forEach((key, i) => {
     if (cards[key]) return;
     const c = createEmptyCard(now);
     c.due = new Date(now.getTime() + (startDay + (i % 3)) * 86_400_000);

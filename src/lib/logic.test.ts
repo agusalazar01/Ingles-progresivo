@@ -103,3 +103,79 @@ describe('habla', () => {
     expect(intelligibility('I live in a big city.', ['I leave in a big city']).score).toBeLessThan(0.85);
   });
 });
+
+import { generate, GENERATED, PATTERNS, supports, hasGenerator } from '../gen/generate';
+import { CLOZE } from '../gen/banks';
+import { conjugateEs } from '../gen/spanish';
+import { NGSL } from '../content/ngsl';
+import { wordExercise } from './vocab';
+import { activeSteps, stepItems } from './ladder';
+
+describe('generador', () => {
+  it('produce ejercicios válidos para todas las unidades y tipos', () => {
+    let count = 0;
+    for (const u of UNITS) {
+      if (!hasGenerator(u.id)) continue;
+      for (const p of PATTERNS) {
+        if (!supports(u.id, p)) continue;
+        for (let i = 0; i < 25; i++) {
+          const e = generate(u.id, p);
+          if (!e) continue;
+          count++;
+          if ('options' in e) {
+            expect(e.options[e.answer], `${u.id} ${p}`).toBeDefined();
+            expect(new Set(e.options).size).toBe(e.options.length);
+          }
+          if ('answers' in e) for (const a of e.answers) expect(matches(a, e.answers)).toBe(true);
+          if (e.kind === 'order') {
+            const norm = (t: string) => t.toLowerCase().replace(/[.?!]/g, '').split(' ').sort().join(' ');
+            expect(norm(e.words.join(' ')), `${u.id} order`).toBe(norm(e.answers[0]));
+          }
+          expect(e.prompt.includes('undefined')).toBe(false);
+        }
+      }
+    }
+    expect(count).toBeGreaterThan(500);
+  });
+  it('bancos: cada oración tiene la parte marcada y opciones distintas', () => {
+    for (const [id, bank] of Object.entries(CLOZE))
+      for (const c of bank) {
+        const m = c.s.match(/\{(.+?)\}/);
+        expect(m, `${id}: ${c.s}`).toBeTruthy();
+        expect(c.alt.includes(m![1]), `${id}: ${c.s}`).toBe(false);
+      }
+  });
+  it('conjuga en español (vos)', () => {
+    expect(conjugateEs('trabajar', 'pres', 1)).toBe('trabajás');
+    expect(conjugateEs('ir', 'pret', 2)).toBe('fue');
+    expect(conjugateEs('tener', 'subjImp', 0)).toBe('tuviera');
+    expect(conjugateEs('trabajar', 'subjImp', 3)).toBe('trabajáramos');
+    expect(conjugateEs('hacer', 'perf', 2)).toBe('ha hecho');
+    expect(conjugateEs('leer', 'presCont', 0)).toBe('estoy leyendo');
+    expect(conjugateEs('pasar a buscar', 'fut', 4)).toBe('pasarán a buscar');
+  });
+  it('todas las unidades tienen escalera con ejercicios', () => {
+    for (const u of UNITS) {
+      const steps = activeSteps(u);
+      expect(steps.length, u.id).toBeGreaterThanOrEqual(4);
+      for (const st of steps) if (st.id !== 'explain') expect(stepItems(u, st.id).length, `${u.id} ${st.id}`).toBeGreaterThanOrEqual(2);
+    }
+  });
+  it('tiempos con generador declarados existen en el programa', () => {
+    for (const id of Object.keys(GENERATED)) expect(UNITS.some((u) => u.id === id), id).toBe(true);
+  });
+});
+
+describe('vocabulario', () => {
+  it('2801 palabras con traducción', () => {
+    expect(NGSL.length).toBe(2801);
+    for (const [w, es] of NGSL) {
+      expect(w.length).toBeGreaterThan(0);
+      expect(es.length).toBeGreaterThan(0);
+    }
+  });
+  it('el ejercicio acepta la palabra', () => {
+    const e = wordExercise('house');
+    expect('answers' in e && matches('house', e.answers)).toBe(true);
+  });
+});

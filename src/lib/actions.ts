@@ -1,4 +1,7 @@
-import { LEVELS } from '../content/types';
+import { LEVELS, type Level } from '../content/types';
+import { generate, type Pattern } from '../gen/generate';
+import { orderExercise, unitSentences } from './ladder';
+import { wordItem } from './vocab';
 import { UNITS } from '../content/curriculum';
 import {
   cardKey,
@@ -25,6 +28,8 @@ export function applyPlacement(result: TestResult) {
         next = seedPlacedCards(next, u.id, day);
         day = Math.min(day + 1, 14);
       }
+      next = { ...next, levels: { ...next.levels } };
+      for (const L of LEVELS.slice(0, max + 1)) next.levels[L] ??= { date: result.date, score: 1 };
     }
     return markActive(next);
   });
@@ -36,9 +41,14 @@ export function syncPlacedUnits() {
     const level = s.tests.at(-1)?.level;
     if (!level) return s;
     const max = LEVELS.indexOf(level);
-    let next = { ...s, units: { ...s.units } };
+    let next = { ...s, units: { ...s.units }, levels: { ...s.levels } };
     let day = 1;
     let changed = false;
+    for (const L of LEVELS.slice(0, max + 1))
+      if (!next.levels[L]) {
+        next.levels[L] = { date: new Date().toISOString(), score: 1 };
+        changed = true;
+      }
     for (const u of UNITS) {
       if (LEVELS.indexOf(u.level) > max || next.units[u.id]) continue;
       next.units[u.id] = { status: 'placed', date: new Date().toISOString() };
@@ -57,6 +67,7 @@ export interface ItemResult {
   given: string;
   correct: string;
   outcome: Outcome;
+  ms?: number;
 }
 
 /** Registra una respuesta de repaso: reprograma la tarjeta y actualiza el registro de errores. */
@@ -75,24 +86,62 @@ export function recordReview(r: ItemResult) {
   });
 }
 
-/** Termina una lección. Si el primer intento llegó al umbral, la unidad queda dominada y sus tarjetas arrancan con esa calificación. */
-export function finishLesson(unitId: string, firstTry: ItemResult[], mastered: boolean) {
+/** Resultado de un escalón: las tarjetas de repaso arrancan con lo que pasó en el primer intento. */
+export function completeStep(unitId: string, stepIndex: number, lastStep: number, firstTry: ItemResult[], passed: boolean) {
   setState((s) => {
     let next = s;
     for (const r of firstTry) if (r.outcome === 'again') next = logError(next, r);
-    if (mastered) {
-      const graded = firstTry.filter((r) => r.outcome !== 'skip');
-      const score = graded.length ? graded.filter((r) => r.outcome === 'good').length / graded.length : 1;
-      next = { ...next, units: { ...next.units, [unitId]: { status: 'mastered', date: new Date().toISOString(), score } } };
-      for (const r of firstTry) next = gradeCard(next, r.key, r.outcome);
+    // Una calificación por tarjeta (los ejercicios generados comparten tarjeta por tipo).
+    const worst = new Map<string, Outcome>();
+    const rank: Record<Outcome, number> = { again: 0, hard: 1, good: 2, skip: 3 };
+    for (const r of firstTry) {
+      const prev = worst.get(r.key);
+      if (!prev || rank[r.outcome] < rank[prev]) worst.set(r.key, r.outcome);
+    }
+    for (const [key, outcome] of worst) next = gradeCard(next, key, outcome);
+    if (passed) {
+      const cur = next.units[unitId] ?? { date: new Date().toISOString() };
+      const step = Math.max(cur.step ?? 0, stepIndex + 1);
+      const done = step >= lastStep + 1;
+      next = {
+        ...next,
+        units: { ...next.units, [unitId]: { ...cur, step, date: new Date().toISOString(), ...(done ? { status: 'mastered' as const } : {}) } },
+      };
     }
     return markActive(next);
   });
 }
 
-export const MASTERY = 0.85;
+/** Marca leída la explicación (primer escalón). */
+export function readExplanation(unitId: string) {
+  setState((s) => {
+    const cur = s.units[unitId] ?? { date: new Date().toISOString() };
+    if ((cur.step ?? 0) >= 1 || cur.status) return s;
+    return { ...s, units: { ...s.units, [unitId]: { ...cur, step: 1 } } };
+  });
+}
 
+export function passLevel(level: Level, score: number) {
+  setState((s) => markActive({ ...s, levels: { ...s.levels, [level]: { date: new Date().toISOString(), score } } }));
+}
+
+export const STEP_PASS = 0.8;
+
+/** Reconstruye un ejercicio a partir de su clave de repaso. Los generados traen una oración nueva. */
 export function exerciseRef(key: string) {
+  if (key.startsWith('w:')) return wordItem(key.slice(2));
+  const gm = key.match(/^(.+)@(\w+)$/);
+  if (gm) {
+    const unit = UNITS.find((u) => u.id === gm[1]);
+    const exercise = unit ? generate(unit.id, gm[2] as Pattern) : null;
+    return unit && exercise ? { key, unit, exercise } : null;
+  }
+  const om = key.match(/^(.+)#o(\d+)$/);
+  if (om) {
+    const unit = UNITS.find((u) => u.id === om[1]);
+    const s = unit ? unitSentences(unit)[Number(om[2])] : undefined;
+    return unit && s ? { key, unit, exercise: orderExercise(s) } : null;
+  }
   const [unitId, idx] = key.split('#');
   const unit = UNITS.find((u) => u.id === unitId);
   const exercise = unit?.exercises[Number(idx)];

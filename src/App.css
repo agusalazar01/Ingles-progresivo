@@ -251,3 +251,52 @@ form { display: flex; flex-direction: column; gap: 10px; }
 }
 .update a.primary { display: flex; align-items: center; justify-content: center; text-decoration: none; }
 .center { text-align: center; }
+
+/* escalera */
+.ladder { display: flex; flex-direction: column; gap: 8px; }
+.rung {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; color: var(--ink);
+}
+.rung > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.rung-num {
+  width: 32px; height: 32px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+  background: var(--line); font-weight: 700; flex-shrink: 0;
+}
+.rung.done { background: var(--good-soft); border-color: transparent; }
+.rung.done .rung-num { background: var(--good); color: #fff; }
+.rung.current { border-color: var(--brand); }
+.rung.current .rung-num { background: var(--brand); color: #fff; }
+.rung.locked { opacity: 0.5; }
+.link.left { text-align: left; padding-left: 0; }
+.level-ok { color: var(--good); font-weight: 600; }
+
+/* ordenar palabras */
+.order { display: flex; flex-direction: column; gap: 12px; }
+.order-line {
+  min-height: 56px; border-bottom: 2px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-bottom: 8px;
+}
+.order-bank, .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 17px; color: var(--ink);
+}
+.chip:disabled { opacity: 0.25; }
+.chip.chosen { border-color: var(--brand); background: var(--brand-soft); }
+.chip.chosen:disabled { opacity: 1; }
+.task { font-weight: 600; color: var(--brand); }
+.prompt-es { font-size: 19px; color: var(--muted); }
+
+/* modo fluidez */
+.timer { height: 4px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.timer-fill { height: 100%; background: var(--brand); width: 100%; transform-origin: left; animation-name: shrink; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); background: var(--bad); } }
+
+/* vocabulario */
+.bands { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.band { background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 8px; display: flex; flex-direction: column; gap: 4px; align-items: center; color: var(--ink); }
+.band.active { border-color: var(--brand); background: var(--brand-soft); }
+.mini-bar { width: 100%; height: 4px; background: var(--line); border-radius: 999px; overflow: hidden; display: block; }
+.mini-bar > span { display: block; height: 100%; background: var(--brand); }
+.word-card { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 28px 0; }
+.word-card .sheet-word { font-size: 38px; }
+.tabs button { font-size: 13.5px; }

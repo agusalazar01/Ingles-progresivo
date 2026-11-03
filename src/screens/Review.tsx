@@ -41,6 +41,7 @@ export function Review({ keys, title, onExit }: { keys: string[]; title: string;
       <ExerciseRunner
         items={items}
         showUnit
+        timed
         onItem={(r) => {
           recordReview(r);
           if (r.outcome === 'skip') return;
