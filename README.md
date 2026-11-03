@@ -1,8 +1,10 @@
-# Inglés Progresivo
+# CriollEnglish
+
+> **Learn English, a lo criollo.**
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
-## Qué hace la versión 0.3
+## Qué hace la versión 0.4
 
 Se centra en una sola cosa: **armar oraciones correctas, rápido y sin traducir en la cabeza**. La escucha y la conversación se practican fuera de la app.
 
@@ -13,7 +15,9 @@ Se centra en una sola cosa: **armar oraciones correctas, rápido y sin traducir 
 - **Modo fluidez**: en el último escalón y en los repasos, una respuesta correcta pero lenta vuelve antes.
 - **Práctica mezclada**: reglas parecidas juntas (todos los pasados, todos los futuros…), para elegir la correcta sin la pista de la unidad.
 - **Vocabulario**: las 2801 palabras más usadas (NGSL) en bandas A1–B2, con traducción, audio y repaso espaciado.
-- **Examen de cierre de nivel**: para abrir el nivel siguiente hay que producir oraciones correctas (80%), no solo elegir opciones.
+- **Avance automático**: al aprobar un escalón sigue el próximo, y al dominar una unidad pasa sola a la siguiente. «Volver» lleva al menú.
+- **Taller de verbos**: 63 verbos ordenados del más usado al menos, cada uno en 4 etapas: formas (opción múltiple) → conjugar → completar oraciones en todos los tiempos → crear tus propias oraciones.
+- **Prueba de práctica por nivel**: debajo de cada nivel terminado, todo lo del nivel mezclado (3 preguntas por tema + vocabulario). Explica cada error y permite practicar los temas fallados. No bloquea nada; se repite cuando quieras.
 - **Repaso espaciado con FSRS**, corrección con pista y segundo intento, registro de errores, diccionario al tocar cualquier palabra y voces del teléfono.
 
 Todo se guarda en el teléfono. No necesita internet ni cuenta.
@@ -27,7 +31,7 @@ Vocabulario: New General Service List (Browne, Culligan & Phillips, 2013), licen
 El workflow `.github/workflows/android.yml` compila la APK en GitHub en cada push a `main`:
 
 1. Subí este proyecto a un repositorio de GitHub.
-2. Entrá a la pestaña **Actions**, abrí la última ejecución de "Compilar APK" y descargá el artefacto `ingles-progresivo-apk`.
+2. Entrá a la pestaña **Actions**, abrí la última ejecución de "Compilar APK" y descargá el artefacto `criollenglish-apk`.
 3. Si creás un tag `v0.1.0` (`git tag v0.1.0 && git push --tags`), la APK también queda publicada en **Releases**.
 
 Es una APK *debug*, instalable directamente en Android 7 o superior. Hay que permitir "instalar apps de origen desconocido". Para publicarla en Google Play hace falta firmarla con una clave propia (pendiente).

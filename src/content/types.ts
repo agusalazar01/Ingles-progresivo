@@ -22,7 +22,9 @@ export type Exercise =
   /** Ordenar las palabras para armar la oración. `prompt` = significado en español (pista). */
   | { kind: 'order'; prompt: string; words: string[]; answers: string[]; explain?: string }
   /** Transformar una oración: `prompt` = oración de partida, `task` = qué cambiar. */
-  | { kind: 'transform'; prompt: string; task: string; answers: string[]; hint?: string; explain?: string };
+  | { kind: 'transform'; prompt: string; task: string; answers: string[]; hint?: string; explain?: string }
+  /** Crear una oración propia: tiene que incluir alguna de las formas `accept`. `example` = oración modelo. */
+  | { kind: 'create'; prompt: string; accept: string[]; example: string; hint?: string; explain?: string };
 
 export interface Unit {
   id: string;

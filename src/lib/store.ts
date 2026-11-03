@@ -53,6 +53,8 @@ export interface AppState {
   levels: Partial<Record<Level, { date: string; score: number }>>;
   /** Vocabulario: palabra → estado. */
   words: Record<string, { added: string; known?: boolean }>;
+  /** Taller de verbos: verbo → etapas aprobadas (0–4). */
+  verbs: Record<string, number>;
 }
 
 const KEY = 'ingles-progresivo-v1';
@@ -68,6 +70,7 @@ const empty = (): AppState => ({
   settings: { accent: 'variado', newWords: 10 },
   levels: {},
   words: {},
+  verbs: {},
 });
 
 function load(): AppState {

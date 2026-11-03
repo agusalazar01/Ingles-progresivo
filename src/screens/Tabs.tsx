@@ -6,6 +6,8 @@ import { ACCENT_LABEL, say, type Accent } from '../lib/speech';
 import { APP_VERSION, BUILD } from '../lib/update';
 import type { Route } from '../App';
 import { availableFamilies } from './Practice';
+import { nextVerb } from './Verbs';
+import { WORKSHOP } from '../gen/verbs';
 import { levelUnitsDone } from '../lib/progress';
 import { bandProgress, defaultBand, nextNewWords } from '../lib/vocab';
 
@@ -23,6 +25,12 @@ export function Home({ go }: { go: (r: Route) => void }) {
 
   return (
     <div className="screen">
+      <div className="brand-row">
+        <p className="brand">
+          Crioll<span>English</span>
+        </p>
+        <p className="slogan">Learn English, a lo criollo</p>
+      </div>
       <div className="hero">
         <div>
           <p className="eyebrow">Tu nivel</p>
@@ -84,6 +92,20 @@ export function Home({ go }: { go: (r: Route) => void }) {
           );
         })()}
       </div>
+      {(() => {
+        const nv = nextVerb(s.verbs);
+        return nv ? (
+          <div className="card">
+            <p className="card-title">Taller de verbos</p>
+            <p>
+              Próximo verbo: <b>{nv.base}</b> ({nv.es})
+            </p>
+            <button className="secondary" onClick={() => go({ name: 'verb', verbId: nv.id })}>
+              Practicar «{nv.base}»
+            </button>
+          </div>
+        ) : null;
+      })()}
       {availableFamilies().length > 0 && (
         <div className="card">
           <p className="card-title">4. Práctica mezclada</p>
@@ -127,8 +149,14 @@ export function Path({ go }: { go: (r: Route) => void }) {
     <div className="screen">
       <h1>Tu camino</h1>
       <p className="small">
-        Cada unidad tiene una escalera de 6 escalones. Un nivel se abre al dominar el anterior y aprobar su examen de cierre.
+        Cada unidad tiene una escalera de 6 escalones. Un nivel se abre al terminar el anterior, y debajo de cada nivel terminado tenés una prueba de práctica para volver cuando quieras.
       </p>
+      <button className="practice-test" onClick={() => go({ name: 'verbs' })}>
+        <span className="unit-title">Taller de verbos</span>
+        <span className="unit-status">
+          {WORKSHOP.filter((v) => (s.verbs[v.id] ?? 0) >= 4).length} de {WORKSHOP.length} verbos dominados · de los más usados a los menos, en todos los tiempos
+        </span>
+      </button>
       {LEVELS.map((L) => (
         <section key={L} className="level-block">
           <h2>{L}</h2>
@@ -149,14 +177,16 @@ export function Path({ go }: { go: (r: Route) => void }) {
               </button>
             );
           })}
-          {s.levels[L] ? (
-            <p className="small level-ok">✓ Nivel {L} cerrado{s.levels[L]!.score < 1 ? ` con ${Math.round(s.levels[L]!.score * 100)}% en el examen` : ''}</p>
-          ) : levelUnitsDone(s, L) ? (
-            <button className="primary" onClick={() => go({ name: 'exam', level: L })}>
-              Examen de cierre de {L}
+          {levelUnitsDone(s, L) ? (
+            <button className="practice-test" onClick={() => go({ name: 'exam', level: L })}>
+              <span className="unit-title">Prueba de práctica de {L}</span>
+              <span className="unit-status">
+                Todo lo de {L} mezclado, con explicación de cada error
+                {s.levels[L] && s.levels[L]!.score < 1 ? ` · mejor resultado: ${Math.round(s.levels[L]!.score * 100)}%` : ''}
+              </span>
             </button>
           ) : (
-            <p className="small">Al dominar todas las unidades se habilita el examen de cierre de {L}.</p>
+            <p className="small">Al terminar las unidades de {L} se habilita su prueba de práctica.</p>
           )}
         </section>
       ))}
@@ -301,7 +331,7 @@ export function Progress({ go }: { go: (r: Route) => void }) {
         Borrar mi progreso
       </button>
       <p className="small center">
-        Versión {APP_VERSION}
+        CriollEnglish · Learn English, a lo criollo · v{APP_VERSION}
         {BUILD ? ` · compilación ${BUILD}` : ' · desarrollo'}
       </p>
     </div>
@@ -311,7 +341,12 @@ export function Progress({ go }: { go: (r: Route) => void }) {
 export function Welcome({ go }: { go: (r: Route) => void }) {
   return (
     <div className="screen welcome">
-      <h1>Inglés Progresivo</h1>
+      <div className="brand-block">
+        <p className="brand big-brand">
+          Crioll<span>English</span>
+        </p>
+        <p className="slogan">Learn English, a lo criollo.</p>
+      </div>
       <p>
         Aprendés en orden: cada tema se apoya en el anterior. Usamos los métodos con más evidencia: recordar activamente en vez de releer, repasos espaciados en el tiempo, y corrección que te hace pensar.
       </p>

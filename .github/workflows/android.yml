@@ -64,27 +64,27 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           if [ "$HAS_KEY" = "true" ]; then
             ./gradlew assembleRelease --no-daemon
-            cp app/build/outputs/apk/release/app-release.apk ../ingles-progresivo.apk
+            cp app/build/outputs/apk/release/app-release.apk ../criollenglish.apk
           else
             echo "::warning::Sin clave de firma: APK de prueba (debug). No se instala encima de versiones firmadas."
             ./gradlew assembleDebug --no-daemon
-            cp app/build/outputs/apk/debug/app-debug.apk ../ingles-progresivo.apk
+            cp app/build/outputs/apk/debug/app-debug.apk ../criollenglish.apk
           fi
 
       - name: Subir APK como artefacto
         uses: actions/upload-artifact@v5
         with:
-          name: ingles-progresivo-apk
-          path: ingles-progresivo.apk
+          name: criollenglish-apk
+          path: criollenglish.apk
 
       - name: Publicar versión
         if: github.event_name == 'workflow_dispatch' && inputs.publicar && env.HAS_KEY == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION_NAME }}-build${{ github.run_number }}
-          name: Inglés Progresivo ${{ env.VERSION_NAME }} (compilación ${{ github.run_number }})
+          name: CriollEnglish ${{ env.VERSION_NAME }} (compilación ${{ github.run_number }})
           target_commitish: ${{ github.sha }}
           make_latest: true
           body: |
-            Descargá ingles-progresivo.apk desde el celular e instalala encima de la anterior: se conserva tu progreso.
-          files: ingles-progresivo.apk
+            Descargá criollenglish.apk desde el celular e instalala encima de la anterior: se conserva tu progreso.
+          files: criollenglish.apk

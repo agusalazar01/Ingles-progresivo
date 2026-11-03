@@ -55,9 +55,10 @@ interface Pick {
   pol: Pol;
 }
 
-function pickParts(tenses: Tense[], r: Rng, pols: Pol[] = ['aff', 'aff', 'neg', 'q']): Pick {
-  const t = pick(tenses, r);
-  const v = pick(VERBS.filter((x) => verbOk(x, t)), r);
+function pickParts(tenses: Tense[], r: Rng, pols: Pol[] = ['aff', 'aff', 'neg', 'q'], only?: string): Pick {
+  const okTenses = only ? tenses.filter((t) => verbOk(VERBS.find((x) => x.id === only)!, t)) : tenses;
+  const t = pick(okTenses.length ? okTenses : tenses, r);
+  const v = only ? VERBS.find((x) => x.id === only)! : pick(VERBS.filter((x) => verbOk(x, t)), r);
   const s = pick(SUBJECTS, r);
   const c = pick(v.comps, r);
   let time = pick(TIMES[t], r);
@@ -92,10 +93,10 @@ export interface GenItem {
 
 const NO_TIME: Tense[] = ['can', 'shouldHave', 'couldHave'];
 
-function tensePattern(tenses: Tense[], pattern: Pattern, r: Rng, fromTense?: Tense): GenItem {
-  let p = pickParts(tenses, r);
+function tensePattern(tenses: Tense[], pattern: Pattern, r: Rng, fromTense?: Tense, only?: string): GenItem {
+  let p = pickParts(tenses, r, undefined, only);
   // Para elegir o completar el tiempo hace falta la pista de tiempo.
-  for (let i = 0; i < 20 && (pattern === 'recognize' || pattern === 'complete') && !p.time[0] && !NO_TIME.includes(p.t); i++) p = pickParts(tenses, r);
+  for (let i = 0; i < 20 && (pattern === 'recognize' || pattern === 'complete') && !p.time[0] && !NO_TIME.includes(p.t); i++) p = pickParts(tenses, r, undefined, only);
   const sig = `${p.t}|${p.s.en}|${p.v.id}|${p.c.en}|${p.time[0]}|${p.pol}|${pattern}`;
   const label = TENSE_LABEL[p.t];
   switch (pattern) {
@@ -403,3 +404,12 @@ export function generateMixed(unitIds: string[], r: Rng = Math.random): { unitId
   const exercise = generate(unitId, pattern, r) ?? generate(unitId, 'recognize', r);
   return exercise ? { unitId, exercise } : null;
 }
+
+/** Oraciones con un verbo fijo en todos los tiempos (taller de verbos). */
+export const ALL_TENSES: Tense[] = ['presSimple', 'presCont', 'pastSimple', 'pastCont', 'will', 'goingTo', 'presPerf', 'presPerfCont', 'pastPerf', 'futPerf', 'futCont'];
+
+export function verbSentence(verbId: string, pattern: Pattern, r: Rng = Math.random): Exercise {
+  return tensePattern(ALL_TENSES, pattern, r, undefined, verbId).exercise;
+}
+
+export { pickParts as _pickParts, TIMES as _TIMES, verbOk as _verbOk };

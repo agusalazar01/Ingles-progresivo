@@ -179,3 +179,26 @@ describe('vocabulario', () => {
     expect('answers' in e && matches('house', e.answers)).toBe(true);
   });
 });
+
+import { stageItems, VSTAGES, WORKSHOP } from '../gen/verbs';
+import { normalize } from './answer';
+
+describe('taller de verbos', () => {
+  it('ordenado por frecuencia y con todas las etapas', () => {
+    expect(WORKSHOP.length).toBeGreaterThan(50);
+    expect(WORKSHOP[0].base).toBe('be' === WORKSHOP[0].base ? 'be' : WORKSHOP[0].base);
+    for (const v of WORKSHOP)
+      for (const st of VSTAGES) {
+        const items = stageItems(v, st.id);
+        expect(items.length, `${v.id} ${st.id}`).toBeGreaterThanOrEqual(4);
+        for (const e of items) {
+          if ('options' in e) expect(e.options[e.answer]).toBeDefined();
+          if ('answers' in e) for (const a of e.answers) expect(matches(a, e.answers)).toBe(true);
+          if (e.kind === 'create') {
+            const n = ` ${normalize(e.example)} `;
+            expect(e.accept.some((a) => n.includes(` ${normalize(a)} `)), `${v.id}: ${e.example}`).toBe(true);
+          }
+        }
+      }
+  });
+});

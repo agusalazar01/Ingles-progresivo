@@ -3,8 +3,9 @@ import { Lesson } from './screens/Lesson';
 import { Placement } from './screens/Placement';
 import { Review } from './screens/Review';
 import { Errors, Home, Path, Progress, Welcome } from './screens/Tabs';
-import { Exam, Mixed } from './screens/Practice';
+import { Exam, Mixed, Remedial } from './screens/Practice';
 import { Vocab } from './screens/Vocab';
+import { VerbLesson, VerbWorkshop } from './screens/Verbs';
 import type { Level } from './content/types';
 import { markActive, setState, useAppState } from './lib/store';
 import { syncPlacedUnits } from './lib/actions';
@@ -19,10 +20,13 @@ export type Route =
   | { name: 'errors' }
   | { name: 'progress' }
   | { name: 'vocab' }
+  | { name: 'verbs' }
+  | { name: 'verb'; verbId: string; banner?: string }
   | { name: 'mixed'; family: string }
   | { name: 'exam'; level: Level }
+  | { name: 'remedial'; unitIds: string[]; level: Level }
   | { name: 'placement'; retest: boolean }
-  | { name: 'lesson'; unitId: string }
+  | { name: 'lesson'; unitId: string; banner?: string }
   | { name: 'review'; keys: string[]; title: string };
 
 const TABS: { name: 'home' | 'path' | 'vocab' | 'errors' | 'progress'; label: string }[] = [
@@ -62,7 +66,15 @@ export default function App() {
       body = <Placement retest={route.retest} onExit={home} />;
       break;
     case 'lesson':
-      body = <Lesson key={route.unitId} unitId={route.unitId} onExit={home} />;
+      body = (
+        <Lesson
+          key={route.unitId}
+          unitId={route.unitId}
+          banner={route.banner}
+          onExit={home}
+          onNextUnit={(unitId, banner) => setRoute({ name: 'lesson', unitId, banner })}
+        />
+      );
       break;
     case 'review':
       body = <Review keys={route.keys} title={route.title} onExit={home} />;
@@ -73,11 +85,35 @@ export default function App() {
     case 'vocab':
       body = <Vocab go={go} />;
       break;
+    case 'verbs':
+      body = <VerbWorkshop go={go} />;
+      break;
+    case 'verb':
+      body = (
+        <VerbLesson
+          key={route.verbId}
+          verbId={route.verbId}
+          banner={route.banner}
+          onExit={() => setRoute({ name: 'verbs' })}
+          onNext={(verbId, banner) => setRoute({ name: 'verb', verbId, banner })}
+        />
+      );
+      break;
     case 'mixed':
       body = <Mixed family={route.family} onExit={home} />;
       break;
     case 'exam':
-      body = <Exam level={route.level} onExit={() => setRoute({ name: 'path' })} />;
+      body = (
+        <Exam
+          level={route.level}
+          onExit={() => setRoute({ name: 'path' })}
+          onContinue={(unitId, banner) => setRoute({ name: 'lesson', unitId, banner })}
+          onPractice={(unitIds) => setRoute({ name: 'remedial', unitIds, level: route.level })}
+        />
+      );
+      break;
+    case 'remedial':
+      body = <Remedial unitIds={route.unitIds} onExit={() => setRoute({ name: 'exam', level: route.level })} />;
       break;
     case 'errors':
       body = <Errors go={go} />;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TIME_LIMIT } from '../lib/ladder';
 import type { Exercise, Unit } from '../content/types';
-import { matches, nearMiss } from '../lib/answer';
+import { matches, nearMiss, normalize } from '../lib/answer';
 import type { ItemResult } from '../lib/actions';
 import { canListen, intelligibility, listen, say, stopSpeaking } from '../lib/speech';
 import { getState, type Outcome } from '../lib/store';
@@ -24,11 +24,12 @@ const KIND_LABEL: Record<Exercise['kind'], string> = {
   sound: '¿Qué palabra escuchaste?',
   speak: 'Decilo en voz alta',
   order: 'Ordená las palabras',
+  create: 'Creá tu propia oración',
   transform: 'Transformá la oración',
 };
 
 export const correctText = (e: Exercise) =>
-  e.kind === 'choice' || e.kind === 'sound' ? e.options[e.answer] : e.kind === 'speak' ? e.prompt : e.answers[0];
+  e.kind === 'choice' || e.kind === 'sound' ? e.options[e.answer] : e.kind === 'speak' ? e.prompt : e.kind === 'create' ? e.example : e.answers[0];
 
 const accent = () => getState().settings.accent;
 
@@ -107,7 +108,20 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   const orderText = ex.kind === 'order' ? picked.map((i) => ex.words[i]).join(' ') : '';
   const given = ex.kind === 'order' ? orderText : input;
 
+  const checkCreate = () => {
+    if (ex.kind !== 'create' || !input.trim()) return;
+    const n = ` ${normalize(input)} `;
+    const ok = normalize(input).split(' ').length >= 3 && ex.accept.some((a) => n.includes(` ${normalize(a)} `));
+    if (ok) return finish(phase === 'retry' ? 'hard' : 'good', input);
+    if (phase === 'answer') {
+      setMessage(`Casi. ${ex.hint ?? ''} Escribí una oración completa (sujeto + verbo + algo más).`);
+      return setPhase('retry');
+    }
+    finish('again', input);
+  };
+
   const check = () => {
+    if (ex.kind === 'create') return checkCreate();
     if (!('answers' in ex) || !given.trim()) return;
     if (matches(given, ex.answers)) return finish(phase === 'retry' ? 'hard' : 'good', given);
     if (ex.kind === 'translate' && phase === 'answer') return setPhase('selfcheck');
@@ -243,7 +257,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
         </div>
       )}
 
-      {'answers' in ex && ex.kind !== 'order' && (
+      {('answers' in ex || ex.kind === 'create') && ex.kind !== 'order' && (
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -316,7 +330,8 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
                   ? 'Bien, en el segundo intento.'
                   : '¡Correcto!'}
           </p>
-          {(verdict === 'again' || isAudio || ex.kind === 'translate' || ex.kind === 'transform') && <Words text={correctText(ex)} className="model" />}
+          {ex.kind === 'create' && verdict !== 'skip' && <p className="small">Ejemplo:</p>}
+          {(verdict === 'again' || isAudio || ex.kind === 'translate' || ex.kind === 'transform' || ex.kind === 'create') && <Words text={correctText(ex)} className="model" />}
           {ex.explain && <p>{ex.explain}</p>}
           {verdict === 'again' && requeue && <p className="small">Te la vuelvo a preguntar al final.</p>}
           <button className="primary" onClick={next}>

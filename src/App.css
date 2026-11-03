@@ -300,3 +300,41 @@ form { display: flex; flex-direction: column; gap: 10px; }
 .word-card { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 28px 0; }
 .word-card .sheet-word { font-size: 38px; }
 .tabs button { font-size: 13.5px; }
+
+/* marca */
+.brand { font-size: 20px; font-weight: 800; color: var(--brand); letter-spacing: -0.01em; }
+.brand span { color: #2f8fce; }
+.big-brand { font-size: 40px; }
+.slogan { font-style: italic; color: var(--muted); font-size: 14px; }
+.brand-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.brand-block { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.brand-block .slogan { font-size: 18px; }
+
+.row.between { justify-content: space-between; align-items: center; }
+.row.between .link { padding: 4px 0; }
+.notice { background: var(--good-soft); color: var(--good); font-weight: 600; padding: 10px 14px; border-radius: 12px; font-size: 15px; }
+
+.practice-test {
+  text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 12px;
+  background: var(--brand-soft); border: 1.5px dashed var(--brand); color: var(--ink);
+}
+.why { font-size: 14px; color: var(--muted); }
+
+/* taller de verbos */
+.verb-list { display: flex; flex-direction: column; gap: 6px; }
+.verb-row {
+  display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; text-align: left; gap: 2px 8px;
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 14px; color: var(--ink);
+}
+.verb-row .verb-base { font-weight: 700; font-size: 17px; }
+.verb-row .unit-status { grid-column: 1; }
+.verb-row .dots { grid-column: 2; grid-row: 1 / span 2; align-self: center; display: flex; gap: 4px; }
+.verb-row.open { border-color: var(--brand); }
+.verb-row.done { background: var(--good-soft); border-color: transparent; }
+.verb-row.locked { opacity: 0.5; }
+.dot { width: 9px; height: 9px; border-radius: 999px; background: var(--line); display: inline-block; }
+.dot.on { background: var(--good); }
+.forms { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; }
+.forms th, .forms td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 16px; }
+.forms th { color: var(--muted); font-weight: 600; width: 45%; }
+.forms td { font-weight: 700; }

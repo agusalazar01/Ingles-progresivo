@@ -19,10 +19,10 @@ export function unitStatus(s: AppState, unitId: string): UnitStatus {
 /** ¿Están todas las unidades del nivel dominadas o ubicadas? */
 export const levelUnitsDone = (s: AppState, level: Level) => UNITS.filter((u) => u.level === level).every((u) => isDone(s, u.id));
 
-/** Un nivel se abre cuando el anterior está completo Y aprobaste su examen de cierre. */
+/** Un nivel se abre cuando el anterior está completo. */
 export function previousLevelDone(s: AppState, level: Level): boolean {
   const prev = LEVELS[LEVELS.indexOf(level) - 1];
-  return !prev || (levelUnitsDone(s, prev) && !!s.levels[prev]);
+  return !prev || levelUnitsDone(s, prev);
 }
 
 /** Siguiente unidad recomendada: la primera disponible en el orden del camino. */
@@ -35,7 +35,7 @@ export function pathLevel(s: AppState): { level: Level | null; next: Level | nul
   let level: Level | null = null;
   for (const L of LEVELS) {
     const units = UNITS.filter((u) => u.level === L);
-    if (units.every((u) => isDone(s, u.id)) && s.levels[L]) level = L;
+    if (units.every((u) => isDone(s, u.id))) level = L;
     else break;
   }
   const next = level ? (LEVELS[LEVELS.indexOf(level) + 1] ?? null) : 'A1';

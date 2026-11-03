@@ -3,8 +3,8 @@ import { ExerciseRunner, type RunnerItem } from '../components/ExerciseRunner';
 import { UNITS } from '../content/curriculum';
 import type { Level } from '../content/types';
 import { generate, generateMixed, supports, type Pattern } from '../gen/generate';
-import { passLevel, recordReview, type ItemResult } from '../lib/actions';
-import { isDone } from '../lib/progress';
+import { recordReview, saveLevelScore, type ItemResult } from '../lib/actions';
+import { isDone, nextUnit } from '../lib/progress';
 import { getState } from '../lib/store';
 import { vocabExamItems } from '../lib/vocab';
 
@@ -83,31 +83,46 @@ export function Mixed({ family, onExit }: { family: string; onExit: () => void }
   );
 }
 
-export const EXAM_PASS = 0.8;
+export const GOOD_SCORE = 0.8;
 
 function examItems(level: Level): RunnerItem[] {
   const units = UNITS.filter((u) => u.level === level);
-  const production: Pattern[] = ['complete', 'transform', 'translate', 'order'];
+  const production: Pattern[] = ['recognize', 'complete', 'transform', 'translate', 'order'];
   const out: RunnerItem[] = [];
   for (const unit of units) {
-    const pats = production.filter((p) => supports(unit.id, p));
+    const pats = shuffle(production.filter((p) => supports(unit.id, p)));
     if (pats.length) {
-      for (let i = 0; i < 2; i++) {
-        const p = pats[Math.floor(Math.random() * pats.length)];
+      // Tres preguntas por tema, de tipos distintos.
+      for (const p of pats.slice(0, 3)) {
         const exercise = generate(unit.id, p);
         if (exercise) out.push({ key: `${unit.id}@${p}`, unit, exercise });
       }
     } else {
-      unit.exercises.forEach((exercise, i) => {
-        if (['fix', 'translate', 'type'].includes(exercise.kind)) out.push({ key: `${unit.id}#${i}`, unit, exercise });
-      });
+      shuffle(unit.exercises.map((exercise, i) => ({ exercise, i })))
+        .slice(0, 3)
+        .forEach(({ exercise, i }) => out.push({ key: `${unit.id}#${i}`, unit, exercise }));
     }
   }
-  return [...shuffle(out).slice(0, 20), ...vocabExamItems(level, 5)];
+  return [...shuffle(out).slice(0, 40), ...vocabExamItems(level, 5)];
 }
 
-/** Examen de cierre de nivel: producir oraciones correctas (no solo elegir). Hace falta 80%. */
-export function Exam({ level, onExit }: { level: Level; onExit: () => void }) {
+const answerOf = (r: RunnerItem) => {
+  const e = r.exercise;
+  return 'options' in e ? e.options[e.answer] : 'answers' in e ? e.answers[0] : e.prompt;
+};
+
+/** Prueba de práctica de un nivel: todo lo del nivel mezclado. No bloquea nada; se puede repetir cuando quieras. */
+export function Exam({
+  level,
+  onExit,
+  onContinue,
+  onPractice,
+}: {
+  level: Level;
+  onExit: () => void;
+  onContinue: (unitId: string, banner: string) => void;
+  onPractice: (unitIds: string[]) => void;
+}) {
   const [phase, setPhase] = useState<'intro' | 'run' | 'done'>('intro');
   const [items, setItems] = useState<RunnerItem[]>([]);
   const results = useRef<ItemResult[]>([]);
@@ -116,12 +131,12 @@ export function Exam({ level, onExit }: { level: Level; onExit: () => void }) {
   if (phase === 'intro')
     return (
       <div className="screen">
-        <h1>Examen de cierre: {level}</h1>
+        <h1>Prueba de práctica: {level}</h1>
         <p>
-          Para cerrar el nivel tenés que demostrar que podés producir oraciones correctas: completar, transformar, ordenar y traducir, más
-          vocabulario del nivel. No hay opción múltiple.
+          Todo lo que aprendiste en {level}, mezclado: tres preguntas por tema (elegir, completar, transformar, ordenar y traducir) más
+          vocabulario del nivel. Unas {UNITS.filter((u) => u.level === level).length * 3 + 5} preguntas.
         </p>
-        <p>Se aprueba con {Math.round(EXAM_PASS * 100)}% al primer intento. Si no llegás, podés repetirlo cuando quieras: las preguntas cambian.</p>
+        <p className="small">No bloquea nada: es para comprobar cuánto te quedó. Al final ves cada error explicado y podés practicar los temas que fallaste.</p>
         <div className="row">
           <button className="secondary" onClick={onExit}>
             Volver
@@ -142,37 +157,136 @@ export function Exam({ level, onExit }: { level: Level; onExit: () => void }) {
 
   if (phase === 'run')
     return (
-      <Session
-        title={`Examen ${level}`}
-        items={items}
-        timed={false}
-        onItem={(r, first) => {
-          if (first) results.current.push(r);
-        }}
-        onDone={() => {
-          const graded = results.current.filter((r) => r.outcome !== 'skip');
-          const sc = graded.length ? graded.filter((r) => r.outcome !== 'again').length / graded.length : 0;
-          setScore(sc);
-          if (sc >= EXAM_PASS) passLevel(level, sc);
-          for (const r of results.current) recordReview(r);
-          setPhase('done');
-        }}
-      />
+      <div className="screen">
+        <div className="row between">
+          <p className="eyebrow">Prueba de práctica {level}</p>
+          <button className="link" onClick={onExit}>
+            Volver
+          </button>
+        </div>
+        <ExerciseRunner
+          items={items}
+          showUnit
+          onItem={(r, first) => {
+            if (first) results.current.push(r);
+          }}
+          onDone={() => {
+            const graded = results.current.filter((r) => r.outcome !== 'skip');
+            const sc = graded.length ? graded.filter((r) => r.outcome !== 'again').length / graded.length : 0;
+            setScore(sc);
+            saveLevelScore(level, sc);
+            for (const r of results.current) recordReview(r);
+            setPhase('done');
+          }}
+        />
+      </div>
     );
 
-  const passed = score >= EXAM_PASS;
+  const wrong = results.current
+    .map((r, i) => ({ r, item: items[i] }))
+    .filter(({ r }) => r.outcome === 'again');
+  const failedUnits = [...new Set(wrong.map(({ r }) => r.unitId).filter((id) => id !== 'vocab'))];
+  const st = getState();
+  const nxt = nextUnit(st);
   return (
     <div className="screen">
-      <h1>{passed ? `¡Nivel ${level} aprobado!` : 'Todavía no'}</h1>
+      <h1>{score >= GOOD_SCORE ? `¡Muy bien en ${level}!` : `Prueba de ${level}: a repasar`}</h1>
       <p className="big">{Math.round(score * 100)}% correcto</p>
-      <p>
-        {passed
-          ? 'Se abre el nivel siguiente. Lo que fallaste quedó en tus errores y en los repasos.'
-          : `Necesitás ${Math.round(EXAM_PASS * 100)}%. Repasá tus errores y la práctica mezclada, y volvé a intentarlo.`}
+      <p className="small">
+        {score >= GOOD_SCORE
+          ? 'Lo que fallaste quedó en tus errores y vuelve en los repasos.'
+          : 'Te conviene practicar los temas que fallaste y volver a hacer la prueba más adelante (las preguntas cambian).'}
       </p>
-      <button className="primary" onClick={onExit}>
-        Volver
+      {failedUnits.length > 0 && (
+        <button className="primary" onClick={() => onPractice(failedUnits)}>
+          Practicar los temas fallados ({failedUnits.length})
+        </button>
+      )}
+      {nxt && (
+        <button className="secondary" onClick={() => onContinue(nxt.id, `Seguimos con «${nxt.title}».`)}>
+          Seguir con «{nxt.title}»
+        </button>
+      )}
+      {wrong.length > 0 && (
+        <>
+          <h2>Tus errores, explicados</h2>
+          <ul className="errors">
+            {wrong.map(({ r, item }, i) => (
+              <li key={i}>
+                <p className="small">{item.unit.title}</p>
+                <p className="prompt-sm">{item.exercise.kind === 'transform' ? `${item.exercise.prompt} → ${item.exercise.task}` : item.exercise.prompt}</p>
+                <p className="given">Pusiste: {r.given || '—'}</p>
+                <p className="correct">Correcto: {answerOf(item)}</p>
+                <p className="why">{('explain' in item.exercise && item.exercise.explain) || item.unit.trap || ''}</p>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <button className="link" onClick={onExit}>
+        Volver al camino
       </button>
+    </div>
+  );
+}
+
+/** Práctica dirigida de los temas fallados: explicación breve y ejercicios nuevos de cada tema. */
+export function Remedial({ unitIds, onExit }: { unitIds: string[]; onExit: () => void }) {
+  const [idx, setIdx] = useState(0);
+  const [phase, setPhase] = useState<'explain' | 'run'>('explain');
+  const [items, setItems] = useState<RunnerItem[]>([]);
+  const unit = UNITS.find((u) => u.id === unitIds[idx]);
+  if (!unit) {
+    onExit();
+    return null;
+  }
+  const nextTopic = () => {
+    if (idx + 1 < unitIds.length) {
+      setIdx(idx + 1);
+      setPhase('explain');
+    } else onExit();
+  };
+  if (phase === 'explain')
+    return (
+      <div className="screen">
+        <div className="row between">
+          <p className="eyebrow">
+            Tema {idx + 1} de {unitIds.length}
+          </p>
+          <button className="link" onClick={onExit}>
+            Volver
+          </button>
+        </div>
+        <h1>{unit.title}</h1>
+        {unit.explanation.map((p) => (
+          <p key={p}>{p}</p>
+        ))}
+        <div className="trap">
+          <p className="trap-title">Trampa para hispanohablantes</p>
+          <p>{unit.trap}</p>
+        </div>
+        <button
+          className="primary"
+          onClick={() => {
+            const pats: Pattern[] = ['recognize', 'complete', 'transform', 'translate', 'order', 'complete'];
+            const gen = pats
+              .filter((p) => supports(unit.id, p))
+              .map((p) => ({ p, e: generate(unit.id, p) }))
+              .filter((x) => x.e)
+              .map(({ p, e }) => ({ key: `${unit.id}@${p}`, unit, exercise: e! }));
+            const cur = unit.exercises.map((exercise, i) => ({ key: `${unit.id}#${i}`, unit, exercise }));
+            setItems(shuffle(gen.length >= 4 ? gen : [...gen, ...cur]).slice(0, 6));
+            setPhase('run');
+          }}
+        >
+          Practicar este tema
+        </button>
+      </div>
+    );
+  return (
+    <div className="screen">
+      <p className="eyebrow">Práctica: {unit.title}</p>
+      <ExerciseRunner key={idx} items={items} requeue onItem={(r) => recordReview(r)} onDone={nextTopic} />
     </div>
   );
 }

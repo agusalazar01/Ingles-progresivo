@@ -127,6 +127,7 @@ export const TIME_LIMIT: Record<Exercise['kind'], number> = {
   order: 20,
   translate: 25,
   speak: 15,
+  create: 40,
 };
 
 export const unitOf = (id: string) => UNITS.find((u) => u.id === id);

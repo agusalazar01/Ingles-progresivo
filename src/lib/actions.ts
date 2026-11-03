@@ -2,6 +2,28 @@ import { LEVELS, type Level } from '../content/types';
 import { generate, type Pattern } from '../gen/generate';
 import { orderExercise, unitSentences } from './ladder';
 import { wordItem } from './vocab';
+import { stageItem, workshopVerb, type VStage } from '../gen/verbs';
+import type { Unit } from '../content/types';
+
+/** Unidad "virtual" del taller de verbos (para mostrar los ejercicios). */
+export const VERB_UNIT: Unit = { id: 'verbs', level: 'A1', axis: 'Verbos', title: 'Taller de verbos', prereqs: [], explanation: [], examples: [], trap: '', exercises: [] };
+
+/** Resultado de una etapa del taller de verbos. */
+export function completeVerbStage(verbId: string, stage: number, firstTry: ItemResult[], passed: boolean) {
+  setState((s) => {
+    let next = s;
+    for (const r of firstTry) if (r.outcome === 'again') next = logError(next, r);
+    const rank: Record<Outcome, number> = { again: 0, hard: 1, good: 2, skip: 3 };
+    const worst = new Map<string, Outcome>();
+    for (const r of firstTry) {
+      const prev = worst.get(r.key);
+      if (!prev || rank[r.outcome] < rank[prev]) worst.set(r.key, r.outcome);
+    }
+    for (const [key, outcome] of worst) next = gradeCard(next, key, outcome);
+    if (passed) next = { ...next, verbs: { ...next.verbs, [verbId]: Math.max(next.verbs[verbId] ?? 0, stage + 1) } };
+    return markActive(next);
+  });
+}
 import { UNITS } from '../content/curriculum';
 import {
   cardKey,
@@ -121,8 +143,13 @@ export function readExplanation(unitId: string) {
   });
 }
 
-export function passLevel(level: Level, score: number) {
-  setState((s) => markActive({ ...s, levels: { ...s.levels, [level]: { date: new Date().toISOString(), score } } }));
+/** Guarda el mejor resultado de la prueba de práctica del nivel. */
+export function saveLevelScore(level: Level, score: number) {
+  setState((s) => {
+    const prev = s.levels[level];
+    if (prev && prev.score >= score) return markActive(s);
+    return markActive({ ...s, levels: { ...s.levels, [level]: { date: new Date().toISOString(), score } } });
+  });
 }
 
 export const STEP_PASS = 0.8;
@@ -130,6 +157,11 @@ export const STEP_PASS = 0.8;
 /** Reconstruye un ejercicio a partir de su clave de repaso. Los generados traen una oración nueva. */
 export function exerciseRef(key: string) {
   if (key.startsWith('w:')) return wordItem(key.slice(2));
+  const vm = key.match(/^v:(.+)@(\w+)$/);
+  if (vm) {
+    const v = workshopVerb(vm[1]);
+    return v ? { key, unit: VERB_UNIT, exercise: stageItem(v, vm[2] as VStage['id']) } : null;
+  }
   const gm = key.match(/^(.+)@(\w+)$/);
   if (gm) {
     const unit = UNITS.find((u) => u.id === gm[1]);
