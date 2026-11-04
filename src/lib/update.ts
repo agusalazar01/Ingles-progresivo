@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 /** Busca si hay una versión publicada más nueva en GitHub Releases. */
 const REPO = 'agusalazar01/Ingles-progresivo';
 
@@ -13,6 +15,7 @@ export interface UpdateInfo {
 
 export async function checkUpdate(): Promise<UpdateInfo | null> {
   if (!BUILD) return null; // versión de desarrollo
+  if (!Capacitor.isNativePlatform()) return null; // la web se actualiza sola
   try {
     const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
       headers: { Accept: 'application/vnd.github+json' },

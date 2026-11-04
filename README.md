@@ -23,6 +23,8 @@ Se centra en una sola cosa: **armar oraciones correctas, rápido y sin traducir 
 - **Explicación siempre a mano**: en el menú de la unidad (también después de terminarla) y con el botón «📖 Explicación» durante los ejercicios. Puntos numerados, inglés resaltado y «trampas» en color.
 - **Repaso espaciado con FSRS**, corrección con pista y segundo intento, registro de errores, diccionario al tocar cualquier palabra y voces del teléfono.
 
+**Versión web**: https://agusalazar01.github.io/Ingles-progresivo/ (se actualiza con cada versión publicada; el progreso queda en ese navegador).
+
 Todo se guarda en el teléfono. No necesita internet ni cuenta.
 
 ### Créditos
