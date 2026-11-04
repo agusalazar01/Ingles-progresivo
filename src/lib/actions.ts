@@ -138,7 +138,7 @@ export function completeStep(unitId: string, stepIndex: number, lastStep: number
 export function readExplanation(unitId: string) {
   setState((s) => {
     const cur = s.units[unitId] ?? { date: new Date().toISOString() };
-    if ((cur.step ?? 0) >= 1 || cur.status) return s;
+    if ((cur.step ?? 0) >= 1 || cur.status === 'mastered') return s;
     return { ...s, units: { ...s.units, [unitId]: { ...cur, step: 1 } } };
   });
 }

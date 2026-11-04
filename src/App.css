@@ -168,7 +168,9 @@ form { display: flex; flex-direction: column; gap: 10px; }
 .unit-status { font-size: 13px; color: var(--muted); }
 .unit.available { border-color: var(--brand); }
 .unit.available .unit-status { color: var(--brand); font-weight: 600; }
-.unit.mastered, .unit.placed { background: var(--good-soft); border-color: transparent; }
+.unit.mastered { background: var(--good-soft); border-color: transparent; }
+.unit.placed { border-color: var(--brand); }
+.unit.placed .unit-status { color: var(--brand); font-weight: 600; }
 .unit.locked { opacity: 0.55; }
 
 /* listas */
@@ -398,3 +400,18 @@ form { display: flex; flex-direction: column; gap: 10px; }
 .trap-title { color: #8a5a00; }
 .small-title { font-size: 20px; }
 .practice-test { background: linear-gradient(135deg, var(--sky-soft), #f1ecfb); }
+
+/* Explicación de cada error */
+.why { background: #fff; border-left: 4px solid var(--sun, #f2a93b); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.why p { margin: 0; line-height: 1.45; }
+.why-title { font-weight: 700; color: #9a5b00; font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
+.why-yours { color: #7a2e2e; }
+
+/* Avance por unidad y por tema */
+.mini-bar { height: 6px; border-radius: 3px; background: rgba(31, 59, 87, 0.1); overflow: hidden; margin-top: 6px; }
+.mini-bar > div { height: 100%; background: linear-gradient(90deg, var(--brand, #2a7d6f), var(--sky, #5bb4ec)); border-radius: 3px; }
+.theme-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.theme-head h2 { margin: 0; }
+.theme-pct { font-weight: 700; color: var(--brand, #2a7d6f); }
+.resume-card { border-left: 4px solid var(--sky, #5bb4ec); }
+.practice-test.locked { opacity: 0.55; }

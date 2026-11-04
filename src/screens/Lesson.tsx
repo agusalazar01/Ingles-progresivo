@@ -1,39 +1,79 @@
 import { useRef, useState } from 'react';
-import { ExerciseRunner, type RunnerItem } from '../components/ExerciseRunner';
+import { ExerciseRunner, type RunnerItem, type RunnerQueue } from '../components/ExerciseRunner';
+import { themeOf } from '../content/themes';
 import { Explanation, ExplanationSheet, axisClass } from '../components/Explanation';
 import { unitById } from '../content/curriculum';
 import { completeStep, readExplanation, STEP_PASS, type ItemResult } from '../lib/actions';
 import { activeSteps, stepItems, type Step } from '../lib/ladder';
-import { getState, useAppState } from '../lib/store';
-import { levelUnitsDone, nextUnit } from '../lib/progress';
+import { clearRun, getState, saveRun, useAppState, type SavedRun } from '../lib/store';
+import { levelUnitsDone, nextUnit, unitPercent } from '../lib/progress';
 
 /** Una unidad: la escalera de muy fácil a difícil. */
 interface Props {
   unitId: string;
   banner?: string;
+  /** Entrar directo al escalón que quedó a medias. */
+  resume?: boolean;
   onExit: () => void;
   /** Al dominar la unidad se pasa sola a la siguiente. */
   onNextUnit: (unitId: string, banner: string) => void;
 }
 
-export function Lesson({ unitId, banner, onExit, onNextUnit }: Props) {
+const toSaved = (q: RunnerQueue): SavedRun['queue'] => q.map(({ item, first }) => ({ key: item.key, exercise: item.exercise, first }));
+
+export function Lesson({ unitId, banner, resume, onExit, onNextUnit }: Props) {
   const unit = unitById(unitId);
   const s = useAppState();
   const steps = activeSteps(unit);
   const progress = s.units[unitId];
-  const done = progress?.status ? steps.length : (progress?.step ?? 0);
-  const [running, setRunning] = useState<{ index: number; items: RunnerItem[] } | null>(null);
+  // El tic de completado aparece solo al dominar la unidad (no por el test de ubicación).
+  const done = progress?.status === 'mastered' ? steps.length : (progress?.step ?? 0);
+  const saved = s.resume[unitId];
+  const fromSaved = (r: SavedRun) => ({
+    index: r.stepIndex,
+    items: r.queue.map((q) => ({ key: q.key, unit, exercise: q.exercise })),
+    initial: { queue: r.queue.map((q) => ({ item: { key: q.key, unit, exercise: q.exercise }, first: q.first })), pos: r.pos },
+  });
+  const [running, setRunning] = useState<{ index: number; items: RunnerItem[]; initial?: { queue: RunnerQueue; pos: number } } | null>(() => {
+    const r = getState().resume[unitId];
+    if (!resume || !r || r.pos >= r.queue.length) return null;
+    return fromSaved(r);
+  });
   const [result, setResult] = useState<{ index: number; score: number; passed: boolean } | null>(null);
   const [notice, setNotice] = useState<string | undefined>(banner);
   const [showExplain, setShowExplain] = useState(done === 0);
   const [sheet, setSheet] = useState(false);
-  const firstTry = useRef<ItemResult[]>([]);
+  const firstTry = useRef<ItemResult[]>(resume ? (getState().resume[unitId]?.firstTry ?? []) : []);
 
 
   const start = (index: number) => {
     firstTry.current = [];
     setResult(null);
-    setRunning({ index, items: stepItems(unit, steps[index].id) });
+    const items = stepItems(unit, steps[index].id);
+    saveRun(unit.id, { stepIndex: index, queue: toSaved(items.map((item) => ({ item, first: true }))), pos: 0, firstTry: [] });
+    setRunning({ index, items });
+  };
+
+  const resumeSaved = () => {
+    const r = getState().resume[unitId];
+    if (!r) return;
+    firstTry.current = r.firstTry;
+    setResult(null);
+    if (r.pos >= r.queue.length) return finishStep(r.stepIndex);
+    setRunning(fromSaved(r));
+  };
+
+  /** Fin de un escalón: se califica con lo que salió al primer intento. */
+  const finishStep = (index: number) => {
+    clearRun(unit.id);
+    const graded = firstTry.current.filter((r) => r.outcome !== 'skip');
+    const score = graded.length ? graded.filter((r) => r.outcome === 'good').length / graded.length : 1;
+    const passed = score >= STEP_PASS;
+    completeStep(unit.id, index, steps.length - 1, firstTry.current, passed);
+    if (passed) return advance(index, score);
+    setNotice(undefined);
+    setRunning(null);
+    setResult({ index, score, passed });
   };
 
   /** Después de aprobar: siguiente escalón, siguiente unidad o examen de nivel, sin volver al menú. */
@@ -47,7 +87,7 @@ export function Lesson({ unitId, banner, onExit, onNextUnit }: Props) {
     const nxt = nextUnit(st);
     const levelDone = levelUnitsDone(st, unit.level) && nxt?.level !== unit.level;
     const msg = levelDone
-      ? `✓ ¡Terminaste ${unit.level}! En Camino tenés la prueba de práctica de ${unit.level} para repasar todo cuando quieras.${nxt ? ` Seguimos con «${nxt.title}».` : ''}`
+      ? `✓ Dominaste «${unit.title}» y se habilitó la prueba de nivel ${unit.level} (en Camino → Pruebas de nivel).${nxt ? ` Seguimos con «${nxt.title}».` : ''}`
       : `✓ Dominaste «${unit.title}».${nxt ? ` Seguimos con «${nxt.title}».` : ''}`;
     if (nxt && nxt.id !== unit.id) return onNextUnit(nxt.id, msg);
     setRunning(null);
@@ -76,21 +116,14 @@ export function Lesson({ unitId, banner, onExit, onNextUnit }: Props) {
         <ExerciseRunner
           key={`${running.index}-${running.items.length}-${notice ?? ''}`}
           items={running.items}
+          initial={running.initial}
           requeue
           timed={step.id === 'fluency'}
           onItem={(r, first) => {
             if (first) firstTry.current.push(r);
           }}
-          onDone={() => {
-            const graded = firstTry.current.filter((r) => r.outcome !== 'skip');
-            const score = graded.length ? graded.filter((r) => r.outcome === 'good').length / graded.length : 1;
-            const passed = score >= STEP_PASS;
-            completeStep(unit.id, running.index, steps.length - 1, firstTry.current, passed);
-            if (passed) return advance(running.index, score);
-            setNotice(undefined);
-            setRunning(null);
-            setResult({ index: running.index, score, passed });
-          }}
+          onProgress={(queue, pos) => saveRun(unit.id, { stepIndex: running.index, queue: toSaved(queue), pos, firstTry: firstTry.current })}
+          onDone={() => finishStep(running.index)}
         />
       </div>
     );
@@ -100,14 +133,30 @@ export function Lesson({ unitId, banner, onExit, onNextUnit }: Props) {
     <div className="screen">
       <div className="row between">
         <p className={`eyebrow axis-tag ${axisClass(unit)}`}>
-          {unit.level} · {unit.axis}
+          {themeOf(unit).title} · {unit.axis}
         </p>
         <button className="link" onClick={onExit}>
           Volver
         </button>
       </div>
       <h1>{unit.title}</h1>
+      {(() => {
+        const p = unitPercent(s, unit.id);
+        return (
+          <div className="unit-progress">
+            <div className="mini-bar">
+              <div style={{ width: `${Math.round(p * 100)}%` }} />
+            </div>
+            <p className="small">{p >= 1 ? '✓ Unidad completada' : `${Math.round(p * 100)}% de la unidad`}</p>
+          </div>
+        );
+      })()}
       {notice && !result && <p className="notice">{notice}</p>}
+      {saved && saved.pos < saved.queue.length && (
+        <button className="primary" onClick={resumeSaved}>
+          ▶ Seguí donde quedaste: «{steps[saved.stepIndex]?.title}», pregunta {saved.pos + 1} de {saved.queue.length}
+        </button>
+      )}
 
       {result && (
         <div className={`feedback ${result.passed ? 'good' : 'bad'}`}>
@@ -147,7 +196,7 @@ export function Lesson({ unitId, banner, onExit, onNextUnit }: Props) {
         </>
       )}
 
-      {done > 0 && done < steps.length && !showExplain && (
+      {done > 0 && done < steps.length && !showExplain && !(saved && saved.stepIndex === done) && (
         <button className="primary" onClick={() => start(done)}>
           {result && !result.passed ? 'Repetir' : 'Seguir'}: {steps[done].title}
         </button>

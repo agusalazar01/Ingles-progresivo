@@ -4,11 +4,15 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
-## Qué hace la versión 0.5
+## Qué hace la versión 0.6
 
 Se centra en una sola cosa: **armar oraciones correctas, rápido y sin traducir en la cabeza**. La escucha y la conversación se practican fuera de la app.
 
 - **Test de nivel adaptativo** (A1–C1): empieza en B1 y sube o baja según las respuestas. Se puede repetir.
+- **Camino por temas**: lo básico, preguntas, presente, pasado, futuro, tiempos perfectos, condicionales, cantidades, preposiciones, conectar ideas, pasiva y estilo indirecto, vocabulario, sonidos y énfasis. Cada tema muestra su porcentaje. Los niveles A1–C1 aparecen solo al evaluar (test de ubicación y pruebas de nivel).
+- **Retomar donde quedaste**: si salís a mitad de un escalón o cerrás la app, seguís desde la misma pregunta. Cada unidad muestra cuánto llevás.
+- **Explicación de cada error**: por qué va la respuesta correcta en ese ejercicio y por qué no va lo que pusiste.
+- **Tic solo al completar**: lo que el test da por sabido queda abierto, pero se marca como completado recién cuando lo hacés.
 - **36 unidades en 5 ejes**: estructura, verbos, vocabulario, sonidos y escucha. Cada unidad tiene prerrequisitos.
 - **Escalera de 6 escalones por unidad**, de muy fácil a difícil: explicación → reconocer → completar → transformar → construir (ordenar y traducir) → fluidez contra reloj. Cada escalón se aprueba con 80% al primer intento.
 - **Ejercicios que no se repiten**: un generador de oraciones (inglés y español) y bancos por unidad crean oraciones nuevas cada vez, así se aprende la regla y no la frase.

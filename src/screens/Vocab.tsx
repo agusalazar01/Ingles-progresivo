@@ -3,7 +3,7 @@ import { ExerciseRunner } from '../components/ExerciseRunner';
 import { recordReview } from '../lib/actions';
 import { say } from '../lib/speech';
 import { dueKeys, getState, setState, useAppState } from '../lib/store';
-import { BANDS, bandProgress, defaultBand, introduceWord, nextNewWords, wordItem } from '../lib/vocab';
+import { BAND_NAME, BANDS, bandProgress, defaultBand, introduceWord, nextNewWords, wordItem } from '../lib/vocab';
 import type { Level } from '../content/types';
 import type { Route } from '../App';
 
@@ -50,7 +50,7 @@ export function Vocab({ go }: { go: (r: Route) => void }) {
           <span>
             Palabra {pos + 1} de {learning.length}
           </span>
-          <span className="small">banda {band}</span>
+          <span className="small">{BAND_NAME[band] ?? band}</span>
         </div>
         <div className="bar">
           <div className="bar-fill" style={{ width: `${(pos / learning.length) * 100}%` }} />
@@ -98,7 +98,7 @@ export function Vocab({ go }: { go: (r: Route) => void }) {
           const bp = bandProgress(s, b.level);
           return (
             <button key={b.level} className={`band ${band === b.level ? 'active' : ''}`} onClick={() => setBand(b.level)}>
-              <span className="unit-title">{b.level}</span>
+              <span className="unit-title">{BAND_NAME[b.level] ?? b.level}</span>
               <span className="unit-status">
                 {bp.added}/{bp.total}
               </span>
@@ -111,7 +111,7 @@ export function Vocab({ go }: { go: (r: Route) => void }) {
       </div>
 
       <div className="card">
-        <p className="card-title">Banda {band}</p>
+        <p className="card-title">Palabras {(BAND_NAME[band] ?? band).toLowerCase()}</p>
         <p className="small">
           {p.added} de {p.total} palabras vistas · {p.solid} ya consolidadas
         </p>

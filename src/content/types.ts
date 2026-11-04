@@ -4,8 +4,17 @@ export const LEVELS: Level[] = ['A1', 'A2', 'B1', 'B2', 'C1'];
 /** Ejes del programa. Avanzan en paralelo, con prerrequisitos entre ellos. */
 export type Axis = 'Estructura' | 'Verbos' | 'Vocabulario' | 'Sonidos' | 'Escucha';
 
+/**
+ * Explicación de cada error: `why` = por qué va la respuesta correcta en este ejercicio;
+ * `wrong` = respuesta incorrecta (normalizada) → por qué no va.
+ */
+export interface WhyInfo {
+  why?: string;
+  wrong?: Record<string, string>;
+}
+
 /** Ejercicios de recuperación activa: el usuario siempre produce o elige la respuesta. */
-export type Exercise =
+export type Exercise = WhyInfo & (
   | { kind: 'choice'; prompt: string; options: string[]; answer: number; explain?: string; context?: string }
   /** Completar el hueco (___). `answers` son las respuestas aceptadas. */
   | { kind: 'type'; prompt: string; answers: string[]; hint?: string; explain?: string; context?: string }
@@ -24,7 +33,7 @@ export type Exercise =
   /** Transformar una oración: `prompt` = oración de partida, `task` = qué cambiar. */
   | { kind: 'transform'; prompt: string; task: string; answers: string[]; hint?: string; explain?: string }
   /** Crear una oración propia: tiene que incluir alguna de las formas `accept`. `example` = oración modelo. */
-  | { kind: 'create'; prompt: string; accept: string[]; example: string; hint?: string; explain?: string };
+  | { kind: 'create'; prompt: string; accept: string[]; example: string; hint?: string; explain?: string });
 
 export interface Unit {
   id: string;

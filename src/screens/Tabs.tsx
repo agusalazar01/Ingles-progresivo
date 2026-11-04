@@ -1,7 +1,10 @@
 import { LEVELS } from '../content/types';
 import { UNITS } from '../content/curriculum';
-import { daysSince, isDone, lastTest, nextUnit, pathLevel, previousLevelDone, unitStatus } from '../lib/progress';
-import { dueKeys, resetAll, setState, streak, useAppState } from '../lib/store';
+import { daysSince, groupPercent, isDone, lastTest, nextUnit, pathLevel, previousLevelDone, unitPercent, unitStatus } from '../lib/progress';
+import { THEMES, themeOf, themeUnits } from '../content/themes';
+import { unitById } from '../content/curriculum';
+import { dueKeys, lastRun, resetAll, setState, streak, useAppState } from '../lib/store';
+import { activeSteps } from '../lib/ladder';
 import { ACCENT_LABEL, say, type Accent } from '../lib/speech';
 import { APP_VERSION, BUILD } from '../lib/update';
 import type { Route } from '../App';
@@ -9,7 +12,7 @@ import { availableFamilies } from './Practice';
 import { nextVerb } from './Verbs';
 import { WORKSHOP } from '../gen/verbs';
 import { levelUnitsDone } from '../lib/progress';
-import { bandProgress, defaultBand, nextNewWords } from '../lib/vocab';
+import { BAND_NAME, bandProgress, defaultBand, nextNewWords } from '../lib/vocab';
 
 const REVIEW_BATCH = 20;
 const RETEST_DAYS = 28;
@@ -18,7 +21,6 @@ export function Home({ go }: { go: (r: Route) => void }) {
   const s = useAppState();
   const due = dueKeys(s);
   const unit = nextUnit(s);
-  const { level, next, progress } = pathLevel(s);
   const test = lastTest(s);
   const errorCount = Object.keys(s.errors).length;
   const days = streak(s);
@@ -33,19 +35,36 @@ export function Home({ go }: { go: (r: Route) => void }) {
       </div>
       <div className="hero">
         <div>
-          <p className="eyebrow">Tu nivel</p>
-          <p className="level">{level ?? 'A1 inicial'}</p>
-          {next && (
-            <p className="small">
-              {Math.round(progress * 100)}% de {next}
-            </p>
-          )}
+          <p className="eyebrow">Tu nivel (según el test)</p>
+          <p className="level">{test?.level ?? (test ? 'Inicial' : '—')}</p>
+          <p className="small">{Math.round(groupPercent(s, UNITS.map((u) => u.id)) * 100)}% del camino completado</p>
         </div>
         <div className="streak">
           <p className="level">{days}</p>
           <p className="small">{days === 1 ? 'día seguido' : 'días seguidos'}</p>
         </div>
       </div>
+
+      {(() => {
+        const lr = lastRun(s);
+        if (!lr) return null;
+        const u = unitById(lr.unitId);
+        const steps = activeSteps(u);
+        const p = unitPercent(s, u.id);
+        return (
+          <div className="card resume-card">
+            <p className="card-title">Seguí donde quedaste</p>
+            <p>
+              <b>{u.title}</b> · escalón «{steps[lr.run.stepIndex]?.title}», pregunta {Math.min(lr.run.pos + 1, lr.run.queue.length)} de {lr.run.queue.length}
+            </p>
+            <Bar value={p} />
+            <p className="small">{Math.round(p * 100)}% de la unidad</p>
+            <button className="primary" onClick={() => go({ name: 'lesson', unitId: u.id, resume: true })}>
+              Retomar
+            </button>
+          </div>
+        );
+      })()}
 
       <h2>Hoy</h2>
       <div className="card">
@@ -62,10 +81,16 @@ export function Home({ go }: { go: (r: Route) => void }) {
         {unit ? (
           <>
             <p>
-              {unit.title} <span className="tag">{unit.level}</span>
+              {unit.title} <span className="tag">{themeOf(unit).title}</span>
             </p>
-            <button className={due.length ? 'secondary' : 'primary'} onClick={() => go({ name: 'lesson', unitId: unit.id })}>
-              Aprender
+            {unitPercent(s, unit.id) > 0 && (
+              <>
+                <Bar value={unitPercent(s, unit.id)} />
+                <p className="small">{Math.round(unitPercent(s, unit.id) * 100)}% de la unidad</p>
+              </>
+            )}
+            <button className={due.length ? 'secondary' : 'primary'} onClick={() => go({ name: 'lesson', unitId: unit.id, resume: !!s.resume[unit.id] })}>
+              {s.resume[unit.id] ? 'Seguir' : 'Aprender'}
             </button>
           </>
         ) : (
@@ -81,7 +106,7 @@ export function Home({ go }: { go: (r: Route) => void }) {
           return (
             <>
               <p>
-                Banda {b}: {bp.added} de {bp.total} palabras vistas.
+                Palabras {(BAND_NAME[b] ?? b).toLowerCase()}: {bp.added} de {bp.total} vistas.
               </p>
               {fresh > 0 && (
                 <button className="secondary" onClick={() => go({ name: 'vocab' })}>
@@ -141,7 +166,13 @@ export function Home({ go }: { go: (r: Route) => void }) {
   );
 }
 
-const STATUS_LABEL = { locked: 'Bloqueada', available: 'Disponible', progress: 'En curso', mastered: 'Dominada', placed: 'Ubicada por test' } as const;
+const STATUS_LABEL = { locked: 'Bloqueada', available: 'Disponible', progress: 'En curso', mastered: '✓ Completada', placed: 'Disponible · ya la conocés por el test' } as const;
+
+const Bar = ({ value }: { value: number }) => (
+  <div className="mini-bar">
+    <div style={{ width: `${Math.round(value * 100)}%` }} />
+  </div>
+);
 
 export function Path({ go }: { go: (r: Route) => void }) {
   const s = useAppState();
@@ -149,7 +180,7 @@ export function Path({ go }: { go: (r: Route) => void }) {
     <div className="screen">
       <h1>Tu camino</h1>
       <p className="small">
-        Cada unidad tiene una escalera de 6 escalones. Un nivel se abre al terminar el anterior, y debajo de cada nivel terminado tenés una prueba de práctica para volver cuando quieras.
+        Organizado por temas. Dentro de cada tema las unidades van de fácil a difícil, y se abren a medida que dominás lo que hace falta saber antes.
       </p>
       <button className="practice-test" onClick={() => go({ name: 'verbs' })}>
         <span className="unit-title">Taller de verbos</span>
@@ -157,39 +188,64 @@ export function Path({ go }: { go: (r: Route) => void }) {
           {WORKSHOP.filter((v) => (s.verbs[v.id] ?? 0) >= 4).length} de {WORKSHOP.length} verbos dominados · de los más usados a los menos, en todos los tiempos
         </span>
       </button>
-      {LEVELS.map((L) => (
-        <section key={L} className="level-block">
-          <h2>{L}</h2>
-          {UNITS.filter((u) => u.level === L).map((u) => {
-            const st = unitStatus(s, u.id);
-            const needs = u.prereqs.filter((p) => !isDone(s, p)).map((p) => UNITS.find((x) => x.id === p)!.title);
-            if (!previousLevelDone(s, u.level)) needs.push(`completar ${LEVELS[LEVELS.indexOf(u.level) - 1]}`);
-            return (
-              <button key={u.id} className={`unit ${st}`} disabled={st === 'locked'} onClick={() => go({ name: 'lesson', unitId: u.id })}>
-                <span className="unit-title">
-                  {u.title} <span className="tag">{u.axis}</span>
-                </span>
-                <span className="unit-status">
-                  {STATUS_LABEL[st]}
-                  {st === 'progress' && ` · escalón ${s.units[u.id]?.step ?? 0}`}
-                  {st === 'locked' && needs.length > 0 && ` · antes: ${needs.join(', ')}`}
-                </span>
-              </button>
-            );
-          })}
-          {levelUnitsDone(s, L) ? (
-            <button className="practice-test" onClick={() => go({ name: 'exam', level: L })}>
-              <span className="unit-title">Prueba de práctica de {L}</span>
+      {THEMES.map((t) => {
+        const units = themeUnits(t);
+        const pct = groupPercent(s, t.units);
+        return (
+          <section key={t.id} className="level-block">
+            <div className="theme-head">
+              <h2>{t.title}</h2>
+              <span className="theme-pct">{Math.round(pct * 100)}%</span>
+            </div>
+            <p className="small">{t.desc}</p>
+            <Bar value={pct} />
+            {units.map((u) => {
+              const st = unitStatus(s, u.id);
+              const needs = u.prereqs.filter((p) => !isDone(s, p)).map((p) => UNITS.find((x) => x.id === p)!.title);
+              if (!previousLevelDone(s, u.level)) {
+                const prev = LEVELS[LEVELS.indexOf(u.level) - 1];
+                const left = UNITS.filter((x) => x.level === prev && !isDone(s, x.id)).length;
+                needs.push(`${left} ${left === 1 ? 'unidad más básica' : 'unidades más básicas'}`);
+              }
+              const p = unitPercent(s, u.id);
+              const r = s.resume[u.id];
+              return (
+                <button key={u.id} className={`unit ${st}`} disabled={st === 'locked'} onClick={() => go({ name: 'lesson', unitId: u.id, resume: !!r })}>
+                  <span className="unit-title">
+                    {u.title} <span className="tag">{u.axis}</span>
+                  </span>
+                  <span className="unit-status">
+                    {STATUS_LABEL[st]}
+                    {st === 'progress' && ` · ${Math.round(p * 100)}%`}
+                    {r && ' · seguí donde quedaste'}
+                    {st === 'locked' && needs.length > 0 && ` · antes: ${needs.join(', ')}`}
+                  </span>
+                  {st === 'progress' && <Bar value={p} />}
+                </button>
+              );
+            })}
+          </section>
+        );
+      })}
+      <section className="level-block">
+        <h2>Pruebas de nivel</h2>
+        <p className="small">Para saber en qué nivel estás (A1 a C1). Cada prueba se habilita al terminar todas las unidades de ese nivel; no bloquea nada y se repite cuando quieras.</p>
+        {LEVELS.map((L) => {
+          const units = UNITS.filter((u) => u.level === L);
+          const done = units.filter((u) => isDone(s, u.id)).length;
+          const open = levelUnitsDone(s, L);
+          return (
+            <button key={L} className={`practice-test ${open ? '' : 'locked'}`} disabled={!open} onClick={() => go({ name: 'exam', level: L })}>
+              <span className="unit-title">Prueba de práctica {L}</span>
               <span className="unit-status">
-                Todo lo de {L} mezclado, con explicación de cada error
-                {s.levels[L] && s.levels[L]!.score < 1 ? ` · mejor resultado: ${Math.round(s.levels[L]!.score * 100)}%` : ''}
+                {open
+                  ? `Todo lo de ${L} mezclado, con explicación de cada error${s.levels[L] && s.levels[L]!.score < 1 ? ` · mejor resultado: ${Math.round(s.levels[L]!.score * 100)}%` : ''}`
+                  : `Se habilita al terminar ${units.length - done} ${units.length - done === 1 ? 'unidad' : 'unidades'} más`}
               </span>
             </button>
-          ) : (
-            <p className="small">Al terminar las unidades de {L} se habilita su prueba de práctica.</p>
-          )}
-        </section>
-      ))}
+          );
+        })}
+      </section>
     </div>
   );
 }

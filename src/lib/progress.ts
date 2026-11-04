@@ -2,6 +2,7 @@ import { LEVELS, type Level, type PlacementItem, type Skill } from '../content/t
 import { PLACEMENT } from '../content/placement';
 import { UNITS } from '../content/curriculum';
 import type { AppState, TestResult } from './store';
+import { activeSteps } from './ladder';
 
 export type UnitStatus = 'locked' | 'available' | 'progress' | 'mastered' | 'placed';
 
@@ -9,12 +10,28 @@ export const isDone = (s: AppState, unitId: string) => !!s.units[unitId]?.status
 
 export function unitStatus(s: AppState, unitId: string): UnitStatus {
   const p = s.units[unitId];
-  if (p?.status) return p.status;
+  if (p?.status === 'mastered') return 'mastered';
+  // Ubicada por el test: queda abierta, pero el tic aparece recién al completarla.
+  if (p?.status === 'placed') return p.step || s.resume[unitId] ? 'progress' : 'placed';
   const unit = UNITS.find((u) => u.id === unitId)!;
   const open = unit.prereqs.every((id) => isDone(s, id)) && previousLevelDone(s, unit.level);
   if (!open) return 'locked';
-  return p?.step ? 'progress' : 'available';
+  return p?.step || s.resume[unitId] ? 'progress' : 'available';
 }
+
+/** Cuánto llevás de la unidad (0–1): escalones aprobados más la parte hecha del escalón en curso. */
+export function unitPercent(s: AppState, unitId: string): number {
+  const p = s.units[unitId];
+  if (p?.status === 'mastered') return 1;
+  const total = activeSteps(UNITS.find((u) => u.id === unitId)!).length;
+  const step = p?.step ?? 0;
+  const r = s.resume[unitId];
+  const part = r && r.stepIndex === step && r.queue.length ? Math.min(r.pos / r.queue.length, 0.99) : 0;
+  return Math.min((step + part) / total, 1);
+}
+
+/** Avance de un grupo de unidades (promedio). */
+export const groupPercent = (s: AppState, ids: string[]) => (ids.length ? ids.reduce((a, id) => a + unitPercent(s, id), 0) / ids.length : 0);
 
 /** ¿Están todas las unidades del nivel dominadas o ubicadas? */
 export const levelUnitsDone = (s: AppState, level: Level) => UNITS.filter((u) => u.level === level).every((u) => isDone(s, u.id));

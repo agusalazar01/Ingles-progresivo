@@ -6,6 +6,8 @@ import type { ItemResult } from '../lib/actions';
 import { canListen, intelligibility, listen, say, stopSpeaking } from '../lib/speech';
 import { getState, type Outcome } from '../lib/store';
 import { Words } from './Words';
+import { explainMistake } from '../lib/why';
+import { themeOf } from '../content/themes';
 
 export interface RunnerItem {
   key: string;
@@ -42,11 +44,17 @@ interface Props {
   showUnit?: boolean;
   /** Modo fluidez: muestra el tiempo y una respuesta correcta pero lenta cuenta como "difícil". */
   timed?: boolean;
+  /** Para retomar: la fila y la posición guardadas. */
+  initial?: { queue: { item: RunnerItem; first: boolean }[]; pos: number };
+  /** Se llama después de cada respuesta con la fila y la próxima posición (para guardar y retomar). */
+  onProgress?: (queue: { item: RunnerItem; first: boolean }[], nextPos: number) => void;
 }
 
-export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUnit, timed = false }: Props) {
-  const [queue, setQueue] = useState<{ item: RunnerItem; first: boolean }[]>(() => items.map((item) => ({ item, first: true })));
-  const [pos, setPos] = useState(0);
+export type RunnerQueue = NonNullable<Props['initial']>['queue'];
+
+export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUnit, timed = false, initial, onProgress }: Props) {
+  const [queue, setQueue] = useState<{ item: RunnerItem; first: boolean }[]>(() => initial?.queue ?? items.map((item) => ({ item, first: true })));
+  const [pos, setPos] = useState(initial?.pos ?? 0);
   const [phase, setPhase] = useState<Phase>('answer');
   const [input, setInput] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -56,6 +64,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   const [listening, setListening] = useState(false);
   const [picked, setPicked] = useState<number[]>([]);
   const [slow, setSlow] = useState(false);
+  const [givenText, setGiven] = useState('');
   const started = useRef(Date.now());
 
   const current = queue[pos];
@@ -83,8 +92,11 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
     setSlow(tooSlow);
     setVerdict(outcome);
     setPhase('feedback');
+    setGiven(given);
     onItem({ key: item.key, unitId: item.unit.id, prompt: ex.prompt, given, correct: correctText(ex), outcome, ms }, first);
-    if (requeue && first && outcome === 'again') setQueue((q) => [...q, { item, first: false }]);
+    const nextQueue = requeue && first && outcome === 'again' ? [...queue, { item, first: false }] : queue;
+    if (nextQueue !== queue) setQueue(nextQueue);
+    onProgress?.(nextQueue, pos + 1);
   };
 
   const next = () => {
@@ -178,7 +190,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
       </div>
       {showUnit && (
         <p className="eyebrow">
-          {item.unit.title} · {item.unit.level}
+          {item.unit.title} · {themeOf(item.unit)?.title ?? ''}
         </p>
       )}
       <p className="kind">{KIND_LABEL[ex.kind]}</p>
@@ -333,7 +345,23 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
           </p>
           {ex.kind === 'create' && verdict !== 'skip' && <p className="small">Ejemplo:</p>}
           {(verdict === 'again' || isAudio || ex.kind === 'translate' || ex.kind === 'transform' || ex.kind === 'create') && <Words text={correctText(ex)} className="model" />}
-          {ex.explain && <p>{ex.explain}</p>}
+          {ex.explain && verdict !== 'again' && <p>{ex.explain}</p>}
+          {(verdict === 'again' || verdict === 'hard') &&
+            (() => {
+              const m = explainMistake(item.key, item.unit, ex, verdict === 'again' ? givenText : '', correctText(ex));
+              if (!m.why && !m.yours) return null;
+              return (
+                <div className="why">
+                  <p className="why-title">¿Por qué?</p>
+                  {m.why && <p>{m.why}</p>}
+                  {m.yours && (
+                    <p className="why-yours">
+                      <b>Lo que pusiste:</b> {m.yours}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           {verdict === 'again' && requeue && <p className="small">Te la vuelvo a preguntar al final.</p>}
           <button className="primary" onClick={next}>
             Continuar

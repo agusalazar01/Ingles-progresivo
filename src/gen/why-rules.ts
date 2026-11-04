@@ -1,0 +1,407 @@
+/**
+ * Reglas cortas para explicar cada error: palabra o forma → cuándo se usa.
+ * Se usan para decir por qué va la respuesta correcta y por qué no va la que pusiste.
+ * Las claves se comparan normalizadas (minúsculas, contracciones expandidas).
+ */
+export const RULES: Record<string, Record<string, string>> = {
+  'to-be': {
+    am: '«am» va solo con I (I am).',
+    'am not': 'Negativa con I: I am not (I\'m not). No existe «I amn\'t».',
+    is: '«is» va con he, she, it o una sola persona o cosa (my brother, the shop).',
+    "isn't": 'Negativa de is: is not (isn\'t), con he, she, it o una sola cosa.',
+    are: '«are» va con you, we, they o con varias personas o cosas (Ana and Juan, the keys).',
+    "aren't": 'Negativa de are: are not (aren\'t), con you, we, they o varias cosas.',
+    has: '«has» es «tiene». La edad, el estado y el clima no van con have: van con to be (I am 30, I am hungry, it is hot).',
+    have: '«have» es «tener». La edad, el hambre o el frío van con to be: I am 30, I am hungry.',
+    does: '«does» es el auxiliar del presente simple. Con to be no hace falta: la pregunta se arma poniendo is/are adelante (Is she…?).',
+    do: '«do» es el auxiliar del presente simple. Con to be no hace falta: la pregunta se arma con are/is adelante (Are you…?).',
+  },
+  pronouns: {
+    my: '«my» = mi (de mí).',
+    your: '«your» = tu / su (de vos o de ustedes).',
+    his: '«his» = su, de él (un hombre).',
+    her: '«her» = su, de ella; también «la / a ella» después del verbo.',
+    its: '«its» = su, de una cosa o un animal (sin apóstrofo: it\'s es «it is»).',
+    our: '«our» = nuestro.',
+    their: '«their» = su, de ellos o de ellas (varias personas).',
+    me: '«me» va después del verbo o de una preposición: help me, with me.',
+    him: '«him» = lo / a él, después del verbo (I see him).',
+    us: '«us» = nos / a nosotros, después del verbo (help us).',
+    them: '«them» = los / a ellos, después del verbo.',
+    "ana's": 'Para decir «de Ana» se agrega \'s: Ana\'s car (el auto de Ana).',
+    "juan's": 'Para decir «de Juan» se agrega \'s: Juan\'s house.',
+    he: '«he» es sujeto (él hace algo). Después del verbo va «him».',
+    she: '«she» es sujeto. Después del verbo va «her».',
+    they: '«they» es sujeto. Para «su/sus de ellos» va «their».',
+  },
+  'articles-plurals': {
+    a: '«a» va antes de una palabra que empieza con sonido de consonante (a nurse, a flat white).',
+    an: '«an» va antes de una palabra que empieza con sonido de vocal (an umbrella, an hour: la h no suena).',
+    the: '«the» va con algo específico o único, que ya se sabe cuál es (the sun, the beach in Punta).',
+    '—': 'Sin artículo: hablando en general de algo o de un grupo, en inglés no va «the» (Life is beautiful, I love music).',
+    children: 'Plural irregular: child → children.',
+    women: 'Plural irregular: woman → women.',
+    people: 'El plural de person es people.',
+    feet: 'Plural irregular: foot → feet.',
+    sheep: 'sheep no cambia en plural: one sheep, three sheep.',
+    knives: 'Los terminados en -fe/-f cambian a -ves: knife → knives.',
+    cities: 'Consonante + y → -ies: city → cities.',
+    babies: 'Consonante + y → -ies: baby → babies.',
+    boxes: 'Después de x, s, sh o ch se agrega -es: box → boxes.',
+    watches: 'Después de ch, sh, s o x se agrega -es: watch → watches.',
+    kilos: 'Plural normal con -s: kilo → kilos.',
+    dogs: 'Hablando de los perros en general va el plural sin «the»: Dogs are loyal.',
+    music: 'Hablando de la música en general, sin artículo: I love music.',
+    life: 'Hablando de la vida en general, sin artículo: Life is beautiful.',
+    asado: 'Hablando del asado en general, sin artículo: I love asado.',
+  },
+  'there-is': {
+    'there is': '«there is» = hay, con una sola cosa o algo incontable.',
+    "there's": '«there\'s» = there is: hay, con una sola cosa.',
+    'there are': '«there are» = hay, con varias cosas (plural).',
+    'is there': 'Pregunta con una cosa: Is there…? (el is va adelante).',
+    'are there': 'Pregunta con varias cosas: Are there…?',
+    "there isn't": 'Negativa con una cosa o incontable: there isn\'t (any milk).',
+    "there aren't": 'Negativa con plural: there aren\'t (many people).',
+    'there was': '«there was» = hubo / había, con una sola cosa.',
+    'there were': '«there were» = había / hubo, con varias cosas.',
+    'there will be': 'Futuro de hay: there will be (va a haber).',
+    'it has': '«Hay» no se dice con have: se dice there is / there are.',
+    has: '«Hay» no se dice con have: se dice there is / there are.',
+    have: '«Hay» no se dice con have: se dice there is / there are.',
+    had: '«Había» no se dice con had: se dice there was / there were.',
+  },
+  questions: {
+    where: '«where» = dónde.',
+    what: '«what» = qué / cuál (What time…? = ¿a qué hora?).',
+    when: '«when» = cuándo.',
+    who: '«who» = quién.',
+    why: '«why» = por qué.',
+    how: '«how» = cómo; How old…? = ¿cuántos años…?',
+    'how many': '«how many» = cuántos, con cosas que se cuentan (brothers, eggs).',
+    'how much': '«how much» = cuánto, con incontables o precios (How much is it?).',
+    'how long': '«how long» = cuánto tiempo.',
+    which: '«which» = cuál / qué, eligiendo entre opciones (Which bus…?).',
+    whose: '«whose» = de quién.',
+    "who's": '«who\'s» = who is (quién es), no «de quién».',
+    do: '«do» es el auxiliar de la pregunta en presente con I, you, we, they.',
+    does: '«does» es el auxiliar de la pregunta en presente con he, she, it.',
+    did: '«did» es el auxiliar de la pregunta en pasado, con cualquier sujeto.',
+    is: 'Con to be no va do/does: is va adelante (Where is the bathroom?).',
+    are: 'Con to be o con -ing no va do: are va adelante (Are you coming…?).',
+  },
+  'prep-time-place': {
+    at: '«at» = punto exacto: horas (at 6:30), at night, at home, at work, at the bus stop.',
+    on: '«on» = días y fechas (on Monday, on 3 May) y superficies (on the table).',
+    in: '«in» = meses, años, estaciones, partes del día (in the evening) y dentro de un lugar, ciudad o país.',
+  },
+  'vocab-daily': {
+    usually: '«usually» = normalmente. Va antes del verbo (I usually get up…).',
+    always: '«always» = siempre. Va antes del verbo, no después: I always go.',
+    never: '«never» = nunca. Va antes del verbo y ya es negativo.',
+    often: '«often» = seguido, a menudo.',
+    sometimes: '«sometimes» = a veces (todo junto).',
+    rarely: '«rarely» = rara vez.',
+    have: 'Para comidas se usa have: have breakfast, have lunch, have a mate.',
+    get: '«get up» = levantarse; «get home» = llegar a casa.',
+    go: '«go to bed» = acostarse; «go to the feria» = ir a la feria.',
+    take: '«take a shower» = ducharse (también have a shower).',
+    catch: '«catch the bus» = tomarse el ómnibus.',
+  },
+  countables: {
+    much: '«much» va con incontables (water, time, yerba), sobre todo en preguntas y negativas.',
+    many: '«many» va con cosas que se cuentan, en plural (eggs, snags, people).',
+    some: '«some» va en afirmativas y en ofrecimientos o pedidos (Would you like some tea?).',
+    any: '«any» va en negativas y preguntas (There aren\'t any chairs).',
+    'a lot of': '«a lot of» = mucho/s, en afirmativas, con contables e incontables.',
+    'a few': '«a few» = algunos, con contables (friends, mates).',
+    'a little': '«a little» = un poco, con incontables (sugar, milk).',
+    information: 'information es incontable: no lleva -s ni «an».',
+    advice: 'advice es incontable: some advice / a piece of advice, nunca «an advice».',
+    furniture: 'furniture es incontable: no lleva -s.',
+    news: 'news es incontable y va en singular: The news is good.',
+  },
+  comparatives: {
+    than: '«than» = que, en las comparaciones (taller than me).',
+    as: 'as … as = tan … como (as tall as).',
+    that: '«that» no sirve para comparar: «más alto que» es taller than.',
+    like: '«like» no sirve en as … as: tan alto como = as tall as.',
+    cheaper: 'Adjetivo corto (una sílaba): se agrega -er (cheap → cheaper).',
+    hotter: 'Corto que termina en vocal + consonante: se duplica la consonante (hot → hotter).',
+    bigger: 'Corto que termina en vocal + consonante: se duplica (big → bigger).',
+    warmer: 'Adjetivo corto: warm → warmer.',
+    easier: 'Terminado en -y: y → -ier (easy → easier).',
+    'more expensive': 'Adjetivo largo (dos sílabas o más): more + adjetivo (more expensive).',
+    'most intelligent': 'Superlativo de adjetivo largo: the most + adjetivo.',
+    better: 'good es irregular: good → better → the best.',
+    best: 'Superlativo irregular: good → better → the best.',
+    worse: 'bad es irregular: bad → worse → the worst.',
+    worst: 'Superlativo irregular: bad → worse → the worst.',
+    further: 'far es irregular: far → further (o farther).',
+  },
+  collocations: {
+    make: '«make» = crear o producir algo: make a decision, make a mistake, make a plan, make money, make noise.',
+    made: '«made» es el pasado de make: make a mistake → made a mistake, make friends → made friends.',
+    makes: '«makes» es make con he/she/it: make money = ganar plata.',
+    do: '«do» = tareas y actividades: do homework, do exercise, do the shopping, do me a favour.',
+    take: '«take» = tomar o llevar: take a photo, take a break, take the bus.',
+    took: '«took» es el pasado de take: take the bus → took the bus.',
+    takes: 'It takes + tiempo = se tarda (It takes two hours).',
+    have: '«have» = vivir o disfrutar algo: have a great time, have a shower, have a barbie.',
+    had: '«had» es el pasado de have: have a great time → had a great time.',
+    did: '«did» es el pasado de do; con mistake va make: made a mistake.',
+    does: 'Con money va make: she makes money (do no sirve acá).',
+    wins: '«win» es ganar un partido o un premio; plata trabajando = make money.',
+  },
+  'phrasal-1': {
+    'looking for': '«look for» = buscar.',
+    'looks after': '«look after» = cuidar.',
+    'looking after': '«look after» = cuidar, no buscar.',
+    'looking up': '«look up» = buscar en un diccionario o internet.',
+    'looks for': '«look for» = buscar, no cuidar.',
+    'looks at': '«look at» = mirar.',
+    'turn off': '«turn off» = apagar.',
+    'turn on': '«turn on» = prender.',
+    'ran out of': '«run out of» = quedarse sin algo (pasado: ran out of).',
+    'give up': '«give up» = rendirse o dejar de hacer algo.',
+    'gave up': '«gave up» es el pasado de give up (dejó de, se rindió).',
+    'find out': '«find out» = averiguar.',
+    'pick me up': '«pick up» = pasar a buscar. Con un pronombre, va en el medio: pick me up.',
+    'pick up me': 'Con pronombres (me, him, it) va en el medio del phrasal: pick me up.',
+    'get up': '«get up» = levantarse.',
+    'go out': '«go out» = salir.',
+    'come in': '«come in» = pasar, entrar.',
+    'grew up': '«grow up» = criarse (pasado: grew up).',
+    'hurry up': '«hurry up» = apurarse.',
+    'catch up': '«catch up» = juntarse a ponerse al día.',
+    off: '«turn off» = apagar.',
+    out: '«run out of» = quedarse sin; «find out» = averiguar.',
+    up: '«give up» = rendirse.',
+  },
+  relatives: {
+    who: '«who» = que, para personas (the man who called).',
+    which: '«which» = que, para cosas o animales (the phone which I bought).',
+    that: '«that» = que, sirve para personas y cosas (no después de coma).',
+    where: '«where» = donde, para lugares (the restaurant where we met).',
+    whose: '«whose» = cuyo / cuya: de quién es algo (a friend whose father…).',
+    "who's": '«who\'s» = who is; para «cuyo» va whose.',
+    whom: '«whom» es formal y va como objeto; como sujeto («la que llamó») va who.',
+  },
+  connectors: {
+    although: '«although» = aunque, seguido de una oración (sujeto + verbo).',
+    'even though': '«even though» = aunque (más fuerte), seguido de sujeto + verbo.',
+    despite: '«despite» = a pesar de, seguido de un sustantivo o -ing (despite the rain).',
+    because: '«because» = porque, seguido de sujeto + verbo (because I was sick).',
+    'because of': '«because of» = por / a causa de, seguido de un sustantivo (because of the storm).',
+    so: '«so» = así que: une la causa con su consecuencia.',
+    but: '«but» = pero: une dos ideas que contrastan.',
+    and: '«and» = y: suma ideas.',
+    however: '«However,» = sin embargo: empieza una oración nueva, con coma.',
+    unless: '«unless» = a menos que (= if … not).',
+    if: '«if» = si. «A menos que» es unless.',
+    'in case': '«in case» = por si (acaso).',
+    to: 'Para decir «para» + verbo se usa to: I came to learn.',
+    for: '«for» + verbo no va; para + verbo es to + verbo (to learn).',
+  },
+  passive: {},
+  'false-friends': {
+    actually: '«actually» = en realidad (no «actualmente»).',
+    currently: '«currently» = actualmente.',
+    actual: '«actual» = real, verdadero (no «actual»).',
+    attended: '«attend» = asistir a un evento.',
+    assisted: '«assist» = ayudar, no asistir a un evento.',
+    pregnant: '«pregnant» = embarazada.',
+    embarrassed: '«embarrassed» = con vergüenza (no embarazada).',
+    embarrassing: '«embarrassing» = que da vergüenza; si vos sentís la vergüenza, embarrassed.',
+    realized: '«realize» = darse cuenta.',
+    realised: '«realise» = darse cuenta (ortografía británica y australiana).',
+    'carried out': '«carry out» = realizar o llevar a cabo un proyecto.',
+    bookshop: '«bookshop» = librería (donde se compran libros).',
+    library: '«library» = biblioteca (donde se prestan libros).',
+    sensitive: '«sensitive» = sensible, que se emociona.',
+    sensible: '«sensible» = sensato.',
+    success: '«success» = éxito.',
+    exit: '«exit» = salida (no éxito).',
+    remember: '«remember» = acordarse.',
+    remind: '«remind» = recordarle algo a otra persona.',
+    succeed: '«succeed» es el verbo (tener éxito); el sustantivo es success.',
+    'noticed of': '«notice» no lleva of; darse cuenta = realize/realise.',
+    made: '«made» = hice o hizo. Darse cuenta es realize, y realizar un proyecto es carry out.',
+    cold: '«have a cold» = estar resfriado.',
+    constipation: '«constipation» = estreñimiento (no resfrío).',
+  },
+  'gerund-inf': {},
+  reported: {
+    was: 'En estilo indirecto el verbo va un tiempo para atrás: am/is → was.',
+    were: 'En estilo indirecto: are → were.',
+    would: 'En estilo indirecto: will → would.',
+    could: 'En estilo indirecto: can → could.',
+    had: 'En estilo indirecto: have finished → had finished.',
+    'has been': 'En estilo indirecto el verbo va un tiempo para atrás: am → was (no has been).',
+    'will be': 'En estilo indirecto el verbo va para atrás: are leaving → were leaving.',
+    'had lost': 'En estilo indirecto el pasado simple pasa a pasado perfecto: lost → had lost.',
+    said: '«say» va sin persona: He said (that)…',
+    told: '«tell» lleva a quién: She told me / told us.',
+    asked: '«ask» es preguntar o pedir.',
+    if: 'Pregunta de sí o no en estilo indirecto: asked me if…',
+    that: 'Para una pregunta de sí o no se usa if (si), no that.',
+    'i lived': 'En una pregunta indirecta no se invierte: where I lived (sujeto + verbo).',
+    'did i live': 'En una pregunta indirecta no se usa did ni se invierte: where I lived.',
+    'do i live': 'En una pregunta indirecta no se invierte: where I lived.',
+    'the film started': 'Pregunta indirecta: orden normal, sujeto + verbo (what time the film started).',
+    'i had been': 'Pregunta indirecta: orden normal, sujeto + verbo (how long I had been…).',
+    is: 'En estilo indirecto el verbo va un tiempo para atrás: is → was.',
+    will: 'En estilo indirecto will pasa a would.',
+    can: 'En estilo indirecto can pasa a could.',
+  },
+  register: {
+    'let you know': '«let you know» = avisarte; inform/notice suenan a carta formal.',
+    starts: '«start» es lo natural; commence/initiate son muy formales.',
+    get: '«get» = conseguir; obtain/acquire suenan a documento.',
+    buy: '«buy» es lo natural; purchase es formal.',
+    help: '«help» es lo natural; assist es formal.',
+    need: '«need» es lo natural; require es formal.',
+    honest: '«To be honest» = la verdad, siendo sincero.',
+    'no worries': '«No worries» = no pasa nada / de nada (muy australiano).',
+    depends: 'Depender de = depend on (no «depend of»).',
+    reckon: '«I reckon» = me parece, creo (muy australiano).',
+    'fair enough': '«Fair enough» = está bien, es razonable.',
+    'i mean': '«I mean» = o sea.',
+    'how are you going': '«How are you going?» = ¿cómo andás? (saludo australiano).',
+    cheers: '«Cheers» = gracias / salud.',
+    'good on ya': '«Good on ya» = ¡bien ahí!',
+    'flat out': '«flat out» = a mil, muy ocupado.',
+    heaps: '«heaps» = muchísimo, re.',
+  },
+  inversion: {
+    what: '«What» al principio = Lo que (What I need is…).',
+    which: '«Lo que» al principio de la oración es What; which necesita algo antes (the thing which…).',
+    that: '«Lo que» es What, no that.',
+    whom: 'Como sujeto («la que llamó») va who; whom es objeto y formal.',
+    who: 'It was Ana who… = Fue Ana la que (persona → who).',
+  },
+  aussie: {
+    "g'day": '«G\'day» = buen día / hola.',
+    arvo: '«arvo» = la tarde (afternoon).',
+    brekkie: '«brekkie» = el desayuno.',
+    servo: '«servo» = estación de servicio.',
+    esky: '«esky» = conservadora.',
+    ute: '«ute» = camioneta.',
+    sunnies: '«sunnies» = lentes de sol.',
+    thongs: '«thongs» = ojotas (no ropa interior).',
+    footy: '«footy» = fútbol australiano (o rugby).',
+    snags: '«snags» = chorizos.',
+    crook: '«crook» = enfermo.',
+    chockers: '«chockers» = lleno hasta el tope.',
+    cuppa: '«cuppa» = una taza de té o café.',
+    tradie: '«tradie» = técnico de oficio (electricista, plomero…).',
+    'bottle-o': '«bottle-o» = la licorería.',
+    heaps: '«heaps» = muchísimo.',
+    smoko: '«smoko» = el descanso en el trabajo.',
+    exy: '«exy» = caro (expensive).',
+  },
+};
+
+/** Formas incorrectas típicas y por qué no van. */
+export const WRONG: Record<string, string> = {
+  childs: 'child tiene plural irregular: children.',
+  womans: 'woman tiene plural irregular: women.',
+  citys: 'Consonante + y → -ies: cities.',
+  boxs: 'Después de x se agrega -es: boxes.',
+  persons: 'El plural común de person es people.',
+  peoples: 'people ya es plural: no lleva -s.',
+  foots: 'foot tiene plural irregular: feet.',
+  feets: 'feet ya es plural: no lleva -s.',
+  watchs: 'Después de ch se agrega -es: watches.',
+  kiloes: 'kilo hace el plural con -s: kilos.',
+  sheeps: 'sheep no cambia en plural.',
+  sheepes: 'sheep no cambia en plural.',
+  knifes: '-fe cambia a -ves en plural: knives.',
+  babys: 'Consonante + y → -ies: babies.',
+  informations: 'information es incontable: no lleva -s.',
+  'an information': 'information es incontable: no lleva «an».',
+  advices: 'advice es incontable: no lleva -s.',
+  'an advice': 'advice es incontable: some advice.',
+  furnitures: 'furniture es incontable: no lleva -s.',
+  'a furniture': 'furniture es incontable: no lleva «a».',
+  'news are': 'news va con verbo en singular: the news is.',
+  'more cheap': 'cheap es corto: se agrega -er (cheaper), no more.',
+  expensiver: 'expensive es largo: more expensive, no -er.',
+  goodest: 'good es irregular: the best.',
+  gooder: 'good es irregular: better.',
+  'more good': 'good es irregular: better.',
+  hoter: 'hot duplica la t: hotter.',
+  'more hot': 'hot es corto: hotter.',
+  badder: 'bad es irregular: worse.',
+  baddest: 'bad es irregular: the worst.',
+  biger: 'big duplica la g: bigger.',
+  'more big': 'big es corto: bigger.',
+  'more easy': 'easy termina en -y: easier.',
+  easyer: 'La y cambia a i: easier.',
+  intelligentest: 'intelligent es largo: the most intelligent.',
+  farer: 'far es irregular: further / farther.',
+  'more far': 'far es irregular: further / farther.',
+  'more warm': 'warm es corto: warmer.',
+  'more intelligent': 'Para el superlativo (el más de todos) va the most, no more.',
+  cheapest: 'cheapest es superlativo (el más barato de todos); comparando dos va cheaper than.',
+  'most expensive': 'most es superlativo; comparando dos va more expensive than.',
+  biggest: 'biggest es superlativo; comparando dos va bigger than.',
+  warmest: 'warmest es superlativo; comparando dos va warmer than.',
+  'was wrote': 'Después de was va el participio: written.',
+  'was stole': 'Después de was va el participio: stolen.',
+  'depends of': 'Depender de = depend on.',
+  'is depending': 'depend es un verbo de estado: no va en -ing.',
+  'not worry': '«No te preocupes» = No worries o Don\'t worry.',
+  'no problems': 'La expresión es No worries (o No problem, en singular).',
+};
+
+/** Pasiva: be (en el tiempo que corresponde) + participio. */
+export function passiveWhy(target: string): string {
+  const [be, pp] = target.split(' ');
+  const when = /^(was|were)$/.test(be) ? 'pasado (fue / se hizo)' : 'presente (se hace siempre o en general)';
+  return `Pasiva en ${when}: ${be} + participio (${pp}). El que hace la acción no importa o no se dice.`;
+}
+
+const PREPS = new Set(['about', 'of', 'for', 'at', 'in', 'on', 'without', 'before', 'after', 'by', 'to']);
+const ING_VERBS = new Set(['enjoy', 'stop', 'stopped', 'mind', 'finish', 'avoid', 'keep', 'miss', 'suggest', 'practise', 'practice', 'love', 'like', 'hate', 'imagine', 'consider']);
+
+/** Gerundio o infinitivo según la palabra de antes. */
+export function gerundWhy(before: string, target: string): string {
+  const prev = before.trim().split(/\s+/).pop()?.toLowerCase().replace(/[^a-z']/g, '') ?? '';
+  const ing = !/^to /i.test(target) && /ing$/.test(target);
+  if (ing && prev === 'to' && /forward to$/i.test(before.trim())) return '«look forward to» termina en la preposición to: va verbo con -ing (seeing).';
+  if (ing && PREPS.has(prev)) return `Después de una preposición («${prev}») el verbo va con -ing.`;
+  if (ing && ING_VERBS.has(prev)) return `Después de «${prev}» va verbo con -ing.`;
+  if (ing) return `Acá va el verbo con -ing (${target}), que funciona como sustantivo.`;
+  if (prev === 'remember' || prev === 'forget') return `«${prev} to» = acordarse de hacer algo que todavía no hiciste (remember to lock); «${prev} + -ing» es acordarse de algo que ya pasó.`;
+  return `Después de «${prev}» va to + verbo (${target}).`;
+}
+
+const DAYS = /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mondays|tuesdays|wednesdays|thursdays|fridays|saturdays|sundays|\d{1,2}(st|nd|rd|th)?|christmas day|my birthday|the weekend)$/i;
+const MONTHS = /^(january|february|march|april|may|june|july|august|september|october|november|december|summer|winter|autumn|spring|\d{4})$/i;
+
+/** in / on / at según lo que viene después. */
+export function prepWhy(target: string, after: string): string {
+  const words = after.trim().split(/\s+/);
+  const first = (words[0] ?? '').replace(/[.,!?]/g, '');
+  const two = words.slice(0, 2).join(' ').replace(/[.,!?]/g, '').toLowerCase();
+  const t = target.toLowerCase();
+  let why = '';
+  if (/^\d/.test(first) && /:|am|pm|o'clock/i.test(after)) why = 'con una hora va at (at 6:30)';
+  else if (DAYS.test(first) || DAYS.test(two)) why = 'con días y fechas va on (on Monday)';
+  else if (MONTHS.test(first)) why = 'con meses, años y estaciones va in (in December)';
+  else if (/^the (morning|afternoon|evening)$/.test(two)) why = 'con las partes del día va in (in the evening); pero at night';
+  else if (/^(night|home|work|school|uni|the weekend)$/.test(first.toLowerCase()) || /^the (station|bus stop|airport|door|party)$/.test(two)) why = `«at ${first.toLowerCase() === 'the' ? two : first.toLowerCase()}» es un punto o un lugar puntual: va at`;
+  else if (/^the (table|wall|floor|bus|train|beach)$/.test(two)) why = t === 'on' ? 'sobre una superficie o en un transporte público va on (on the table, on the bus)' : '';
+  if (!why) return RULES['prep-time-place'][t] ?? '';
+  return `Va «${t}» porque ${why}.`;
+}
+
+/** a / an según el sonido de la palabra siguiente. */
+export function articleWhy(target: string, after: string): string {
+  const next = after.trim().split(/\s+/)[0]?.replace(/[.,!?]/g, '') ?? '';
+  const t = target.toLowerCase();
+  if (t === 'an') return `Va «an» porque «${next}» empieza con sonido de vocal.`;
+  if (t === 'a') return `Va «a» porque «${next}» empieza con sonido de consonante.`;
+  return RULES['articles-plurals'][t] ?? '';
+}

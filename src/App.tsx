@@ -26,7 +26,7 @@ export type Route =
   | { name: 'exam'; level: Level }
   | { name: 'remedial'; unitIds: string[]; level: Level }
   | { name: 'placement'; retest: boolean }
-  | { name: 'lesson'; unitId: string; banner?: string }
+  | { name: 'lesson'; unitId: string; banner?: string; resume?: boolean }
   | { name: 'review'; keys: string[]; title: string };
 
 const TABS: { name: 'home' | 'path' | 'vocab' | 'errors' | 'progress'; label: string }[] = [
@@ -71,6 +71,7 @@ export default function App() {
           key={route.unitId}
           unitId={route.unitId}
           banner={route.banner}
+          resume={route.resume}
           onExit={home}
           onNextUnit={(unitId, banner) => setRoute({ name: 'lesson', unitId, banner })}
         />

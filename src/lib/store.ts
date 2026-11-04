@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { createEmptyCard, fsrs, Rating, type Card, type Grade } from 'ts-fsrs';
-import type { Level, Skill } from '../content/types';
+import type { Exercise, Level, Skill } from '../content/types';
 import type { Accent } from './speech';
 import { UNITS } from '../content/curriculum';
 import { PATTERNS, supports } from '../gen/generate';
@@ -40,6 +40,15 @@ export interface UnitProgress {
   score?: number;
 }
 
+/** Escalón a medio hacer: se guarda después de cada respuesta para poder retomarlo. */
+export interface SavedRun {
+  stepIndex: number;
+  queue: { key: string; exercise: Exercise; first: boolean }[];
+  pos: number;
+  firstTry: { key: string; unitId: string; prompt: string; given: string; correct: string; outcome: Outcome; ms?: number }[];
+  date: string;
+}
+
 export interface AppState {
   version: 1;
   units: Record<string, UnitProgress>;
@@ -55,6 +64,8 @@ export interface AppState {
   words: Record<string, { added: string; known?: boolean }>;
   /** Taller de verbos: verbo → etapas aprobadas (0–4). */
   verbs: Record<string, number>;
+  /** Escalones sin terminar, por unidad. */
+  resume: Record<string, SavedRun>;
 }
 
 const KEY = 'ingles-progresivo-v1';
@@ -71,6 +82,7 @@ const empty = (): AppState => ({
   levels: {},
   words: {},
   verbs: {},
+  resume: {},
 });
 
 function load(): AppState {
@@ -206,4 +218,25 @@ export function streak(s: AppState, now = new Date()): number {
     d.setDate(d.getDate() - 1);
   }
   return n;
+}
+
+// ───── Retomar ─────
+
+export function saveRun(unitId: string, run: Omit<SavedRun, 'date'>) {
+  setState((s) => ({ ...s, resume: { ...s.resume, [unitId]: { ...run, date: new Date().toISOString() } } }));
+}
+
+export function clearRun(unitId: string) {
+  setState((s) => {
+    if (!s.resume[unitId]) return s;
+    const resume = { ...s.resume };
+    delete resume[unitId];
+    return { ...s, resume };
+  });
+}
+
+/** El escalón sin terminar más reciente. */
+export function lastRun(s: AppState): { unitId: string; run: SavedRun } | null {
+  const e = Object.entries(s.resume).sort((a, b) => b[1].date.localeCompare(a[1].date))[0];
+  return e ? { unitId: e[0], run: e[1] } : null;
 }

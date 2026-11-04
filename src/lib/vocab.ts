@@ -7,6 +7,9 @@ import { getState, gradeCard, markActive, setState, type AppState } from './stor
  * Vocabulario por frecuencia (NGSL): las palabras más usadas primero, en bandas por nivel.
  * Palabras nuevas por día → tarjeta de repaso espaciado → producir la palabra en inglés desde el español.
  */
+/** Nombre de cada banda (los niveles A1–C1 se muestran solo al evaluar). */
+export const BAND_NAME: Record<string, string> = { A1: 'Básicas (1–500)', A2: 'Frecuentes (501–1200)', B1: 'Intermedias (1201–2000)', B2: 'Avanzadas (2001–2801)' };
+
 export const BANDS: { level: Level; from: number; to: number }[] = [
   { level: 'A1', from: 0, to: 500 },
   { level: 'A2', from: 500, to: 1200 },
