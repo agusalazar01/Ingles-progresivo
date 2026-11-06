@@ -1,3 +1,5 @@
+import { BackButton } from '../components/BackButton';
+import { useBack } from '../lib/nav';
 import { useRef, useState } from 'react';
 import { ExerciseRunner, type RunnerItem } from '../components/ExerciseRunner';
 import { UNITS } from '../content/curriculum';
@@ -125,6 +127,7 @@ export function Exam({
   onPractice: (unitIds: string[]) => void;
 }) {
   const [phase, setPhase] = useState<'intro' | 'run' | 'done'>('intro');
+  useBack(phase === 'run', () => setPhase('intro'), 2);
   const [items, setItems] = useState<RunnerItem[]>([]);
   const results = useRef<ItemResult[]>([]);
   const [score, setScore] = useState(0);
@@ -159,11 +162,9 @@ export function Exam({
   if (phase === 'run')
     return (
       <div className="screen">
-        <div className="row between">
+        <div className="top-bar">
+          <BackButton onClick={() => setPhase('intro')} />
           <p className="eyebrow">Prueba de práctica {level}</p>
-          <button className="link" onClick={onExit}>
-            Volver
-          </button>
         </div>
         <ExerciseRunner
           items={items}
@@ -235,6 +236,7 @@ export function Exam({
 export function Remedial({ unitIds, onExit }: { unitIds: string[]; onExit: () => void }) {
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<'explain' | 'run'>('explain');
+  useBack(phase === 'run', () => setPhase('explain'), 2);
   const [items, setItems] = useState<RunnerItem[]>([]);
   const unit = UNITS.find((u) => u.id === unitIds[idx]);
   if (!unit) {
@@ -250,13 +252,11 @@ export function Remedial({ unitIds, onExit }: { unitIds: string[]; onExit: () =>
   if (phase === 'explain')
     return (
       <div className="screen">
-        <div className="row between">
+        <div className="top-bar">
+          <BackButton onClick={onExit} />
           <p className="eyebrow">
             Tema {idx + 1} de {unitIds.length}
           </p>
-          <button className="link" onClick={onExit}>
-            Volver
-          </button>
         </div>
         <h1>{unit.title}</h1>
         <Explanation unit={unit} />

@@ -7,6 +7,7 @@ import { ack, matchTurn } from '../lib/call';
 import { canListen, listen, say, stopSpeaking } from '../lib/speech';
 import { ringtone, sfxCorrect, sfxHangup, sfxPickup, sfxWrong } from '../lib/sfx';
 import { saveCall } from '../lib/store';
+import { useBack } from '../lib/nav';
 
 interface LogLine {
   who: 'oliver' | 'you';
@@ -25,8 +26,8 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
   const unit = unitById(script.unitId);
   const [phase, setPhase] = useState<'ringing' | 'talk' | 'review'>('ringing');
   const [idx, setIdx] = useState(0);
-  const [line, setLine] = useState('');
-  const [you, setYou] = useState('');
+  const [, setLine] = useState('');
+  const [, setYou] = useState('');
   const [talking, setTalking] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [listening, setListening] = useState(false);
@@ -34,6 +35,8 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
   const [typing, setTyping] = useState(false);
   const [typed, setTyped] = useState('');
   const [micOk, setMicOk] = useState<boolean | null>(null);
+  const [drawer, setDrawer] = useState(false);
+  const [micIdle, setMicIdle] = useState(false);
   const [log, setLog] = useState<LogLine[]>([]);
   const [secs, setSecs] = useState(0);
   const attempts = useRef(0);
@@ -103,6 +106,13 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
     setWaiting(true);
   }, [phase, idx]);
 
+  // Como en una llamada de verdad: cuando Oliver termina de hablar, el micrófono se abre solo.
+  useEffect(() => {
+    if (phase !== 'talk' || !waiting || talking || listening || typing || !micOk) return;
+    const t = setTimeout(() => talkNow(), 250);
+    return () => clearTimeout(t);
+  }, [phase, waiting, talking, typing, micOk, idx]);
+
   const current = script.turns[idx];
   const userTurn: UserTurn | null = current && 'u' in current ? current.u : null;
 
@@ -141,22 +151,35 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
   const talkNow = async () => {
     if (!waiting || listening || talking) return;
     setListening(true);
+    setMicIdle(false);
     try {
       const heard = await listen('en-AU');
       setListening(false);
+      if (!heard.some((h) => h.trim())) {
+        // No escuchó nada: no cuenta como intento; queda el botón para volver a hablar.
+        setMicIdle(true);
+        return;
+      }
       await answer(heard);
     } catch {
       setListening(false);
-      setTyping(true);
+      setMicIdle(true);
     }
   };
 
   const hangUp = () => {
+    alive.current = false;
     stopSpeaking();
     sfxHangup();
-    if (log.some((l) => l.who === 'you')) setPhase('review');
-    else onExit();
+    if (log.some((l) => l.who === 'you')) {
+      alive.current = true;
+      setPhase('review');
+    } else onExit();
   };
+  // Botón «atrás»: mientras suena corta; durante la charla cuelga y muestra el repaso.
+  useBack(phase === 'ringing' || phase === 'review', onExit, 3);
+  useBack(phase === 'talk' && drawer, () => setDrawer(false), 4);
+  useBack(phase === 'talk' && !drawer, hangUp, 3);
 
   if (phase === 'ringing')
     return (
@@ -181,6 +204,7 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
 
   if (phase === 'review') return <Review callId={callId} log={log} secs={secs} onExit={onExit} />;
 
+  const needsYou = waiting && !talking && !listening;
   return (
     <div className="call">
       <div className="call-scene">
@@ -200,56 +224,78 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
           {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}
         </span>
       </div>
-      <div className="call-sub">
-        {line && <p className="call-line">{line}</p>}
-        {you && <p className="call-line you">{you}</p>}
-        {hint && userTurn && (
-          <p className="call-hint">
-            💡 Podés decir: <b>{userTurn.model}</b>
-            <br />
-            {userTurn.tip}
-          </p>
-        )}
-      </div>
-      <div className="call-bottom">
-        {typing && waiting && (
-          <form
-            className="call-type"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!typed.trim()) return;
-              const t = typed;
-              setTyped('');
-              answer([t]);
-            }}
-          >
-            <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Escribí tu respuesta en inglés" autoCapitalize="off" autoCorrect="off" />
-            <button type="submit">Enviar</button>
-          </form>
-        )}
-        <div className="call-controls">
-          <button className="round-btn" aria-label="Repetir lo que dijo" onClick={() => lastSaid.current && speak(lastSaid.current)} disabled={talking}>
-            ↻
-          </button>
-          {micOk === false ? (
-            <button className="talk-btn" onClick={() => setTyping(true)} disabled={!waiting}>
-              ⌨️ ESCRIBIR
-            </button>
-          ) : (
-            <button className={`talk-btn ${listening ? 'listening' : ''}`} onClick={talkNow} disabled={!waiting || talking}>
-              {listening ? 'TE ESCUCHO…' : talking ? 'OLIVER HABLA…' : waiting ? '🎤 TOCÁ PARA HABLAR' : '…'}
-            </button>
+
+      {/* Abajo no se muestra nada: solo una flechita. La charla escrita aparece en el repaso, al cortar. */}
+      {!drawer && (
+        <button
+          className={`call-handle ${listening ? 'listening' : ''} ${needsYou && (micIdle || micOk === false) ? 'attention' : ''}`}
+          aria-label="Mostrar botones"
+          onClick={() => setDrawer(true)}
+        >
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M6 15l6-6 6 6" />
+          </svg>
+        </button>
+      )}
+      {drawer && (
+        <div className="call-drawer">
+          {hint && userTurn && (
+            <p className="call-hint">
+              💡 Podés decir: <b>{userTurn.model}</b>
+              <br />
+              {userTurn.tip}
+            </p>
           )}
-          <button className={`round-btn tip ${hint ? 'glow' : ''}`} aria-label="Pista" onClick={() => setHint(!hint)} disabled={!waiting}>
-            💡
+          {typing && waiting && (
+            <form
+              className="call-type"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!typed.trim()) return;
+                const t = typed;
+                setTyped('');
+                answer([t]);
+              }}
+            >
+              <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Escribí tu respuesta en inglés" autoCapitalize="off" autoCorrect="off" />
+              <button type="submit">Enviar</button>
+            </form>
+          )}
+          <div className="call-buttons">
+            <span className="cb">
+              <button className="round-btn" aria-label="Repetir lo que dijo" onClick={() => lastSaid.current && speak(lastSaid.current)} disabled={talking}>
+                ↻
+              </button>
+              <span>Repetir</span>
+            </span>
+            {micOk !== false && (
+              <span className="cb">
+                <button className={`round-btn mic ${listening ? 'on' : ''}`} aria-label="Hablar" onClick={talkNow} disabled={!waiting || talking || listening}>
+                  🎤
+                </button>
+                <span>{listening ? 'Te escucho' : 'Hablar'}</span>
+              </span>
+            )}
+            <span className="cb">
+              <button className={`round-btn tip ${hint ? 'glow' : ''}`} aria-label="Pista" onClick={() => setHint(!hint)} disabled={!waiting}>
+                💡
+              </button>
+              <span>Pista</span>
+            </span>
+            <span className="cb">
+              <button className={`round-btn ${typing ? 'glow' : ''}`} aria-label="Escribir" onClick={() => setTyping(!typing)}>
+                ⌨️
+              </button>
+              <span>Escribir</span>
+            </span>
+          </div>
+          <button className="call-handle down" aria-label="Ocultar botones" onClick={() => setDrawer(false)}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
           </button>
         </div>
-        {micOk !== false && !typing && (
-          <button className="call-link" onClick={() => setTyping(true)}>
-            Ahora no puedo hablar: escribir
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 }

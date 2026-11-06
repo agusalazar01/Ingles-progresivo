@@ -577,3 +577,37 @@ form { display: flex; flex-direction: column; gap: 10px; }
 .call-card .face { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; background: #5bb4ec; flex-shrink: 0; }
 .call-card .face img { width: 76px; margin: -2px 0 0 -12px; }
 .call-card .grow { display: flex; flex-direction: column; gap: 2px; }
+
+/* flecha para volver */
+.back-btn {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--ink); border: 1.5px solid var(--line);
+}
+.top-bar { display: flex; align-items: center; gap: 10px; }
+.top-bar .eyebrow { flex: 1; }
+
+/* llamada: abajo solo una flechita; los botones aparecen al tocarla */
+.call-oliver { bottom: -2%; }
+.call-handle {
+  position: absolute; z-index: 3; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  width: 52px; height: 40px; border-radius: 20px; background: rgba(20, 32, 44, 0.45); color: #fff; display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.call-handle.listening { box-shadow: 0 0 0 3px #6fd36a; animation: listen-pulse 1.2s ease-in-out infinite; }
+.call-handle.attention { box-shadow: 0 0 0 3px #f2a93b; }
+@keyframes listen-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(111, 211, 106, 0.9); } 50% { box-shadow: 0 0 0 9px rgba(111, 211, 106, 0.15); } }
+.call-drawer {
+  position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; padding: 14px 18px calc(16px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 12px; align-items: center;
+  background: linear-gradient(180deg, rgba(20, 32, 44, 0) 0%, rgba(20, 32, 44, 0.75) 30%, rgba(20, 32, 44, 0.92) 100%);
+  animation: sheet-up 0.2s ease-out;
+}
+.call-drawer .call-handle { position: static; transform: none; }
+.call-buttons { display: flex; justify-content: center; gap: 18px; }
+.cb { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: #dce8ef; }
+.round-btn.mic { background: #49c0f8; color: #0b1a22; }
+.round-btn.mic.on { background: #6fd36a; }
+.call-drawer .call-type { width: 100%; max-width: 520px; }
+.call-drawer .call-hint { width: 100%; }
+.call-type { flex-direction: row; }
+.call-type button { min-height: 48px; }

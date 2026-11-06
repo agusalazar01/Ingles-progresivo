@@ -1,4 +1,4 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { normalize } from './answer';
@@ -21,40 +21,36 @@ const native = Capacitor.isNativePlatform();
 interface Voice {
   index: number;
   lang: string;
+  /** Identificador único de la voz (en Android, el voiceURI: por ejemplo «en-au-x-aub-local»). */
+  id: string;
+  /** Nombre para mostrar (en Android suele repetirse: «English Australia»). */
   name: string;
+  local: boolean;
 }
+
+/** Usar la voz que el teléfono tiene elegida para ese idioma (Ajustes › Texto a voz). */
+export const SYSTEM_VOICE = '__system__';
 
 let voicesCache: Voice[] | null = null;
 let preferred = '';
 
-/** Voz elegida en Ajustes (por nombre). Se usa siempre que no se pida «variado». */
-export function setPreferredVoice(name: string) {
-  preferred = name;
+/** Voz elegida en Ajustes (por id). Se usa siempre que no se pida «variado». */
+export function setPreferredVoice(id: string) {
+  preferred = id;
 }
 
-/** Voces en inglés que tiene el teléfono (las del motor de voz preferido: por ejemplo Samsung). */
-export async function listVoices(): Promise<{ name: string; lang: string }[]> {
-  voicesCache = null;
-  if (!native && 'speechSynthesis' in window && !speechSynthesis.getVoices().length)
-    await new Promise((r) => {
-      speechSynthesis.onvoiceschanged = () => r(null);
-      setTimeout(() => r(null), 1500);
-    });
-  return (await englishVoices()).map(({ name, lang }) => ({ name, lang }));
-}
-
-async function englishVoices(): Promise<Voice[]> {
-  if (voicesCache) return voicesCache;
+async function englishVoices(fresh = false): Promise<Voice[]> {
+  if (voicesCache && !fresh) return voicesCache;
   try {
     if (native) {
       const { voices } = await TextToSpeech.getSupportedVoices();
       voicesCache = voices
-        .map((v, index) => ({ index, lang: v.lang.replace('_', '-'), name: v.name }))
+        .map((v, index) => ({ index, lang: v.lang.replace('_', '-'), id: v.voiceURI || v.name, name: v.name, local: v.localService !== false }))
         .filter((v) => v.lang.toLowerCase().startsWith('en'));
     } else if ('speechSynthesis' in window) {
       voicesCache = speechSynthesis
         .getVoices()
-        .map((v, index) => ({ index, lang: v.lang, name: v.name }))
+        .map((v, index) => ({ index, lang: v.lang, id: v.voiceURI || v.name, name: v.name, local: v.localService }))
         .filter((v) => v.lang.toLowerCase().startsWith('en'));
     } else voicesCache = [];
   } catch {
@@ -63,20 +59,51 @@ async function englishVoices(): Promise<Voice[]> {
   return voicesCache;
 }
 
+/** Voces en inglés que tiene el teléfono (las del motor de voz preferido: por ejemplo Samsung). */
+export async function listVoices(): Promise<{ id: string; name: string; lang: string; local: boolean }[]> {
+  if (!native && 'speechSynthesis' in window && !speechSynthesis.getVoices().length)
+    await new Promise((r) => {
+      speechSynthesis.onvoiceschanged = () => r(null);
+      setTimeout(() => r(null), 1500);
+    });
+  return (await englishVoices(true)).map(({ id, name, lang, local }) => ({ id, name, lang, local }));
+}
+
+const TtsSettings = registerPlugin<{ open(): Promise<void> }>('TtsSettings');
+
+/** Abre los ajustes de texto a voz del teléfono (motor y voz preferida). */
+export async function openVoiceSettings(): Promise<boolean> {
+  if (!native) return false;
+  try {
+    await TtsSettings.open();
+    return true;
+  } catch {
+    try {
+      await TextToSpeech.openInstall();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
 export async function canSpeak(): Promise<boolean> {
   return native || 'speechSynthesis' in window;
 }
 
 /** Habla `text`. `varied` elige una voz inglesa al azar (entrenamiento con muchas voces). */
 export async function say(text: string, opts: { accent?: Accent; varied?: boolean; slow?: boolean; lang?: string; voice?: string } = {}) {
-  const voices = await englishVoices();
   const accent = opts.accent ?? 'variado';
   const wanted = opts.voice ?? (opts.varied ? '' : preferred);
-  const chosen = wanted ? voices.find((v) => v.name === wanted) : undefined;
+  // Con una voz fija se vuelve a pedir la lista para que el índice coincida con el del teléfono.
+  const voices = await englishVoices(!!wanted && wanted !== SYSTEM_VOICE);
+  const system = wanted === SYSTEM_VOICE;
+  const chosen = wanted && !system ? voices.find((v) => v.id === wanted) : undefined;
   let pool = opts.lang ? voices.filter((v) => v.lang === opts.lang) : accent === 'variado' || opts.varied ? voices : voices.filter((v) => v.lang === accent);
   if (!pool.length) pool = voices;
-  const voice = chosen ?? (pool.length ? pool[Math.floor(Math.random() * pool.length)] : undefined);
-  const lang = voice?.lang ?? opts.lang ?? (accent === 'variado' ? 'en-US' : accent);
+  // «Voz del teléfono»: no se elige voz; Android usa la que configuraste para el idioma.
+  const voice = system ? undefined : chosen ?? (pool.length ? pool[Math.floor(Math.random() * pool.length)] : undefined);
+  const lang = voice?.lang ?? opts.lang ?? (system ? 'en-AU' : accent === 'variado' ? 'en-US' : accent);
   const rate = opts.slow ? 0.7 : 1;
 
   if (native) {

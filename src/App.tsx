@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
+import { runBack, useBack } from './lib/nav';
 import { Lesson } from './screens/Lesson';
 import { Placement } from './screens/Placement';
 import { Review } from './screens/Review';
@@ -12,7 +15,7 @@ import { markActive, setState, useAppState } from './lib/store';
 import { syncPlacedUnits } from './lib/actions';
 import { checkUpdate, type UpdateInfo } from './lib/update';
 import { WordContext } from './components/Words';
-import { setPreferredVoice } from './lib/speech';
+import { setPreferredVoice, SYSTEM_VOICE } from './lib/speech';
 import { WordSheet } from './components/WordSheet';
 import './App.css';
 
@@ -47,10 +50,46 @@ export default function App() {
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
   const isNew = s.tests.length === 0 && Object.keys(s.units).length === 0 && s.activity.length === 0;
 
+  // Historial para el botón «atrás»: cada pantalla vuelve a la anterior, no al menú ni afuera de la app.
+  const [stack, setStack] = useState<Route[]>([]);
+  const TAB_NAMES = ['home', 'path', 'vocab', 'errors', 'progress'];
   const go = (r: Route) => {
     if (r.name === 'home' && r.skipWelcome) setState(markActive);
+    if (TAB_NAMES.includes(r.name)) setStack(r.name === 'home' ? [] : [{ name: 'home' }]);
+    else setStack((st) => [...st, route.name === 'lesson' ? { ...route, resume: false, banner: undefined } : route]);
     setRoute(r);
   };
+  /** Cambia la pantalla sin sumar un paso al historial (por ejemplo, pasar a la unidad siguiente). */
+  const replace = (r: Route) => setRoute(r);
+  const back = () => {
+    if (stack.length) {
+      setRoute(stack[stack.length - 1]);
+      setStack(stack.slice(0, -1));
+    } else if (route.name !== 'home') setRoute({ name: 'home' });
+    else if (Capacitor.isNativePlatform()) CapApp.minimizeApp().catch(() => {});
+  };
+  const backRef = useRef(back);
+  backRef.current = back;
+
+  useEffect(() => {
+    const handle = () => {
+      if (!runBack()) backRef.current();
+    };
+    if (Capacitor.isNativePlatform()) {
+      const l = CapApp.addListener('backButton', handle);
+      return () => {
+        l.then((x) => x.remove());
+      };
+    }
+    // Navegador: el «atrás» del navegador hace lo mismo y no saca de la app.
+    history.pushState({ criollenglish: 1 }, '');
+    const onPop = () => {
+      handle();
+      history.pushState({ criollenglish: 1 }, '');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -62,6 +101,11 @@ export default function App() {
   }, [s.settings.theme]);
 
   useEffect(() => {
+    // La v0.7 guardaba el nombre visible («English Australia»), que en Android se repite: pasa a «voz del teléfono».
+    if (s.settings.voice && s.settings.voice !== SYSTEM_VOICE && /\s/.test(s.settings.voice)) {
+      setState((st) => ({ ...st, settings: { ...st.settings, voice: SYSTEM_VOICE } }));
+      return;
+    }
     setPreferredVoice(s.settings.voice);
   }, [s.settings.voice]);
 
@@ -70,12 +114,12 @@ export default function App() {
     checkUpdate().then(setUpdate);
   }, []);
 
-  const home = () => setRoute({ name: 'home' });
+  useBack(!!word, () => setWord(null), 9);
 
   let body;
   switch (route.name) {
     case 'placement':
-      body = <Placement retest={route.retest} onExit={home} />;
+      body = <Placement retest={route.retest} onExit={back} />;
       break;
     case 'lesson':
       body = (
@@ -84,19 +128,17 @@ export default function App() {
           unitId={route.unitId}
           banner={route.banner}
           resume={route.resume}
-          onExit={home}
-          onNextUnit={(unitId, banner) => setRoute({ name: 'lesson', unitId, banner })}
-          onCall={(callId) => setRoute({ name: 'call', callId, unitId: route.unitId })}
+          onExit={back}
+          onNextUnit={(unitId, banner) => replace({ name: 'lesson', unitId, banner })}
+          onCall={(callId) => go({ name: 'call', callId })}
         />
       );
       break;
-    case 'call': {
-      const back = route.unitId;
-      body = <Call key={route.callId} callId={route.callId} onExit={() => (back ? setRoute({ name: 'lesson', unitId: back }) : home())} />;
+    case 'call':
+      body = <Call key={route.callId} callId={route.callId} onExit={back} />;
       break;
-    }
     case 'review':
-      body = <Review keys={route.keys} title={route.title} onExit={home} />;
+      body = <Review keys={route.keys} title={route.title} onExit={back} />;
       break;
     case 'path':
       body = <Path go={go} />;
@@ -105,7 +147,7 @@ export default function App() {
       body = <Vocab go={go} />;
       break;
     case 'verbs':
-      body = <VerbWorkshop go={go} />;
+      body = <VerbWorkshop go={go} onBack={back} />;
       break;
     case 'verb':
       body = (
@@ -113,26 +155,26 @@ export default function App() {
           key={route.verbId}
           verbId={route.verbId}
           banner={route.banner}
-          onExit={() => setRoute({ name: 'verbs' })}
-          onNext={(verbId, banner) => setRoute({ name: 'verb', verbId, banner })}
+          onExit={back}
+          onNext={(verbId, banner) => replace({ name: 'verb', verbId, banner })}
         />
       );
       break;
     case 'mixed':
-      body = <Mixed family={route.family} onExit={home} />;
+      body = <Mixed family={route.family} onExit={back} />;
       break;
     case 'exam':
       body = (
         <Exam
           level={route.level}
-          onExit={() => setRoute({ name: 'path' })}
-          onContinue={(unitId, banner) => setRoute({ name: 'lesson', unitId, banner })}
-          onPractice={(unitIds) => setRoute({ name: 'remedial', unitIds, level: route.level })}
+          onExit={back}
+          onContinue={(unitId, banner) => replace({ name: 'lesson', unitId, banner })}
+          onPractice={(unitIds) => go({ name: 'remedial', unitIds, level: route.level })}
         />
       );
       break;
     case 'remedial':
-      body = <Remedial unitIds={route.unitIds} onExit={() => setRoute({ name: 'exam', level: route.level })} />;
+      body = <Remedial unitIds={route.unitIds} onExit={back} />;
       break;
     case 'errors':
       body = <Errors go={go} />;
@@ -166,7 +208,7 @@ export default function App() {
       {showTabs && (
         <nav className="tabs">
           {TABS.map((t) => (
-            <button key={t.name} className={route.name === t.name ? 'active' : ''} onClick={() => setRoute({ name: t.name } as Route)}>
+            <button key={t.name} className={route.name === t.name ? 'active' : ''} onClick={() => go({ name: t.name } as Route)}>
               {t.label}
             </button>
           ))}

@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 import { ExerciseRunner, type RunnerItem, type RunnerQueue } from '../components/ExerciseRunner';
 import { themeOf } from '../content/themes';
 import { callsForUnit } from '../content/calls';
+import { BackButton } from '../components/BackButton';
+import { useBack } from '../lib/nav';
 import { sfxFinish } from '../lib/sfx';
 import { normalize } from '../lib/answer';
 import { Explanation, ExplanationSheet, axisClass } from '../components/Explanation';
@@ -111,6 +113,22 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
     setResult({ index, score, passed: true });
   };
 
+  /** Salir del escalón al menú de la unidad (queda guardado para retomar). */
+  const leaveRun = () => {
+    setRunning(null);
+    setNotice(undefined);
+    setSheet(false);
+  };
+  const closeSummary = () => {
+    const sm = summary;
+    setSummary(null);
+    if (sm && !sm.passed) setResult({ index: sm.index, score: sm.score, passed: false });
+  };
+  // Botón «atrás» del celular: panel → escalón → menú de la unidad → pantalla anterior.
+  useBack(sheet, () => setSheet(false), 5);
+  useBack(!!running && !sheet, leaveRun, 2);
+  useBack(!!summary, closeSummary, 2);
+
   if (summary) {
     const mm = Math.floor(summary.secs / 60);
     const ss = Math.round(summary.secs % 60);
@@ -162,18 +180,14 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
     const step = steps[running.index];
     return (
       <div className="screen">
-        <div className="row between">
+        <div className="top-bar">
+          <BackButton onClick={leaveRun} label="Volver al menú de la unidad" />
           <p className="eyebrow">
             {unit.title} · escalón {running.index + 1} de {steps.length}: {step.title}
           </p>
-          <span className="row gap">
-            <button className="link" onClick={() => setSheet(true)}>
-              📖 Explicación
-            </button>
-            <button className="link" onClick={onExit}>
-              Volver
-            </button>
-          </span>
+          <button className="link" onClick={() => setSheet(true)}>
+            📖
+          </button>
         </div>
         {sheet && <ExplanationSheet unit={unit} onClose={() => setSheet(false)} />}
         {notice && <p className="notice">{notice}</p>}
@@ -195,13 +209,11 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
 
   return (
     <div className="screen">
-      <div className="row between">
+      <div className="top-bar">
+        <BackButton onClick={onExit} />
         <p className={`eyebrow axis-tag ${axisClass(unit)}`}>
           {themeOf(unit).title} · {unit.axis}
         </p>
-        <button className="link" onClick={onExit}>
-          Volver
-        </button>
       </div>
       <h1>{unit.title}</h1>
       {(() => {
@@ -305,9 +317,6 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
         </button>
       ))}
 
-      <button className="secondary" onClick={onExit}>
-        Volver
-      </button>
     </div>
   );
 }

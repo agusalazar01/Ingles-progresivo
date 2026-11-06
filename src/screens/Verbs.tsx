@@ -1,3 +1,5 @@
+import { useBack } from '../lib/nav';
+import { BackButton } from '../components/BackButton';
 import { useRef, useState } from 'react';
 import { ExerciseRunner, type RunnerItem } from '../components/ExerciseRunner';
 import { completeVerbStage, STEP_PASS, VERB_UNIT, type ItemResult } from '../lib/actions';
@@ -18,17 +20,15 @@ export function nextVerb(verbs: Record<string, number>) {
   return WORKSHOP.find((v, i) => verbOpen(i, verbs) && (verbs[v.id] ?? 0) < STAGES);
 }
 
-export function VerbWorkshop({ go }: { go: (r: Route) => void }) {
+export function VerbWorkshop({ go, onBack }: { go: (r: Route) => void; onBack: () => void }) {
   const s = useAppState();
   const done = WORKSHOP.filter((v) => (s.verbs[v.id] ?? 0) >= STAGES).length;
   const nxt = nextVerb(s.verbs);
   return (
     <div className="screen">
-      <div className="row between">
+      <div className="top-bar">
+        <BackButton onClick={onBack} />
         <h1>Taller de verbos</h1>
-        <button className="link" onClick={() => go({ name: 'path' })}>
-          Volver
-        </button>
       </div>
       <p className="small">
         {WORKSHOP.length} verbos, de los más usados a los menos. Cada uno en 4 etapas: formas → conjugar → completar oraciones en todos los tiempos → crear tus
@@ -79,6 +79,8 @@ export function VerbLesson({ verbId, banner, onExit, onNext }: { verbId: string;
   const firstTry = useRef<ItemResult[]>([]);
   const accent = s.settings.accent;
 
+  useBack(!!running, () => setRunning(null), 2);
+
   const start = (index: number) => {
     firstTry.current = [];
     setFailed(null);
@@ -90,13 +92,11 @@ export function VerbLesson({ verbId, banner, onExit, onNext }: { verbId: string;
     const stage = VSTAGES[running.index];
     return (
       <div className="screen">
-        <div className="row between">
+        <div className="top-bar">
+          <BackButton onClick={() => setRunning(null)} label="Volver al verbo" />
           <p className="eyebrow">
             {v.base} · etapa {running.index + 1} de {STAGES}: {stage.title}
           </p>
-          <button className="link" onClick={onExit}>
-            Volver
-          </button>
         </div>
         {notice && <p className="notice">{notice}</p>}
         <ExerciseRunner
@@ -136,11 +136,9 @@ export function VerbLesson({ verbId, banner, onExit, onNext }: { verbId: string;
 
   return (
     <div className="screen">
-      <div className="row between">
+      <div className="top-bar">
+        <BackButton onClick={onExit} />
         <p className="eyebrow">Taller de verbos</p>
-        <button className="link" onClick={onExit}>
-          Volver
-        </button>
       </div>
       {notice && <p className="notice">{notice}</p>}
       <div className="row between">
