@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1600" preserveAspectRatio="xMidYMid slice">
+<defs>
+ <linearGradient id="bg-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4aaef3"/><stop offset="1" stop-color="#bfe4f8"/></linearGradient>
+ <linearGradient id="bg-rock" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4643f"/><stop offset="1" stop-color="#b44a32"/></linearGradient>
+ <linearGradient id="bg-ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ecc27a"/><stop offset="1" stop-color="#e0a95a"/></linearGradient>
+</defs>
+<!-- cielo y nubes -->
+<rect width="900" height="1600" fill="url(#bg-sky)"/>
+<g fill="#ffffff">
+ <path d="M110 190 Q120 150 165 155 Q185 115 235 130 Q275 120 290 160 Q330 165 330 195 Z"/>
+ <path d="M600 300 Q610 265 650 270 Q670 235 715 248 Q750 240 765 275 Q805 280 805 305 Z"/>
+ <path d="M690 760 Q700 730 735 735 Q755 705 795 715 Q830 712 840 742 Q875 748 875 770 Z"/>
+ <path d="M40 820 Q50 795 80 798 Q95 775 128 782 Q155 780 162 805 Q190 810 190 828 Z" opacity="0.9"/>
+</g>
+<g transform="translate(0 150)">
+<!-- sierras lejanas -->
+<path d="M420 1010 Q500 950 580 975 Q650 930 730 965 Q810 940 900 975 L900 1030 L420 1030 Z" fill="#8f9fbb"/>
+<!-- Uluru -->
+<path d="M20 1040 Q35 930 120 905 Q230 880 340 895 Q420 905 450 960 Q470 1000 480 1040 Z" fill="url(#bg-rock)"/>
+<g stroke="#9f3f2b" stroke-width="7" stroke-linecap="round" opacity="0.7" fill="none">
+ <path d="M110 920 Q100 980 95 1035"/><path d="M175 905 Q170 970 172 1035"/><path d="M240 898 Q245 960 250 1035"/>
+ <path d="M305 900 Q315 960 322 1035"/><path d="M370 915 Q385 970 398 1035"/>
+</g>
+<!-- llanura -->
+<path d="M0 1020 Q300 1000 520 1020 Q720 1040 900 1015 L900 1750 L0 1750 Z" fill="url(#bg-ground)"/>
+<path d="M0 1120 Q260 1095 520 1130 Q720 1150 900 1120 L900 1180 Q700 1205 480 1185 Q240 1160 0 1185 Z" fill="#dc9d52" opacity="0.7"/>
+<path d="M560 1600 Q600 1400 680 1260 Q720 1200 760 1180 L800 1180 Q760 1230 740 1300 Q700 1450 720 1600 Z" fill="#d8854b" opacity="0.6"/>
+<!-- arbolitos en el horizonte -->
+<g>
+ <rect x="526" y="975" width="7" height="45" fill="#8b6447"/>
+ <ellipse cx="530" cy="968" rx="40" ry="20" fill="#6f8a3e"/>
+ <rect x="806" y="965" width="7" height="55" fill="#8b6447"/>
+ <ellipse cx="810" cy="958" rx="46" ry="22" fill="#7d9844"/>
+ <rect x="662" y="990" width="5" height="32" fill="#8b6447"/>
+ <ellipse cx="664" cy="986" rx="28" ry="14" fill="#6f8a3e"/>
+</g>
+<!-- matas de pasto -->
+<g fill="#8a9a48">
+ <path d="M40 1260 l18 -55 l10 50 l14 -60 l10 62 l16 -45 l6 48 Z"/>
+ <path d="M300 1160 l12 -36 l8 32 l10 -40 l8 40 l12 -30 l4 34 Z"/>
+ <path d="M620 1100 l10 -28 l6 26 l8 -32 l6 32 l10 -24 l4 26 Z"/>
+ <path d="M780 1340 l16 -48 l10 44 l12 -54 l10 54 l14 -40 l6 44 Z"/>
+ <path d="M150 1450 l20 -64 l12 58 l16 -70 l12 72 l18 -52 l8 56 Z"/>
+</g>
+<g fill="#6f7f3a">
+ <path d="M80 1270 l10 -40 l8 38 Z"/><path d="M820 1350 l10 -36 l8 34 Z"/><path d="M190 1460 l12 -48 l8 46 Z"/>
+</g>
+</g>
+<!-- eucalipto grande a la izquierda -->
+<g>
+ <path d="M70 1320 Q85 1100 75 900 Q65 760 95 620 Q110 560 100 480 L118 480 Q130 560 116 625 Q90 760 102 900 Q112 1100 108 1320 Z" fill="#b88a6a"/>
+ <path d="M98 700 Q150 640 210 600 L218 612 Q160 650 108 720 Z" fill="#b88a6a"/>
+ <path d="M92 820 Q50 770 20 740 L28 730 Q60 760 98 800 Z" fill="#b88a6a"/>
+ <path d="M108 560 Q170 470 250 430 L256 442 Q180 485 118 575 Z" fill="#b88a6a"/>
+ <g fill="#5f7a35">
+  <path d="M-20 450 Q0 380 70 380 Q100 330 170 345 Q215 300 280 330 Q330 330 340 380 Q370 420 330 455 Q300 490 240 470 Q200 500 150 480 Q100 505 50 480 Q-10 500 -20 450 Z"/>
+  <path d="M60 300 Q90 250 150 260 Q190 230 240 255 Q280 270 270 310 Q250 340 200 330 Q160 350 120 335 Q70 345 60 300 Z"/>
+  <path d="M150 590 Q170 555 215 560 Q250 545 280 570 Q300 600 265 615 Q230 630 195 618 Q150 625 150 590 Z"/>
+  <path d="M-30 720 Q-10 680 40 685 Q80 675 100 705 Q105 735 70 740 Q30 755 0 745 Q-35 745 -30 720 Z"/>
+ </g>
+ <g fill="#7f9b44">
+  <path d="M20 430 Q40 395 90 400 Q120 370 170 380 Q200 360 240 372 Q280 380 270 410 Q240 425 200 418 Q160 432 120 425 Q60 440 20 430 Z"/>
+  <path d="M100 290 Q120 265 160 272 Q200 258 230 280 Q215 300 180 298 Q140 310 100 290 Z"/>
+  <path d="M175 585 Q195 568 225 575 Q255 572 262 590 Q240 600 210 598 Q180 604 175 585 Z"/>
+ </g>
+ <g fill="#a7bd6a" opacity="0.6">
+  <ellipse cx="200" cy="390" rx="30" ry="10"/><ellipse cx="80" cy="410" rx="26" ry="9"/><ellipse cx="170" cy="275" rx="22" ry="8"/>
+ </g>
+</g>
+<!-- canguro (de perfil, mirando a la izquierda) -->
+<g fill="#9a6440" transform="translate(-180 -100) scale(1.2)">
+ <path d="M790 1300 Q770 1300 760 1290 L792 1286 Q800 1250 805 1230 Q790 1200 795 1160 Q800 1130 815 1112 Q808 1100 800 1095 Q790 1094 786 1088 Q790 1076 802 1074 L806 1056 L812 1072 L818 1058 L820 1078 Q832 1088 830 1104 Q852 1130 856 1170 Q862 1210 850 1240 Q880 1262 900 1300 L892 1306 Q868 1280 845 1268 L848 1292 L872 1296 L870 1304 L820 1304 Q815 1290 816 1270 Q812 1290 800 1302 Z"/>
+ <path d="M815 1150 Q800 1165 790 1180 L796 1186 Q808 1172 822 1162 Z" fill="#87552f"/>
+</g>
+</svg>

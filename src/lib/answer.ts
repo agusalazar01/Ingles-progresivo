@@ -24,7 +24,7 @@ export function normalize(s: string): string {
 }
 
 /** Variantes de una respuesta normalizada para resolver 's (is/has) y 'd (would/had). */
-function variants(t: string): string[] {
+export function variants(t: string): string[] {
   // Cada aparición se expande por separado: "I'd known, I'd have" → had ... would.
   let out = [''];
   for (const w of t.split(' ')) {

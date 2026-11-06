@@ -5,12 +5,14 @@ import { Review } from './screens/Review';
 import { Errors, Home, Path, Progress, Welcome } from './screens/Tabs';
 import { Exam, Mixed, Remedial } from './screens/Practice';
 import { Vocab } from './screens/Vocab';
+import { Call } from './screens/Call';
 import { VerbLesson, VerbWorkshop } from './screens/Verbs';
 import type { Level } from './content/types';
 import { markActive, setState, useAppState } from './lib/store';
 import { syncPlacedUnits } from './lib/actions';
 import { checkUpdate, type UpdateInfo } from './lib/update';
 import { WordContext } from './components/Words';
+import { setPreferredVoice } from './lib/speech';
 import { WordSheet } from './components/WordSheet';
 import './App.css';
 
@@ -27,6 +29,7 @@ export type Route =
   | { name: 'remedial'; unitIds: string[]; level: Level }
   | { name: 'placement'; retest: boolean }
   | { name: 'lesson'; unitId: string; banner?: string; resume?: boolean }
+  | { name: 'call'; callId: string; unitId?: string }
   | { name: 'review'; keys: string[]; title: string };
 
 const TABS: { name: 'home' | 'path' | 'vocab' | 'errors' | 'progress'; label: string }[] = [
@@ -54,6 +57,15 @@ export default function App() {
   }, [route]);
 
   useEffect(() => {
+    document.documentElement.dataset.theme = s.settings.theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', s.settings.theme === 'dark' ? '#131f24' : '#f6f4ef');
+  }, [s.settings.theme]);
+
+  useEffect(() => {
+    setPreferredVoice(s.settings.voice);
+  }, [s.settings.voice]);
+
+  useEffect(() => {
     syncPlacedUnits();
     checkUpdate().then(setUpdate);
   }, []);
@@ -74,9 +86,15 @@ export default function App() {
           resume={route.resume}
           onExit={home}
           onNextUnit={(unitId, banner) => setRoute({ name: 'lesson', unitId, banner })}
+          onCall={(callId) => setRoute({ name: 'call', callId, unitId: route.unitId })}
         />
       );
       break;
+    case 'call': {
+      const back = route.unitId;
+      body = <Call key={route.callId} callId={route.callId} onExit={() => (back ? setRoute({ name: 'lesson', unitId: back }) : home())} />;
+      break;
+    }
     case 'review':
       body = <Review keys={route.keys} title={route.title} onExit={home} />;
       break;

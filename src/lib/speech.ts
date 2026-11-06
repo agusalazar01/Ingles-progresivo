@@ -25,6 +25,23 @@ interface Voice {
 }
 
 let voicesCache: Voice[] | null = null;
+let preferred = '';
+
+/** Voz elegida en Ajustes (por nombre). Se usa siempre que no se pida «variado». */
+export function setPreferredVoice(name: string) {
+  preferred = name;
+}
+
+/** Voces en inglés que tiene el teléfono (las del motor de voz preferido: por ejemplo Samsung). */
+export async function listVoices(): Promise<{ name: string; lang: string }[]> {
+  voicesCache = null;
+  if (!native && 'speechSynthesis' in window && !speechSynthesis.getVoices().length)
+    await new Promise((r) => {
+      speechSynthesis.onvoiceschanged = () => r(null);
+      setTimeout(() => r(null), 1500);
+    });
+  return (await englishVoices()).map(({ name, lang }) => ({ name, lang }));
+}
 
 async function englishVoices(): Promise<Voice[]> {
   if (voicesCache) return voicesCache;
@@ -51,13 +68,15 @@ export async function canSpeak(): Promise<boolean> {
 }
 
 /** Habla `text`. `varied` elige una voz inglesa al azar (entrenamiento con muchas voces). */
-export async function say(text: string, opts: { accent?: Accent; varied?: boolean; slow?: boolean } = {}) {
+export async function say(text: string, opts: { accent?: Accent; varied?: boolean; slow?: boolean; lang?: string; voice?: string } = {}) {
   const voices = await englishVoices();
   const accent = opts.accent ?? 'variado';
-  let pool = accent === 'variado' || opts.varied ? voices : voices.filter((v) => v.lang === accent);
+  const wanted = opts.voice ?? (opts.varied ? '' : preferred);
+  const chosen = wanted ? voices.find((v) => v.name === wanted) : undefined;
+  let pool = opts.lang ? voices.filter((v) => v.lang === opts.lang) : accent === 'variado' || opts.varied ? voices : voices.filter((v) => v.lang === accent);
   if (!pool.length) pool = voices;
-  const voice = pool.length ? pool[Math.floor(Math.random() * pool.length)] : undefined;
-  const lang = voice?.lang ?? (accent === 'variado' ? 'en-US' : accent);
+  const voice = chosen ?? (pool.length ? pool[Math.floor(Math.random() * pool.length)] : undefined);
+  const lang = voice?.lang ?? opts.lang ?? (accent === 'variado' ? 'en-US' : accent);
   const rate = opts.slow ? 0.7 : 1;
 
   if (native) {
@@ -72,7 +91,13 @@ export async function say(text: string, opts: { accent?: Accent; varied?: boolea
     u.rate = rate;
     const v = voice ? speechSynthesis.getVoices()[voice.index] : undefined;
     if (v) u.voice = v;
-    speechSynthesis.speak(u);
+    // Se espera a que termine de hablar (sirve para animar al personaje de la llamada).
+    await new Promise<void>((resolve) => {
+      u.onend = () => resolve();
+      u.onerror = () => resolve();
+      speechSynthesis.speak(u);
+      setTimeout(resolve, 2000 + text.length * 120);
+    });
   }
 }
 

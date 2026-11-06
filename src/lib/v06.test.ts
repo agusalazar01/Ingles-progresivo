@@ -10,7 +10,7 @@ import type { AppState } from './store';
 
 const base = (): AppState => ({
   version: 1, units: {}, cards: {}, errors: {}, tests: [], activity: [], stats: { reviews: 0, correct: 0 },
-  settings: { accent: 'variado', newWords: 10 }, levels: {}, words: {}, verbs: {}, resume: {},
+  settings: { accent: 'variado', newWords: 10, theme: 'dark', sounds: true, voice: '' }, levels: {}, words: {}, verbs: {}, resume: {}, calls: {},
 });
 
 describe('v0.6', () => {
@@ -73,5 +73,25 @@ describe('v0.6', () => {
     expect(unitPercent(s, 'to-be')).toBeGreaterThan(0);
     s.units['to-be'] = { status: 'mastered', date: '' };
     expect(unitPercent(s, 'to-be')).toBe(1);
+  });
+});
+
+import { CALLS } from '../content/calls';
+import { matchTurn } from './call';
+
+describe('llamadas con Oliver', () => {
+  it('hay al menos 2 llamadas por unidad y todas terminan con despedida', () => {
+    for (const u of UNITS) expect(CALLS.filter((c) => c.unitId === u.id).length, u.id).toBeGreaterThanOrEqual(2);
+    for (const c of CALLS) expect('u' in c.turns[c.turns.length - 1]).toBe(true);
+  });
+  it('la respuesta modelo de cada turno coincide con alguna rama', () => {
+    for (const c of CALLS)
+      for (const t of c.turns) if ('u' in t) expect(matchTurn(t.u, [t.u.model]), `${c.id}: ${t.u.model}`).not.toBeNull();
+  });
+  it('acepta lo que devuelve el reconocimiento (sin puntuación, contracciones)', () => {
+    const c = CALLS.find((x) => x.unitId === 'pres-cont')!;
+    const t = c.turns.find((x) => 'u' in x) as { u: Parameters<typeof matchTurn>[0] };
+    expect(matchTurn(t.u, ['im cooking dinner', "I'm cooking dinner"])).not.toBeNull();
+    expect(matchTurn(t.u, ['pizza'])).toBeNull();
   });
 });

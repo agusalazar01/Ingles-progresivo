@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { LEVELS } from '../content/types';
 import { UNITS } from '../content/curriculum';
 import { daysSince, groupPercent, isDone, lastTest, nextUnit, pathLevel, previousLevelDone, unitPercent, unitStatus } from '../lib/progress';
@@ -5,7 +6,9 @@ import { THEMES, themeOf, themeUnits } from '../content/themes';
 import { unitById } from '../content/curriculum';
 import { dueKeys, lastRun, resetAll, setState, streak, useAppState } from '../lib/store';
 import { activeSteps } from '../lib/ladder';
-import { ACCENT_LABEL, say, type Accent } from '../lib/speech';
+import { ACCENT_LABEL, listVoices, say, type Accent } from '../lib/speech';
+import { sfxCorrect } from '../lib/sfx';
+import { callsForUnit } from '../content/calls';
 import { APP_VERSION, BUILD } from '../lib/update';
 import type { Route } from '../App';
 import { availableFamilies } from './Practice';
@@ -36,7 +39,7 @@ export function Home({ go }: { go: (r: Route) => void }) {
       <div className="hero">
         <div>
           <p className="eyebrow">Tu nivel (según el test)</p>
-          <p className="level">{test?.level ?? (test ? 'Inicial' : '—')}</p>
+          <p className="level">{test?.level ?? (test ? 'Inicial' : 'Sin test')}</p>
           <p className="small">{Math.round(groupPercent(s, UNITS.map((u) => u.id)) * 100)}% del camino completado</p>
         </div>
         <div className="streak">
@@ -117,6 +120,31 @@ export function Home({ go }: { go: (r: Route) => void }) {
           );
         })()}
       </div>
+      {(() => {
+        // Llamada sugerida: de la unidad que estás haciendo (o la última dominada), la que todavía no hiciste.
+        const started = UNITS.filter((u) => s.units[u.id]?.step || s.units[u.id]?.status === 'mastered');
+        const base = unit && s.units[unit.id]?.step ? unit : started[started.length - 1] ?? unit;
+        if (!base) return null;
+        const calls = callsForUnit(base.id);
+        const c = calls.find((x) => !s.calls[x.id]) ?? calls[0];
+        if (!c) return null;
+        return (
+          <div className="card">
+            <p className="card-title">📞 Llamá a Oliver</p>
+            <p className="small">Una charla corta con un australiano para usar lo de «{base.title}».</p>
+            <button className="call-card" onClick={() => go({ name: 'call', callId: c.id, unitId: base.id })}>
+              <span className="face">
+                <img src={`${import.meta.env.BASE_URL}call/character.svg`} alt="" />
+              </span>
+              <span className="grow">
+                <span className="unit-title">{c.title}</span>
+                <span className="unit-status">{c.scene}</span>
+              </span>
+              <span aria-hidden="true">📞</span>
+            </button>
+          </div>
+        );
+      })()}
       {(() => {
         const nv = nextVerb(s.verbs);
         return nv ? (
@@ -361,8 +389,33 @@ export function Progress({ go }: { go: (r: Route) => void }) {
         </ul>
       </div>
       <div className="card">
+        <p className="card-title">Apariencia y sonido</p>
+        <div className="row">
+          {(['dark', 'light'] as const).map((t) => (
+            <button
+              key={t}
+              className={`option grow ${s.settings.theme === t ? 'right' : ''}`}
+              onClick={() => setState((st) => ({ ...st, settings: { ...st.settings, theme: t } }))}
+            >
+              {t === 'dark' ? '🌙 Oscuro' : '☀️ Claro'}
+            </button>
+          ))}
+        </div>
+        <button
+          className={`option ${s.settings.sounds ? 'right' : ''}`}
+          onClick={() => {
+            const on = !s.settings.sounds;
+            setState((st) => ({ ...st, settings: { ...st.settings, sounds: on } }));
+            if (on) setTimeout(sfxCorrect, 50);
+          }}
+        >
+          {s.settings.sounds ? '🔊 Sonidos de acierto y error: prendidos' : '🔇 Sonidos de acierto y error: apagados'}
+        </button>
+      </div>
+      <VoiceSettings />
+      <div className="card">
         <p className="card-title">Acento de las voces</p>
-        <p className="small">Usa las voces que tenga instaladas tu teléfono. "Variado" entrena el oído con muchas voces distintas.</p>
+        <p className="small">Si no elegiste una voz fija, se usa este acento. "Variado" entrena el oído con muchas voces distintas.</p>
         <div className="options">
           {(Object.keys(ACCENT_LABEL) as Accent[]).map((a) => (
             <button
@@ -370,7 +423,7 @@ export function Progress({ go }: { go: (r: Route) => void }) {
               className={`option ${s.settings.accent === a ? 'right' : ''}`}
               onClick={() => {
                 setState((st) => ({ ...st, settings: { ...st.settings, accent: a } }));
-                say('Hello! This is how I sound.', { accent: a });
+                say('Hello! This is how I sound.', { accent: a, voice: '' });
               }}
             >
               {ACCENT_LABEL[a]}
@@ -413,6 +466,53 @@ export function Welcome({ go }: { go: (r: Route) => void }) {
       <button className="link" onClick={() => go({ name: 'home', skipWelcome: true })}>
         Empezar desde el principio (A1)
       </button>
+    </div>
+  );
+}
+
+/** Elegir una voz fija del teléfono (por ejemplo, la australiana de Samsung). */
+function VoiceSettings() {
+  const s = useAppState();
+  const [voices, setVoices] = useState<{ name: string; lang: string }[] | null>(null);
+  const [open, setOpen] = useState(false);
+  const load = () => {
+    setOpen(true);
+    listVoices().then((v) => setVoices(v.sort((a, b) => (a.lang === 'en-AU' ? -1 : 0) - (b.lang === 'en-AU' ? -1 : 0) || a.lang.localeCompare(b.lang))));
+  };
+  const pick = (name: string) => {
+    setState((st) => ({ ...st, settings: { ...st.settings, voice: name } }));
+    say("G'day! This is how I sound.", { voice: name });
+  };
+  return (
+    <div className="card">
+      <p className="card-title">Voz fija</p>
+      <p className="small">
+        Para usar la voz australiana de Samsung: en el teléfono andá a Ajustes › Administración general › Texto a voz, elegí <b>Samsung</b> como motor preferido e
+        instalá el idioma English (Australia). Después elegila acá.
+      </p>
+      <p className="small">
+        Ahora: <b>{s.settings.voice || 'según el acento elegido'}</b>
+      </p>
+      {!open && (
+        <button className="secondary" onClick={load}>
+          Ver las voces del teléfono
+        </button>
+      )}
+      {open && voices === null && <p className="small">Buscando voces…</p>}
+      {open && voices && (
+        <div className="options">
+          <button className={`option ${!s.settings.voice ? 'right' : ''}`} onClick={() => setState((st) => ({ ...st, settings: { ...st.settings, voice: '' } }))}>
+            Ninguna fija (usar el acento)
+          </button>
+          {voices.length === 0 && <p className="small">No encontré voces en inglés. Revisá el motor de texto a voz del teléfono.</p>}
+          {voices.map((v) => (
+            <button key={v.name} className={`option ${s.settings.voice === v.name ? 'right' : ''}`} onClick={() => pick(v.name)}>
+              {v.lang === 'en-AU' ? '🇦🇺 ' : ''}
+              {v.name} <span className="small">· {v.lang}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

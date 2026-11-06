@@ -4,11 +4,15 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
-## Qué hace la versión 0.6
+## Qué hace la versión 0.7
 
 Se centra en una sola cosa: **armar oraciones correctas, rápido y sin traducir en la cabeza**. La escucha y la conversación se practican fuera de la app.
 
 - **Test de nivel adaptativo** (A1–C1): empieza en B1 y sube o baja según las respuestas. Se puede repetir.
+- **Llamadas con Oliver**: un australiano te llama (suena el teléfono, atiende y aparece animado) y charlan unos minutos en roleplays de cada unidad (72 conversaciones, 2 por unidad). Hablás con el micrófono o escribís; al final, el repaso de la charla con lo que dijiste bien y consejos. Sin IA en el teléfono: guiones con ramas y el reconocimiento de voz del propio celular.
+- **Modo oscuro** (o claro), **sonidos** de acierto, error y festejo (generados en el momento, se pueden apagar), **panel de respuesta** que sube desde abajo, **racha** de aciertos y **resumen** al terminar cada escalón.
+- **Voz fija**: elegí cualquier voz instalada en el teléfono, por ejemplo la australiana de Samsung.
+- **Más modos**: traducir armando la oración con fichas, «Repetí lo que dice Oliver», aviso de palabra nueva y «Ahora no puedo hablar / escuchar» (15 minutos sin ejercicios de voz).
 - **Camino por temas**: lo básico, preguntas, presente, pasado, futuro, tiempos perfectos, condicionales, cantidades, preposiciones, conectar ideas, pasiva y estilo indirecto, vocabulario, sonidos y énfasis. Cada tema muestra su porcentaje. Los niveles A1–C1 aparecen solo al evaluar (test de ubicación y pruebas de nivel).
 - **Retomar donde quedaste**: si salís a mitad de un escalón o cerrás la app, seguís desde la misma pregunta. Cada unidad muestra cuánto llevás.
 - **Explicación de cada error**: por qué va la respuesta correcta en ese ejercicio y por qué no va lo que pusiste.

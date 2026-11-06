@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
 import { ExerciseRunner, type RunnerItem, type RunnerQueue } from '../components/ExerciseRunner';
 import { themeOf } from '../content/themes';
+import { callsForUnit } from '../content/calls';
+import { sfxFinish } from '../lib/sfx';
+import { normalize } from '../lib/answer';
 import { Explanation, ExplanationSheet, axisClass } from '../components/Explanation';
 import { unitById } from '../content/curriculum';
 import { completeStep, readExplanation, STEP_PASS, type ItemResult } from '../lib/actions';
@@ -17,11 +20,13 @@ interface Props {
   onExit: () => void;
   /** Al dominar la unidad se pasa sola a la siguiente. */
   onNextUnit: (unitId: string, banner: string) => void;
+  /** Abrir una llamada con Oliver. */
+  onCall: (callId: string) => void;
 }
 
 const toSaved = (q: RunnerQueue): SavedRun['queue'] => q.map(({ item, first }) => ({ key: item.key, exercise: item.exercise, first }));
 
-export function Lesson({ unitId, banner, resume, onExit, onNextUnit }: Props) {
+export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: Props) {
   const unit = unitById(unitId);
   const s = useAppState();
   const steps = activeSteps(unit);
@@ -43,6 +48,8 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit }: Props) {
   const [notice, setNotice] = useState<string | undefined>(banner);
   const [showExplain, setShowExplain] = useState(done === 0);
   const [sheet, setSheet] = useState(false);
+  const startedAt = useRef(Date.now());
+  const [summary, setSummary] = useState<{ index: number; score: number; passed: boolean; good: number; total: number; secs: number; words: number; best: number } | null>(null);
   const firstTry = useRef<ItemResult[]>(resume ? (getState().resume[unitId]?.firstTry ?? []) : []);
 
 
@@ -50,6 +57,7 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit }: Props) {
     firstTry.current = [];
     setResult(null);
     const items = stepItems(unit, steps[index].id);
+    startedAt.current = Date.now();
     saveRun(unit.id, { stepIndex: index, queue: toSaved(items.map((item) => ({ item, first: true }))), pos: 0, firstTry: [] });
     setRunning({ index, items });
   };
@@ -70,10 +78,19 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit }: Props) {
     const score = graded.length ? graded.filter((r) => r.outcome === 'good').length / graded.length : 1;
     const passed = score >= STEP_PASS;
     completeStep(unit.id, index, steps.length - 1, firstTry.current, passed);
-    if (passed) return advance(index, score);
+    // Resumen del escalón: aciertos, tiempo, palabras usadas y mejor racha.
+    let best = 0;
+    let run = 0;
+    for (const r of graded) {
+      run = r.outcome === 'good' ? run + 1 : 0;
+      best = Math.max(best, run);
+    }
+    const words = new Set(graded.filter((r) => r.outcome !== 'again').flatMap((r) => normalize(r.correct).split(' ').filter(Boolean)));
+    const secs = graded.reduce((a, r) => a + (r.ms ?? 0), 0) / 1000 || (Date.now() - startedAt.current) / 1000;
+    if (passed) sfxFinish();
     setNotice(undefined);
     setRunning(null);
-    setResult({ index, score, passed });
+    setSummary({ index, score, passed, good: graded.filter((r) => r.outcome === 'good').length, total: graded.length, secs, words: words.size, best });
   };
 
   /** Después de aprobar: siguiente escalón, siguiente unidad o examen de nivel, sin volver al menú. */
@@ -93,6 +110,53 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit }: Props) {
     setRunning(null);
     setResult({ index, score, passed: true });
   };
+
+  if (summary) {
+    const mm = Math.floor(summary.secs / 60);
+    const ss = Math.round(summary.secs % 60);
+    return (
+      <div className="screen summary">
+        <p className="summary-emoji" aria-hidden="true">{summary.passed ? '🎉' : '💪'}</p>
+        <h1 className="center">{summary.passed ? `¡Escalón «${steps[summary.index].title}» superado!` : 'Casi: repetilo y sale'}</h1>
+        <p className="center small">{unit.title}</p>
+        <div className="summary-stats">
+          <div className="stat">
+            <span className="stat-num">{Math.round(summary.score * 100)}%</span>
+            <span className="stat-label">bien de una</span>
+          </div>
+          <div className="stat">
+            <span className="stat-num">{summary.words}</span>
+            <span className="stat-label">palabras usadas</span>
+          </div>
+          <div className="stat">
+            <span className="stat-num">
+              {mm}:{String(ss).padStart(2, '0')}
+            </span>
+            <span className="stat-label">tiempo</span>
+          </div>
+          <div className="stat">
+            <span className="stat-num">🔥 {summary.best}</span>
+            <span className="stat-label">mejor racha</span>
+          </div>
+        </div>
+        <p className="center">
+          {summary.good} de {summary.total} al primer intento.{' '}
+          {summary.passed ? '' : `Necesitás ${Math.round(STEP_PASS * 100)}%; las oraciones van a ser otras.`}
+        </p>
+        <button
+          className="primary"
+          onClick={() => {
+            const sm = summary;
+            setSummary(null);
+            if (sm.passed) advance(sm.index, sm.score);
+            else setResult({ index: sm.index, score: sm.score, passed: false });
+          }}
+        >
+          Continuar
+        </button>
+      </div>
+    );
+  }
 
   if (running) {
     const step = steps[running.index];
@@ -222,6 +286,25 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit }: Props) {
         })}
       </div>
       {done >= steps.length && <p className="small">Podés repetir cualquier escalón: cada vez trae oraciones nuevas.</p>}
+
+      <h2>📞 Llamadas con Oliver</h2>
+      <p className="small">Charlas cortas con un australiano usando lo de esta unidad. Mejor después de «Construir», pero podés llamar cuando quieras.</p>
+      {callsForUnit(unit.id).map((c) => (
+        <button key={c.id} className="call-card" onClick={() => onCall(c.id)}>
+          <span className="face">
+            <img src={`${import.meta.env.BASE_URL}call/character.svg`} alt="" />
+          </span>
+          <span className="grow">
+            <span className="unit-title">{c.title}</span>
+            <span className="unit-status">
+              {c.scene}
+              {s.calls[c.id] ? ` · ✓ ${Math.round(s.calls[c.id].score * 100)}% bien` : ''}
+            </span>
+          </span>
+          <span aria-hidden="true">📞</span>
+        </button>
+      ))}
+
       <button className="secondary" onClick={onExit}>
         Volver
       </button>

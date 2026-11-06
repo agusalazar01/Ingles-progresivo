@@ -57,7 +57,16 @@ export interface AppState {
   tests: TestResult[];
   activity: string[];
   stats: { reviews: number; correct: number };
-  settings: { accent: Accent; newWords: number };
+  settings: {
+    accent: Accent;
+    newWords: number;
+    /** Tema de colores. */
+    theme: 'dark' | 'light';
+    /** Sonidos de acierto, error y festejo. */
+    sounds: boolean;
+    /** Voz elegida del teléfono (nombre); vacía = según el acento. */
+    voice: string;
+  };
   /** Exámenes de cierre de nivel aprobados. */
   levels: Partial<Record<Level, { date: string; score: number }>>;
   /** Vocabulario: palabra → estado. */
@@ -66,6 +75,8 @@ export interface AppState {
   verbs: Record<string, number>;
   /** Escalones sin terminar, por unidad. */
   resume: Record<string, SavedRun>;
+  /** Llamadas con Oliver hechas: proporción de frases bien. */
+  calls: Record<string, { date: string; score: number }>;
 }
 
 const KEY = 'ingles-progresivo-v1';
@@ -78,11 +89,12 @@ const empty = (): AppState => ({
   tests: [],
   activity: [],
   stats: { reviews: 0, correct: 0 },
-  settings: { accent: 'variado', newWords: 10 },
+  settings: { accent: 'variado', newWords: 10, theme: 'dark', sounds: true, voice: '' },
   levels: {},
   words: {},
   verbs: {},
   resume: {},
+  calls: {},
 });
 
 function load(): AppState {
@@ -239,4 +251,8 @@ export function clearRun(unitId: string) {
 export function lastRun(s: AppState): { unitId: string; run: SavedRun } | null {
   const e = Object.entries(s.resume).sort((a, b) => b[1].date.localeCompare(a[1].date))[0];
   return e ? { unitId: e[0], run: e[1] } : null;
+}
+
+export function saveCall(id: string, score: number) {
+  setState((s) => ({ ...s, calls: { ...s.calls, [id]: { date: new Date().toISOString(), score: Math.max(score, s.calls[id]?.score ?? 0) } } }));
 }
