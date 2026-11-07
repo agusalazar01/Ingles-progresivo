@@ -6,6 +6,8 @@ import {
   cancelDownload,
   getDownloads,
   DEFAULT_TUNE,
+  diagText,
+  labTest,
   MY_RECORDING,
   OliverAi,
   packReady,
@@ -19,6 +21,7 @@ import {
   subscribeDownloads,
   tryVoice,
   type AiStatus,
+  type AudioTest,
   type Tune,
   type Pack,
   type PackKind,
@@ -219,6 +222,7 @@ export function AiSettings() {
             )}
           </div>
         )}
+        {chosen && p.kind === 'voice' && <AudioLab pack={p} speaker={ai.speaker} />}
         {chosen && p.kind === 'voice' && <TunePanel tune={tune} piper={p.engine === 'piper'} onChange={setTune} onReset={resetTune} onTry={() => test(p, ai.speaker)} busy={testing !== null} />}
       </div>
     );
@@ -302,6 +306,68 @@ function TunePanel({ tune, piper, onChange, onReset, onTry, busy }: { tune: Tune
           Restablecer
         </button>
       </div>
+    </div>
+  );
+}
+
+const LAB: { name: string; desc: string; test: AudioTest }[] = [
+  { name: '0. Como está ahora', desc: 'Todo igual que en la llamada.', test: {} },
+  { name: '1. Sin procesamiento', desc: 'Sin shape(): sin filtro, sin suavizado y sin volumen.', test: { raw: true } },
+  { name: '2. Sin PlaybackParams', desc: 'Sin el cambio de tono de Android (solo cambia algo si el tono no está en 100%).', test: { noParams: true } },
+  { name: '3. Búfer de 500 ms', desc: 'Reserva de audio más grande (ahora es de ~200 ms).', test: { bufferMs: 500 } },
+  { name: '4. PCM de 16 bits', desc: 'Reproducir en 16 bits en vez de float.', test: { pcm16: true } },
+  { name: '5. Otro canal de audio', desc: 'Sale por el canal de asistente en vez del de multimedia (por si Samsung le aplica efectos como Dolby Atmos o Adapt Sound).', test: { assistant: true } },
+  { name: '6. Guardar el audio crudo', desc: 'Suena normal y guarda lo que sale del motor, sin tocar, en Descargas/CriollEnglish.', test: { save: true } },
+];
+
+/** Laboratorio de audio: pruebas de a una variable para encontrar de dónde sale el sonido metálico. */
+function AudioLab({ pack, speaker }: { pack: Pack; speaker: number }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [results, setResults] = useState<string[]>([]);
+  const run = async (name: string, test: AudioTest) => {
+    setBusy(name);
+    try {
+      const d = await labTest(pack, speaker, test);
+      setResults((r) => [diagText(name, d), ...r]);
+    } catch (e) {
+      setResults((r) => [`${name}: error ${(e as Error).message ?? e}`, ...r]);
+    }
+    setBusy(null);
+  };
+  if (!open)
+    return (
+      <button className="link" onClick={() => setOpen(true)}>
+        🔬 Laboratorio de audio (si suena metálico)
+      </button>
+    );
+  return (
+    <div className="options">
+      <p className="small">
+        Escuchá cada prueba y anotá cuál suena mejor. Cada una cambia una sola cosa. La 6 guarda un archivo que podés mandarme para compararlo con el mismo audio
+        generado en la computadora.
+      </p>
+      {LAB.map((t) => (
+        <button key={t.name} className="option" disabled={busy !== null} onClick={() => run(t.name, t.test)}>
+          {busy === t.name ? '… ' : '▶ '}
+          <b>{t.name}</b>
+          <br />
+          <span className="small">{t.desc}</span>
+        </button>
+      ))}
+      {results.length > 0 && (
+        <>
+          <pre className="lab-log">{results.join('\n\n')}</pre>
+          <div className="ai-row">
+            <button className="secondary" onClick={() => navigator.clipboard?.writeText(results.join('\n\n'))}>
+              📋 Copiar resultados
+            </button>
+            <button className="secondary" onClick={() => setResults([])}>
+              Borrar
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -422,6 +422,12 @@ class OliverAiPlugin : Plugin() {
         throw IllegalStateException("Grabación inválida")
     }
 
+    /**
+     * Habla. Opciones de diagnóstico (laboratorio de audio), para probar de a una variable:
+     * raw = sin shape(); noParams = sin PlaybackParams; bufferMs = tamaño del búfer (0 = el normal);
+     * pcm16 = reproducir en 16 bits en vez de float; save = guardar el audio crudo del motor en Descargas.
+     * Devuelve lo que pasó en la reproducción (frecuencia, errores, cortes, picos…).
+     */
     @PluginMethod
     fun speak(call: PluginCall) {
         val text = call.getString("text") ?: ""
@@ -430,6 +436,12 @@ class OliverAiPlugin : Plugin() {
         val pitch = call.getFloat("pitch") ?: 1.0f
         val volume = call.getFloat("volume") ?: 1.0f
         val ref = call.getString("reference")
+        val raw = call.getBoolean("raw", false) ?: false
+        val noParams = call.getBoolean("noParams", false) ?: false
+        val bufferMs = call.getInt("bufferMs") ?: 0
+        val pcm16 = call.getBoolean("pcm16", false) ?: false
+        val save = call.getBoolean("save", false) ?: false
+        val assistant = call.getBoolean("assistant", false) ?: false
         stopSpeech = false
         work.execute {
             val voice = tts
@@ -438,46 +450,86 @@ class OliverAiPlugin : Plugin() {
                 return@execute
             }
             var player: AudioTrack? = null
+            val diag = JSObject()
+            val log = StringBuilder()
             try {
                 if (ttsKind == "pocket") loadReference(ref ?: "ref-1.wav")
                 val rate = voice.sampleRate()
-                val minBuf = AudioTrack.getMinBufferSize(rate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)
-                player = AudioTrack.Builder()
+                val encoding = if (pcm16) AudioFormat.ENCODING_PCM_16BIT else AudioFormat.ENCODING_PCM_FLOAT
+                val bytes = if (pcm16) 2 else 4
+                val minBuf = AudioTrack.getMinBufferSize(rate, AudioFormat.CHANNEL_OUT_MONO, encoding)
+                val bufBytes = if (bufferMs > 0) max(minBuf, rate * bufferMs / 1000 * bytes) else max(minBuf * 2, rate / 5 * bytes)
+                val out = AudioTrack.Builder()
                     .setAudioAttributes(
                         AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .setUsage(if (assistant && Build.VERSION.SDK_INT >= 26) AudioAttributes.USAGE_ASSISTANT else AudioAttributes.USAGE_MEDIA)
+                            .setContentType(if (assistant) AudioAttributes.CONTENT_TYPE_MUSIC else AudioAttributes.CONTENT_TYPE_SPEECH)
                             .build(),
                     )
                     .setAudioFormat(
                         AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+                            .setEncoding(encoding)
                             .setSampleRate(rate)
                             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                             .build(),
                     )
-                    // Búfer chico (~0,2 s): con uno grande, Android esperaba a llenarlo antes de sonar y el final
-                    // de cada frase quedaba trabado hasta cortar (la voz salía entrecortada).
-                    .setBufferSizeInBytes(max(minBuf * 2, rate / 5 * 4))
+                    .setBufferSizeInBytes(bufBytes)
                     .setTransferMode(AudioTrack.MODE_STREAM)
                     .build()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                player = out
+                if (out.state != AudioTrack.STATE_INITIALIZED) log.append("AudioTrack no se inicializó (state=${out.state}). ")
+                if (bufferMs == 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     try {
-                        player.setStartThresholdInFrames(min(player.bufferSizeInFrames, rate / 20))
-                    } catch (_: Throwable) {
+                        out.setStartThresholdInFrames(min(out.bufferSizeInFrames, rate / 20))
+                    } catch (e: Throwable) {
+                        log.append("startThreshold: ${e.message}. ")
                     }
                 }
-                // Tono: se cambia al reproducir, sin cambiar la velocidad.
-                if (pitch != 1.0f) {
+                if (pitch != 1.0f && !noParams) {
                     try {
-                        player.playbackParams = PlaybackParams().setPitch(pitch).setSpeed(1.0f)
-                    } catch (_: Throwable) {
+                        out.playbackParams = PlaybackParams().setPitch(pitch).setSpeed(1.0f)
+                    } catch (e: Throwable) {
+                        log.append("PlaybackParams: ${e.message}. ")
                     }
                 }
-                track = player
-                player.play()
+                track = out
+                out.play()
                 var frames = 0L
+                var genMs = 0L
+                var writeErrors = 0
+                var peak = 0f
+                var clipped = 0
+                var bad = 0
+                val rawAll = if (save) ArrayList<FloatArray>() else null
                 val pause = FloatArray(rate * 18 / 100) // pausa natural entre frases
+                val write: (FloatArray) -> Unit = { data ->
+                    var off = 0
+                    if (pcm16) {
+                        val sh = ShortArray(data.size) { (max(-1f, min(1f, data[it])) * 32767f).toInt().toShort() }
+                        while (off < sh.size && !stopSpeech) {
+                            val k = out.write(sh, off, min(4096, sh.size - off), AudioTrack.WRITE_BLOCKING)
+                            if (k < 0) {
+                                writeErrors++
+                                log.append("write=$k. ")
+                                break
+                            }
+                            if (k == 0) break
+                            off += k
+                        }
+                    } else {
+                        while (off < data.size && !stopSpeech) {
+                            val k = out.write(data, off, min(4096, data.size - off), AudioTrack.WRITE_BLOCKING)
+                            if (k < 0) {
+                                writeErrors++
+                                log.append("write=$k. ")
+                                break
+                            }
+                            if (k == 0) break
+                            off += k
+                        }
+                    }
+                    frames += data.size
+                }
                 step("hablar con la voz $ttsId")
                 val sentences = splitSentences(forSpeech(text))
                 for ((n, sentence) in sentences.withIndex()) {
@@ -506,35 +558,62 @@ class OliverAiPlugin : Plugin() {
                         gen.referenceAudio = reference
                         gen.referenceSampleRate = referenceRate
                     }
+                    val t0 = SystemClock.elapsedRealtime()
                     val audio = voice.generateWithConfig(if (gen.phonemeCodepoints != null) "" else sentence, gen)
+                    genMs += SystemClock.elapsedRealtime() - t0
                     val samples = audio.samples
+                    if (audio.sampleRate != rate) log.append("El motor devolvió ${audio.sampleRate} Hz y se reproduce a $rate Hz. ")
+                    for (v in samples) {
+                        if (v.isNaN() || v.isInfinite()) bad++
+                        val av = abs(v)
+                        if (av > peak) peak = av
+                        if (av > 1f) clipped++
+                    }
+                    rawAll?.add(samples.copyOf())
                     if (stopSpeech) break
-                    shape(samples, rate, volume)
-                    if (n > 0) {
-                        player.write(pause, 0, pause.size, AudioTrack.WRITE_BLOCKING)
-                        frames += pause.size
-                    }
-                    var off = 0
-                    while (off < samples.size && !stopSpeech) {
-                        val k = player.write(samples, off, min(4096, samples.size - off), AudioTrack.WRITE_BLOCKING)
-                        if (k <= 0) break
-                        off += k
-                    }
-                    frames += samples.size
+                    if (!raw) shape(samples, rate, volume)
+                    if (n > 0) write(pause)
+                    write(samples)
                 }
                 stepDone()
                 // Un poco de silencio al final empuja las últimas palabras (si no, quedaban esperando en el búfer).
-                if (!stopSpeech && frames > 0) {
-                    val tail = FloatArray(rate / 4)
-                    player.write(tail, 0, tail.size, AudioTrack.WRITE_BLOCKING)
-                    frames += tail.size
-                }
+                if (!stopSpeech && frames > 0) write(FloatArray(rate / 4))
                 // Esperar a que termine de sonar.
                 val deadline = SystemClock.elapsedRealtime() + (frames * 1000 / rate * 1.3).toLong() + 1500
-                while (!stopSpeech && player.playbackHeadPosition < frames && SystemClock.elapsedRealtime() < deadline) {
+                while (!stopSpeech && out.playbackHeadPosition < frames && SystemClock.elapsedRealtime() < deadline) {
                     Thread.sleep(30)
                 }
-                call.resolve()
+                diag.put("engine", ttsKind)
+                diag.put("sampleRate", rate)
+                diag.put("trackRate", out.sampleRate)
+                diag.put("deviceRate", AudioTrack.getNativeOutputSampleRate(android.media.AudioManager.STREAM_MUSIC))
+                diag.put("format", (if (pcm16) "PCM 16 bits" else "PCM float") + (if (assistant) ", canal asistente" else ", canal multimedia"))
+                diag.put("bufferMs", out.bufferSizeInFrames * 1000 / rate)
+                diag.put("underruns", if (Build.VERSION.SDK_INT >= 24) out.underrunCount else -1)
+                diag.put("writeErrors", writeErrors)
+                diag.put("audioMs", frames * 1000 / rate)
+                diag.put("genMs", genMs)
+                diag.put("peak", peak.toDouble())
+                diag.put("clipped", clipped)
+                diag.put("badSamples", bad)
+                diag.put("shape", !raw)
+                diag.put("playbackParams", pitch != 1.0f && !noParams)
+                try {
+                    diag.put("output", out.routedDevice?.productName?.toString() ?: "")
+                } catch (_: Throwable) {
+                }
+                if (rawAll != null) {
+                    val total = rawAll.sumOf { it.size }
+                    val all = FloatArray(total)
+                    var at = 0
+                    for (c in rawAll) {
+                        System.arraycopy(c, 0, all, at, c.size)
+                        at += c.size
+                    }
+                    diag.put("saved", saveToDownloads(all, rate, "criollenglish-${ttsKind}-${System.currentTimeMillis() / 1000}.wav"))
+                }
+                diag.put("log", log.toString())
+                call.resolve(diag)
             } catch (e: Throwable) {
                 stepDone()
                 call.reject("No se pudo hablar: ${e.message}")
@@ -547,6 +626,29 @@ class OliverAiPlugin : Plugin() {
                 track = null
             }
         }
+    }
+
+    /** Guarda el audio crudo del motor (antes de cualquier procesamiento) en Descargas/CriollEnglish. */
+    private fun saveToDownloads(x: FloatArray, rate: Int, name: String): String {
+        val bb = java.nio.ByteBuffer.allocate(44 + x.size * 4).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        bb.put("RIFF".toByteArray()).putInt(36 + x.size * 4).put("WAVE".toByteArray())
+        bb.put("fmt ".toByteArray()).putInt(16).putShort(3).putShort(1).putInt(rate).putInt(rate * 4).putShort(4).putShort(32)
+        bb.put("data".toByteArray()).putInt(x.size * 4)
+        for (v in x) bb.putFloat(v)
+        val bytes = bb.array()
+        if (Build.VERSION.SDK_INT >= 29) {
+            val values = android.content.ContentValues()
+            values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, name)
+            values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "audio/wav")
+            values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS + "/CriollEnglish")
+            val uri = context.contentResolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: throw IllegalStateException("No se pudo crear el archivo en Descargas")
+            context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+            return "Descargas/CriollEnglish/$name"
+        }
+        val f = File(context.getExternalFilesDir(null), name)
+        f.writeBytes(bytes)
+        return f.absolutePath
     }
 
     /**

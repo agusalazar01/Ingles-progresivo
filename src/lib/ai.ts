@@ -20,7 +20,7 @@ interface OliverAiPlugin {
   remove(o: { id: string }): Promise<void>;
   readText(o: { id: string; name: string }): Promise<{ text: string }>;
   loadVoice(o: { id: string; kind: string; espeak: string; noise?: number; noiseW?: number }): Promise<{ speakers: number; sampleRate: number }>;
-  speak(o: { text: string; speaker: number; speed?: number; pitch?: number; volume?: number; reference?: string }): Promise<void>;
+  speak(o: { text: string; speaker: number; speed?: number; pitch?: number; volume?: number; reference?: string } & AudioTest): Promise<AudioDiag>;
   recordReference(o: { id: string; seconds: number }): Promise<{ seconds: number }>;
   stopSpeaking(): Promise<void>;
   loadEar(o: { id: string }): Promise<void>;
@@ -36,6 +36,44 @@ interface OliverAiPlugin {
   addListener(event: 'level', fn: (e: { level: number }) => void): Promise<PluginListenerHandle>;
   addListener(event: 'speechStart', fn: () => void): Promise<PluginListenerHandle>;
   addListener(event: 'recording', fn: (e: { progress: number }) => void): Promise<PluginListenerHandle>;
+}
+
+/** Pruebas del laboratorio de audio (de a una variable por vez). */
+export interface AudioTest {
+  /** Sin el procesamiento shape() (filtro, suavizado y volumen). */
+  raw?: boolean;
+  /** Sin PlaybackParams (tono). */
+  noParams?: boolean;
+  /** Tamaño del búfer en ms (0 = el normal, ~200 ms). */
+  bufferMs?: number;
+  /** Reproducir en PCM de 16 bits en vez de float. */
+  pcm16?: boolean;
+  /** Guardar el audio crudo del motor en Descargas/CriollEnglish. */
+  save?: boolean;
+  /** Otro canal de audio (asistente), por si el teléfono le aplica efectos al de multimedia. */
+  assistant?: boolean;
+}
+
+/** Lo que informa el teléfono después de hablar. */
+export interface AudioDiag {
+  engine?: string;
+  sampleRate?: number;
+  trackRate?: number;
+  deviceRate?: number;
+  format?: string;
+  bufferMs?: number;
+  underruns?: number;
+  writeErrors?: number;
+  audioMs?: number;
+  genMs?: number;
+  peak?: number;
+  clipped?: number;
+  badSamples?: number;
+  shape?: boolean;
+  playbackParams?: boolean;
+  output?: string;
+  saved?: string;
+  log?: string;
 }
 
 export interface AiStatus {
@@ -266,8 +304,9 @@ export async function loadVoicePack(pack: Pack, speaker: number, tune = tuneFor(
   await OliverAi.loadVoice({ id: pack.id, kind: pack.engine ?? 'piper', espeak: pack.espeak ?? 'en', noise: tune.noise, noiseW: tune.noiseW });
 }
 
-export async function speakWith(pack: Pack, speaker: number, text: string, tune = tuneFor(pack.id, speaker)) {
-  await OliverAi.speak({
+export async function speakWith(pack: Pack, speaker: number, text: string, tune = tuneFor(pack.id, speaker), test: AudioTest = {}) {
+  return OliverAi.speak({
+    ...test,
     text,
     speaker: pack.engine === 'pocket' ? 0 : speaker,
     speed: tune.speed,
@@ -275,6 +314,34 @@ export async function speakWith(pack: Pack, speaker: number, text: string, tune 
     volume: tune.volume,
     reference: pack.engine === 'pocket' ? referenceFor(speaker) : undefined,
   });
+}
+
+export const LAB_TEXT = "G'day mate! I'm Oliver. How are you going today? Reckon we'll have a good yarn.";
+
+/** Corre una prueba del laboratorio: carga la voz, habla y la libera. */
+export async function labTest(pack: Pack, speaker: number, test: AudioTest): Promise<AudioDiag> {
+  const t = tuneFor(pack.id, speaker);
+  await loadVoicePack(pack, speaker, t);
+  try {
+    return await speakWith(pack, speaker, LAB_TEXT, t, test);
+  } finally {
+    await OliverAi.unloadAll().catch(() => {});
+  }
+}
+
+/** Resumen legible de una prueba. */
+export function diagText(name: string, d: AudioDiag): string {
+  return [
+    `${name} · ${d.engine}`,
+    `motor ${d.sampleRate} Hz → reproductor ${d.trackRate} Hz → salida del teléfono ${d.deviceRate} Hz (${d.output || 'parlante'})`,
+    `${d.format}, búfer ${d.bufferMs} ms, cortes (underruns) ${d.underruns}, errores de escritura ${d.writeErrors}`,
+    `audio ${d.audioMs} ms, generado en ${d.genMs} ms, pico ${d.peak?.toFixed(2)}, muestras >1: ${d.clipped}, inválidas: ${d.badSamples}`,
+    `shape ${d.shape ? 'sí' : 'no'}, PlaybackParams ${d.playbackParams ? 'sí' : 'no'}`,
+    d.saved ? `guardado en ${d.saved}` : '',
+    d.log ? `aviso: ${d.log}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 // ───────────── la llamada ─────────────
