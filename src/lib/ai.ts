@@ -59,7 +59,7 @@ export interface Pack {
   license: string;
 }
 
-const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-1/';
+const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-2/';
 const HF = 'https://huggingface.co/litert-community/';
 const MB = 1024 * 1024;
 
@@ -71,10 +71,10 @@ export const PACKS: Pack[] = [
     espeak: 'en-gb-x-rp',
     title: 'Piper australiano',
     desc: 'Acento australiano de verdad: 10 narradores australianos de LibriVox. Liviana y rápida.',
-    mb: 65,
+    mb: 74,
     license: 'Grabaciones de dominio público (LibriVox); código CC0.',
     files: [
-      { url: REL + 'piper-au-model.onnx', name: 'model.onnx', size: 63 * MB },
+      { url: REL + 'piper-au-model.onnx', name: 'model.onnx', size: 74 * MB },
       { url: REL + 'piper-au-tokens.txt', name: 'tokens.txt', size: 1 },
       { url: REL + 'piper-au-speakers.json', name: 'speakers.json', size: 1 },
     ],
@@ -86,7 +86,7 @@ export const PACKS: Pack[] = [
     espeak: 'en-gb',
     title: 'Kokoro',
     desc: 'La voz más natural, pero con acento británico o estadounidense (no tiene australiano). Un poco más lenta.',
-    mb: 95,
+    mb: 134,
     license: 'Apache-2.0.',
     speakers: [
       { id: 9, name: 'George (británico)' },
@@ -95,7 +95,7 @@ export const PACKS: Pack[] = [
       { id: 6, name: 'Michael (estadounidense)' },
     ],
     files: [
-      { url: REL + 'kokoro-model.onnx', name: 'model.onnx', size: 88 * MB },
+      { url: REL + 'kokoro-model.onnx', name: 'model.onnx', size: 128 * MB },
       { url: REL + 'kokoro-voices.bin', name: 'voices.bin', size: 6 * MB },
       { url: REL + 'kokoro-tokens.txt', name: 'tokens.txt', size: 1 },
     ],
@@ -105,12 +105,12 @@ export const PACKS: Pack[] = [
     kind: 'ear',
     title: 'Moonshine Tiny',
     desc: 'Entiende lo que decís en inglés sin internet. Muy liviano.',
-    mb: 45,
+    mb: 42,
     license: 'MIT.',
     files: [
-      { url: REL + 'moonshine-encoder_model.ort', name: 'encoder_model.ort', size: 20 * MB },
-      { url: REL + 'moonshine-decoder_model_merged.ort', name: 'decoder_model_merged.ort', size: 25 * MB },
-      { url: REL + 'moonshine-tokens.txt', name: 'tokens.txt', size: 1 },
+      { url: REL + 'moonshine-encoder_model.ort', name: 'encoder_model.ort', size: 13 * MB },
+      { url: REL + 'moonshine-decoder_model_merged.ort', name: 'decoder_model_merged.ort', size: 29 * MB },
+      { url: REL + 'moonshine-tokens.txt', name: 'tokens.txt', size: 1 * MB },
     ],
   },
   {

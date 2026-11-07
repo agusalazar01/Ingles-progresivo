@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepara los modelos de voz y oído para la llamada con Oliver (se corre en GitHub Actions).
 
-Deja en ./modelos/ los archivos que la app baja una sola vez desde el Release «modelos-1»:
+Deja en ./modelos/ los archivos que la app baja una sola vez desde el Release «modelos-2»:
 
 - Piper australiano (DataCraftsmanAustralia/piper-en_AU-librivox-medium): se le agregan los datos
   que necesita sherpa-onnx (como hace scripts/piper/add_meta_data.py de sherpa-onnx) y tokens.txt.
@@ -87,6 +87,28 @@ def piper_au():
 
     speakers = config.get("speaker_id_map") or {}
     ordered = [name for name, _ in sorted(speakers.items(), key=lambda kv: kv[1])]
+    # Nombres lindos (angus, banjo, matilda…) desde voice_to_speaker.yaml, si se pueden leer.
+    friendly = {}
+    try:
+        import yaml
+
+        data = yaml.safe_load(urllib.request.urlopen(base + "voice_to_speaker.yaml").read().decode("utf-8"))
+        print("voice_to_speaker.yaml:", data)
+        if isinstance(data, dict) and len(data) == 1 and isinstance(next(iter(data.values())), dict):
+            data = next(iter(data.values()))
+        for nice, v in (data or {}).items():
+            sid = None
+            if isinstance(v, dict):
+                v = v.get("speaker_id", v.get("speaker", v.get("id")))
+            if isinstance(v, int):
+                sid = v
+            elif isinstance(v, str):
+                sid = speakers.get(v, int(v) if v.isdigit() else None)
+            if sid is not None and 0 <= sid < max(1, len(ordered)) and sid not in friendly:
+                friendly[sid] = str(nice)
+    except Exception as e:  # noqa: BLE001
+        print("Sin nombres lindos:", e)
+    ordered = [friendly.get(i, n) for i, n in enumerate(ordered)]
     json.dump(
         {"espeak": voice, "speakers": ordered or ["default"], "license": info.get("cardData", {}).get("license")},
         open(os.path.join(OUT, "piper-au-speakers.json"), "w", encoding="utf-8"),
