@@ -7,6 +7,7 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
+import android.os.Build
 import android.os.SystemClock
 import com.getcapacitor.JSArray
 import com.getcapacitor.JSObject
@@ -48,6 +49,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.Executors
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -358,9 +360,17 @@ class OliverAiPlugin : Plugin() {
                             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                             .build(),
                     )
-                    .setBufferSizeInBytes(max(minBuf, rate * 4))
+                    // Búfer chico (~0,2 s): con uno grande, Android esperaba a llenarlo antes de sonar y el final
+                    // de cada frase quedaba trabado hasta cortar (la voz salía entrecortada y «robótica»).
+                    .setBufferSizeInBytes(max(minBuf * 2, rate / 5 * 4))
                     .setTransferMode(AudioTrack.MODE_STREAM)
                     .build()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    try {
+                        player.setStartThresholdInFrames(min(player.bufferSizeInFrames, rate / 20))
+                    } catch (_: Throwable) {
+                    }
+                }
                 track = player
                 player.play()
                 var frames = 0L
@@ -383,6 +393,13 @@ class OliverAiPlugin : Plugin() {
                     val audio = voice.generateWithConfig("", gen)
                     val samples = audio.samples
                     if (stopSpeech) break
+                    // Piper sale muy bajito: se sube el volumen hasta un pico de 0,9 (como mucho ×3).
+                    var peak = 0f
+                    for (v in samples) peak = max(peak, abs(v))
+                    if (peak > 0.01f) {
+                        val gain = min(3f, 0.9f / peak)
+                        for (j in samples.indices) samples[j] *= gain
+                    }
                     var off = 0
                     while (off < samples.size && !stopSpeech) {
                         val n = player.write(samples, off, min(4096, samples.size - off), AudioTrack.WRITE_BLOCKING)
@@ -392,6 +409,12 @@ class OliverAiPlugin : Plugin() {
                     frames += samples.size
                 }
                 stepDone()
+                // Un poco de silencio al final empuja las últimas palabras (si no, quedaban esperando en el búfer).
+                if (!stopSpeech && frames > 0) {
+                    val tail = FloatArray(rate / 4)
+                    player.write(tail, 0, tail.size, AudioTrack.WRITE_BLOCKING)
+                    frames += tail.size
+                }
                 // Esperar a que termine de sonar.
                 val deadline = SystemClock.elapsedRealtime() + frames * 1000 / rate + 1500
                 while (!stopSpeech && player.playbackHeadPosition < frames && SystemClock.elapsedRealtime() < deadline) {
