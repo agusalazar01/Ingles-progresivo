@@ -58,6 +58,13 @@ jobs:
           echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
           echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> "$GITHUB_ENV"
 
+      - name: Bajar las librerías de la IA sin internet (sherpa-onnx y piper-phonemize)
+        run: |
+          mkdir -p android/app/libs
+          curl -fsSL --retry 5 -o android/app/libs/sherpa-onnx-2.0.1.aar https://github.com/k2-fsa/sherpa-onnx/releases/download/v2.0.1/sherpa-onnx-2.0.1.aar
+          curl -fsSL --retry 5 -o android/app/libs/piper-phonemize-1.5.9.aar https://github.com/csukuangfj/piper-phonemize/releases/download/v1.5.9/piper-phonemize-1.5.9.aar
+          ls -lh android/app/libs
+
       - name: Compilar APK
         working-directory: android
         run: |
@@ -89,6 +96,39 @@ jobs:
           body: |
             Descargá criollenglish.apk desde el celular e instalala encima de la anterior: se conserva tu progreso.
           files: criollenglish.apk
+
+  # Voces (Piper australiano, Kokoro) y oído (Moonshine) para la llamada con Oliver, listos para que la app
+  # los baje una sola vez. Se arman solo la primera vez (si ya existe el Release «modelos-1», no hace nada).
+  modelos:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: ¿Ya están preparados?
+        id: check
+        run: |
+          if gh release view modelos-1 >/dev/null 2>&1; then echo "listo=true" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/setup-python@v6
+        if: steps.check.outputs.listo != 'true'
+        with:
+          python-version: '3.12'
+
+      - name: Preparar los modelos
+        if: steps.check.outputs.listo != 'true'
+        run: |
+          pip install onnx
+          python3 scripts/preparar-modelos.py
+
+      - name: Subirlos al Release «modelos-1»
+        if: steps.check.outputs.listo != 'true'
+        run: |
+          gh release create modelos-1 modelos/* --prerelease --latest=false \
+            --title "Modelos de voz para la llamada con Oliver" \
+            --notes "Archivos que la app baja una sola vez (Ajustes › Voces e IA). No es una versión de la app."
 
   web:
     needs: apk

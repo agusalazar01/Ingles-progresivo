@@ -1,0 +1,327 @@
+import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core';
+import { getState } from './store';
+
+/**
+ * IA sin internet y gratis para la llamada con Oliver.
+ *
+ * Tres piezas, cada una opcional y descargable desde Ajustes › Voces e IA:
+ * - Voz de Oliver (Piper australiano o Kokoro), con sherpa-onnx.
+ * - Oído (Moonshine Tiny), con sherpa-onnx.
+ * - Charla (LFM2.5 o Qwen3), con LiteRT-LM de Google.
+ *
+ * Se bajan una sola vez y después funcionan sin conexión. Solo se cargan en memoria al atender la
+ * llamada y se liberan al cortar: fuera de la llamada no usan procesador, memoria ni batería.
+ * Lo que decís se procesa en el teléfono y no se manda a ningún lado.
+ */
+interface OliverAiPlugin {
+  status(): Promise<{ installed: Record<string, number>; freeBytes: number; loaded: string[] }>;
+  download(o: { id: string; files: { url: string; name: string; size: number }[] }): Promise<void>;
+  cancelDownload(o: { id: string }): Promise<void>;
+  remove(o: { id: string }): Promise<void>;
+  readText(o: { id: string; name: string }): Promise<{ text: string }>;
+  loadVoice(o: { id: string; kind: string; espeak: string }): Promise<{ speakers: number; sampleRate: number }>;
+  speak(o: { text: string; speaker: number; speed?: number }): Promise<void>;
+  stopSpeaking(): Promise<void>;
+  loadEar(o: { id: string }): Promise<void>;
+  listen(o: { maxMs?: number; silenceMs?: number; waitMs?: number }): Promise<{ text: string }>;
+  stopListening(): Promise<void>;
+  loadBrain(o: { id: string; file: string; system: string }): Promise<void>;
+  resetChat(o: { system: string }): Promise<void>;
+  chat(o: { text: string }): Promise<{ text: string }>;
+  cancelChat(): Promise<void>;
+  unloadAll(): Promise<void>;
+  addListener(event: 'download', fn: (e: { id: string; progress?: number; done?: boolean; error?: string }) => void): Promise<PluginListenerHandle>;
+  addListener(event: 'token', fn: (e: { text: string }) => void): Promise<PluginListenerHandle>;
+  addListener(event: 'level', fn: (e: { level: number }) => void): Promise<PluginListenerHandle>;
+  addListener(event: 'speechStart', fn: () => void): Promise<PluginListenerHandle>;
+}
+
+export const OliverAi = registerPlugin<OliverAiPlugin>('OliverAi');
+
+/** La IA solo existe en la app de Android (en la web se usa la voz y el micrófono del navegador). */
+export const aiAvailable = () => Capacitor.getPlatform() === 'android';
+
+export type PackKind = 'voice' | 'ear' | 'brain';
+export interface Pack {
+  id: string;
+  kind: PackKind;
+  title: string;
+  desc: string;
+  /** Tamaño aproximado en MB. */
+  mb: number;
+  files: { url: string; name: string; size: number }[];
+  engine?: 'piper' | 'kokoro';
+  espeak?: string;
+  /** Voces fijas (Kokoro). Piper las lee de speakers.json. */
+  speakers?: { id: number; name: string }[];
+  /** Archivo del modelo de charla. */
+  file?: string;
+  license: string;
+}
+
+const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-1/';
+const HF = 'https://huggingface.co/litert-community/';
+const MB = 1024 * 1024;
+
+export const PACKS: Pack[] = [
+  {
+    id: 'piper-au',
+    kind: 'voice',
+    engine: 'piper',
+    espeak: 'en-gb-x-rp',
+    title: 'Piper australiano',
+    desc: 'Acento australiano de verdad: 10 narradores australianos de LibriVox. Liviana y rápida.',
+    mb: 65,
+    license: 'Grabaciones de dominio público (LibriVox); código CC0.',
+    files: [
+      { url: REL + 'piper-au-model.onnx', name: 'model.onnx', size: 63 * MB },
+      { url: REL + 'piper-au-tokens.txt', name: 'tokens.txt', size: 1 },
+      { url: REL + 'piper-au-speakers.json', name: 'speakers.json', size: 1 },
+    ],
+  },
+  {
+    id: 'kokoro',
+    kind: 'voice',
+    engine: 'kokoro',
+    espeak: 'en-gb',
+    title: 'Kokoro',
+    desc: 'La voz más natural, pero con acento británico o estadounidense (no tiene australiano). Un poco más lenta.',
+    mb: 95,
+    license: 'Apache-2.0.',
+    speakers: [
+      { id: 9, name: 'George (británico)' },
+      { id: 10, name: 'Lewis (británico)' },
+      { id: 5, name: 'Adam (estadounidense)' },
+      { id: 6, name: 'Michael (estadounidense)' },
+    ],
+    files: [
+      { url: REL + 'kokoro-model.onnx', name: 'model.onnx', size: 88 * MB },
+      { url: REL + 'kokoro-voices.bin', name: 'voices.bin', size: 6 * MB },
+      { url: REL + 'kokoro-tokens.txt', name: 'tokens.txt', size: 1 },
+    ],
+  },
+  {
+    id: 'moonshine',
+    kind: 'ear',
+    title: 'Moonshine Tiny',
+    desc: 'Entiende lo que decís en inglés sin internet. Muy liviano.',
+    mb: 45,
+    license: 'MIT.',
+    files: [
+      { url: REL + 'moonshine-encoder_model.ort', name: 'encoder_model.ort', size: 20 * MB },
+      { url: REL + 'moonshine-decoder_model_merged.ort', name: 'decoder_model_merged.ort', size: 25 * MB },
+      { url: REL + 'moonshine-tokens.txt', name: 'tokens.txt', size: 1 },
+    ],
+  },
+  {
+    id: 'lfm25',
+    kind: 'brain',
+    title: 'LFM2.5 1.2B (Liquid AI)',
+    desc: 'La más rápida y liviana. Contesta bien en charlas cortas. (LFM3 todavía no está en el formato para celulares.)',
+    mb: 1250,
+    file: 'model.litertlm',
+    license: 'Licencia abierta LFM 1.0: gratis para uso personal.',
+    files: [{ url: HF + 'LFM2.5-1.2B-Instruct/resolve/main/LFM2.5-1.2B-Instruct_int8.litertlm', name: 'model.litertlm', size: 1250 * MB }],
+  },
+  {
+    id: 'qwen3',
+    kind: 'brain',
+    title: 'Qwen3 1.7B (Alibaba)',
+    desc: 'Un poco más inteligente, pero más pesada y lenta. Necesita un celular con 8 GB de RAM.',
+    mb: 2100,
+    file: 'model.litertlm',
+    license: 'Apache-2.0.',
+    files: [{ url: HF + 'Qwen3-1.7B/resolve/main/Qwen3_1.7B.litertlm', name: 'model.litertlm', size: 2100 * MB }],
+  },
+];
+
+export const packById = (id: string) => PACKS.find((p) => p.id === id);
+
+export async function aiStatus() {
+  if (!aiAvailable()) return { installed: {} as Record<string, number>, freeBytes: 0, loaded: [] as string[] };
+  return OliverAi.status();
+}
+
+/** Nombres de las voces de un paquete (Piper las trae en speakers.json). */
+export async function packSpeakers(pack: Pack): Promise<{ id: number; name: string }[]> {
+  if (pack.speakers) return pack.speakers;
+  try {
+    const { text } = await OliverAi.readText({ id: pack.id, name: 'speakers.json' });
+    const names: string[] = JSON.parse(text).speakers ?? [];
+    return names.map((n, i) => ({ id: i, name: prettyName(n, i) }));
+  } catch {
+    return [{ id: 0, name: 'Voz 1' }];
+  }
+}
+
+const prettyName = (n: string, i: number) => {
+  const clean = n.replace(/[_-]+/g, ' ').trim();
+  return clean && clean !== 'default' ? `${i + 1}. ${clean[0].toUpperCase()}${clean.slice(1)}` : `Voz ${i + 1}`;
+};
+
+// ───────────── la llamada ─────────────
+
+export interface CallAi {
+  voice: Pack | null;
+  ear: Pack | null;
+  brain: Pack | null;
+  speaker: number;
+}
+
+/** Qué IA quedó elegida y descargada (lo que no esté descargado se reemplaza por lo del teléfono). */
+export async function chosenAi(): Promise<CallAi> {
+  const none: CallAi = { voice: null, ear: null, brain: null, speaker: 0 };
+  if (!aiAvailable()) return none;
+  const a = getState().settings.ai;
+  try {
+    const { installed } = await OliverAi.status();
+    const ok = (id: string) => (id in installed ? packById(id) ?? null : null);
+    return { voice: ok(a.voice), ear: ok(a.ear), brain: ok(a.brain), speaker: a.speaker };
+  } catch {
+    return none;
+  }
+}
+
+/** Carga en memoria lo elegido. Devuelve lo que se pudo cargar. */
+export async function loadCallAi(ai: CallAi, system: string): Promise<CallAi & { errors: string[] }> {
+  const out = { ...ai, errors: [] as string[] };
+  if (ai.voice) {
+    try {
+      await OliverAi.loadVoice({ id: ai.voice.id, kind: ai.voice.engine ?? 'piper', espeak: ai.voice.espeak ?? 'en-gb' });
+    } catch (e) {
+      out.errors.push(String((e as Error).message ?? e));
+      out.voice = null;
+    }
+  }
+  if (ai.ear) {
+    try {
+      await OliverAi.loadEar({ id: ai.ear.id });
+    } catch (e) {
+      out.errors.push(String((e as Error).message ?? e));
+      out.ear = null;
+    }
+  }
+  if (ai.brain) {
+    try {
+      await OliverAi.loadBrain({ id: ai.brain.id, file: ai.brain.file ?? 'model.litertlm', system });
+    } catch (e) {
+      out.errors.push(String((e as Error).message ?? e));
+      out.brain = null;
+    }
+  }
+  return out;
+}
+
+/** Libera todo al cortar (memoria, procesador y micrófono). */
+export function releaseCallAi() {
+  if (!aiAvailable()) return;
+  OliverAi.unloadAll().catch(() => {});
+}
+
+/** Lo que dice el modelo, sin marcas de pensamiento, emojis ni acotaciones. */
+export function cleanReply(text: string): string {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/g, '')
+    .replace(/<\/?think>/g, '')
+    .replace(/\*[^*]{0,40}\*/g, '')
+    .replace(/^\s*(Oliver|Assistant)\s*:\s*/i, '')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Corta la respuesta en un máximo de frases (para que Oliver no dé discursos). */
+export function shortReply(text: string, max = 3): string {
+  const parts = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [text];
+  return parts.slice(0, max).map((p) => p.trim()).join(' ');
+}
+
+const OLIVER = `You are Oliver, a friendly Australian bloke in his thirties from the outback who works at a winery.
+You are on a video call with a Spanish speaker (probably from Uruguay) who is learning English.
+Speak casual Australian English (mate, no worries, reckon, arvo) but keep it easy to understand.
+Rules:
+- Answer in 1 to 3 short sentences, then usually ask one simple question to keep the chat going.
+- Never use emojis, lists, asterisks or stage directions. Only the words you say out loud.
+- If they make a grammar mistake, reply naturally and then add a quick friendly correction like: "By the way, we say 'I went', not 'I goed'."
+- If they speak Spanish or get stuck, help them with a short English phrase they can use.`;
+
+/** Instrucciones para una llamada con temática (roleplay de la unidad). */
+export function roleplayPrompt(o: { scene: string; goal: string; unit: string; lines: string[] }) {
+  return `${OLIVER}
+
+This call is a role-play. Scene: ${o.scene}. Goal for the learner: ${o.goal}.
+Grammar topic they are practising: ${o.unit}. Use it often in your questions so they have to use it in their answers.
+Stay inside this scene the whole call. Here is the planned script for your lines, use it as a guide but react to what they actually say:
+${o.lines.map((l) => `- ${l}`).join('\n')}
+When the goal is done or after about 8 exchanges, wrap up and say goodbye.`;
+}
+
+/** Instrucciones para la llamada libre. */
+export const FREE_PROMPT = `${OLIVER}
+
+This is a free chat: talk about whatever they want (life in Australia, wine, travel, Uruguay, work, hobbies…).
+Start by asking how they're going and what they'd like to chat about.`;
+
+/** Pedido final: consejos para el repaso, en español. */
+export const FEEDBACK_REQUEST = `The call is over. Now, in Spanish from Uruguay (voseo), give the learner feedback on their English in this call.
+Write exactly 3 lines, each starting with "- ": one thing they did well, and two concrete mistakes or improvements with the correct English phrase in quotes.
+No greetings, nothing else.`;
+
+// ───────────── descargas (siguen aunque cambies de pantalla) ─────────────
+
+type DlState = Record<string, { progress: number; error?: string }>;
+let downloads: DlState = {};
+const dlListeners = new Set<() => void>();
+let dlHooked = false;
+const omit = (st: DlState, id: string): DlState => Object.fromEntries(Object.entries(st).filter(([k]) => k !== id));
+const emitDl = (next: DlState) => {
+  downloads = next;
+  dlListeners.forEach((l) => l());
+};
+
+function hookDownloads() {
+  if (dlHooked || !aiAvailable()) return;
+  dlHooked = true;
+  OliverAi.addListener('download', (e) => {
+    if (e.done) {
+      emitDl(omit(downloads, e.id));
+    } else if (e.error) emitDl({ ...downloads, [e.id]: { progress: downloads[e.id]?.progress ?? 0, error: e.error } });
+    else emitDl({ ...downloads, [e.id]: { progress: e.progress ?? 0 } });
+  });
+}
+
+export function subscribeDownloads(fn: () => void) {
+  hookDownloads();
+  dlListeners.add(fn);
+  return () => dlListeners.delete(fn);
+}
+export const getDownloads = () => downloads;
+
+export async function startDownload(pack: Pack): Promise<boolean> {
+  hookDownloads();
+  emitDl({ ...downloads, [pack.id]: { progress: 0 } });
+  try {
+    await OliverAi.download({ id: pack.id, files: pack.files });
+    emitDl(omit(downloads, pack.id));
+    return true;
+  } catch (e) {
+    const msg = String((e as Error).message ?? e);
+    if (msg.includes('cancelado')) {
+      emitDl(omit(downloads, pack.id));
+    } else emitDl({ ...downloads, [pack.id]: { progress: downloads[pack.id]?.progress ?? 0, error: msg } });
+    return false;
+  }
+}
+
+export const cancelDownload = (id: string) => OliverAi.cancelDownload({ id });
+export const removePack = (id: string) => OliverAi.remove({ id });
+
+/** Prueba una voz (se carga solo mientras suena y después se libera). */
+export async function tryVoice(pack: Pack, speaker: number) {
+  await OliverAi.loadVoice({ id: pack.id, kind: pack.engine ?? 'piper', espeak: pack.espeak ?? 'en-gb' });
+  try {
+    await OliverAi.speak({ text: "G'day mate! I'm Oliver. How are you going today?", speaker });
+  } finally {
+    await OliverAi.unloadAll().catch(() => {});
+  }
+}

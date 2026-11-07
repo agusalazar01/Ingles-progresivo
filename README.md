@@ -4,6 +4,19 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 0.8
+
+- **Llamada tipo selfie**: Oliver más grande, con más outback y menos cielo, y el brazo bajando hacia la cámara (como una videollamada). El micrófono grande queda siempre a mano y se sigue abriendo solo cuando Oliver termina de hablar; lo demás (repetir, pista, escribir) sigue detrás de la flechita.
+- **IA sin internet y gratis** (Ajustes › Voces e IA, solo en Android). Cada parte se baja una sola vez y se elige cuál usar:
+  - Voz de Oliver: **Piper australiano** (10 narradores australianos de LibriVox) o **Kokoro** (británico), además de la voz del teléfono.
+  - Oído: **Moonshine Tiny**, además del reconocimiento del teléfono.
+  - Charla: **LFM2.5 1.2B** (Liquid AI) o **Qwen3 1.7B**, con LiteRT-LM de Google.
+  - Todo se carga al atender y se libera al cortar: fuera de la llamada no usa memoria, procesador ni batería. Nada sale del teléfono.
+- **Las llamadas mantienen su temática**: con IA, Oliver responde a lo que digas pero siempre dentro del roleplay de la unidad, y al final te da 3 consejos sobre tu inglés.
+- **Llamada libre**: pestaña «Llamar» para charlar con Oliver de cualquier tema (necesita una IA de charla descargada).
+
+Los modelos de voz y oído se preparan en GitHub Actions (`scripts/preparar-modelos.py`) y quedan en el Release «modelos-1»; las IA de charla se bajan de Hugging Face (litert-community).
+
 ## Qué hace la versión 0.7
 
 Se centra en una sola cosa: **armar oraciones correctas, rápido y sin traducir en la cabeza**. La escucha y la conversación se practican fuera de la app.
@@ -69,4 +82,4 @@ Para compilar en tu computadora necesitás Android Studio: `npx cap open android
 
 ## Próximos pasos
 
-Más contenido por unidad, vocabulario por bandas de frecuencia, lectura graduada y conversación con corrección por IA (en servidor, para no gastar batería).
+Más conversaciones por unidad, gesto con la mano de Oliver, lectura graduada y ajustar la IA de la llamada según cómo ande en el teléfono.

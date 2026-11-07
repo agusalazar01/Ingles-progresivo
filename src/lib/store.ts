@@ -66,6 +66,8 @@ export interface AppState {
     sounds: boolean;
     /** Voz elegida del teléfono (nombre); vacía = según el acento. */
     voice: string;
+    /** IA sin internet para la llamada con Oliver: qué voz, oído y charla usar ('system' = la del teléfono / 'off'). */
+    ai: { voice: string; speaker: number; ear: string; brain: string };
   };
   /** Exámenes de cierre de nivel aprobados. */
   levels: Partial<Record<Level, { date: string; score: number }>>;
@@ -89,7 +91,7 @@ const empty = (): AppState => ({
   tests: [],
   activity: [],
   stats: { reviews: 0, correct: 0 },
-  settings: { accent: 'variado', newWords: 10, theme: 'dark', sounds: true, voice: '' },
+  settings: { accent: 'variado', newWords: 10, theme: 'dark', sounds: true, voice: '', ai: { voice: 'system', speaker: 0, ear: 'system', brain: 'off' } },
   levels: {},
   words: {},
   verbs: {},
@@ -102,7 +104,8 @@ function load(): AppState {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...empty(), ...parsed, settings: { ...empty().settings, ...parsed.settings } };
+      const base = empty().settings;
+      return { ...empty(), ...parsed, settings: { ...base, ...parsed.settings, ai: { ...base.ai, ...parsed.settings?.ai } } };
     }
   } catch {
     /* almacenamiento no disponible */

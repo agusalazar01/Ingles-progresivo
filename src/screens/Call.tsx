@@ -1,13 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
-import { callById, type UserTurn } from '../content/calls';
+import { App as CapApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
+import { callById, type CallScript, type UserTurn } from '../content/calls';
 import { unitById } from '../content/curriculum';
 import { Oliver } from '../components/Oliver';
 import bg from '../assets/call/background.svg?url';
+import arm from '../assets/call/arm.svg?raw';
 import { ack, matchTurn } from '../lib/call';
 import { canListen, listen, say, stopSpeaking } from '../lib/speech';
 import { ringtone, sfxCorrect, sfxHangup, sfxPickup, sfxWrong } from '../lib/sfx';
 import { saveCall } from '../lib/store';
 import { useBack } from '../lib/nav';
+import {
+  chosenAi,
+  cleanReply,
+  FEEDBACK_REQUEST,
+  FREE_PROMPT,
+  loadCallAi,
+  OliverAi,
+  releaseCallAi,
+  roleplayPrompt,
+  shortReply,
+  type CallAi,
+} from '../lib/ai';
 
 interface LogLine {
   who: 'oliver' | 'you';
@@ -19,16 +34,23 @@ interface LogLine {
 
 const SORRY = ['Sorry, what was that?', 'Come again, mate?', "Sorry, I didn't catch that."];
 const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
+const FREE_OPENER = "G'day mate! Good to see ya. How are you going? What do you reckon we have a yarn about today?";
+const BYE_RE = /\b(bye|see ya|see you|gotta go|got to go|hooroo|catch you|talk later|good night)\b/i;
+const MIN_RING = 4300;
 
-/** Llamada con Oliver: suena, atiende, charla (roleplay de la unidad) y al final el repaso. */
-export function Call({ callId, onExit }: { callId: string; onExit: () => void }) {
-  const script = callById(callId)!;
-  const unit = unitById(script.unitId);
-  const [phase, setPhase] = useState<'ringing' | 'talk' | 'review'>('ringing');
+/**
+ * Llamada con Oliver: suena, atiende y charla. Con un guion de la unidad (roleplay) o libre.
+ * Si en Ajustes hay IA descargada, Oliver usa esa voz, ese oído y/o esa charla; si no, la del teléfono.
+ * La IA se carga mientras suena y se libera al cortar.
+ */
+export function Call({ callId, free = false, onExit, onSettings }: { callId?: string; free?: boolean; onExit: () => void; onSettings?: () => void }) {
+  const script: CallScript | undefined = callId ? callById(callId) : undefined;
+  const unit = script ? unitById(script.unitId) : undefined;
+  const [phase, setPhase] = useState<'ringing' | 'talk' | 'review' | 'needs-ai'>('ringing');
+  const [ai, setAi] = useState<CallAi>({ voice: null, ear: null, brain: null, speaker: 0 });
   const [idx, setIdx] = useState(0);
-  const [, setLine] = useState('');
-  const [, setYou] = useState('');
   const [talking, setTalking] = useState(false);
+  const [thinking, setThinking] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [listening, setListening] = useState(false);
   const [hint, setHint] = useState(false);
@@ -36,32 +58,71 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
   const [typed, setTyped] = useState('');
   const [micOk, setMicOk] = useState<boolean | null>(null);
   const [drawer, setDrawer] = useState(false);
-  const [micIdle, setMicIdle] = useState(false);
+  const [level, setLevel] = useState(0);
   const [log, setLog] = useState<LogLine[]>([]);
   const [secs, setSecs] = useState(0);
+  const [ending, setEnding] = useState(false);
   const attempts = useRef(0);
   const alive = useRef(true);
   const lastSaid = useRef('');
+  const aiRef = useRef(ai);
+  aiRef.current = ai;
+  const logRef = useRef(log);
+  logRef.current = log;
 
-  const userTurns = script.turns.filter((t) => 'u' in t).length;
+  const brain = !!ai.brain;
+  const userTurns = script ? script.turns.filter((t) => 'u' in t).length : 0;
   const doneTurns = log.filter((l) => l.who === 'you').length;
+  const maxTurns = script ? Math.max(userTurns + 3, 6) : 0;
 
+  // Suena el teléfono y, mientras tanto, se carga la IA elegida (solo para esta llamada).
   useEffect(() => {
     alive.current = true;
-    canListen().then(setMicOk);
     const stop = ringtone();
-    const t = setTimeout(() => {
+    const t0 = Date.now();
+    (async () => {
+      let chosen = await chosenAi();
+      if (free && !chosen.brain) {
+        stop();
+        setPhase('needs-ai');
+        return;
+      }
+      const opener = script ? (script.turns[0] as { o: string }).o : FREE_OPENER;
+      const system = script
+        ? roleplayPrompt({
+            scene: script.scene,
+            goal: script.goal,
+            unit: unit?.title ?? '',
+            lines: script.turns.filter((t): t is { o: string } => 'o' in t).map((t) => t.o),
+          }) + `\nYou already opened the call by saying: "${opener}"`
+        : FREE_PROMPT + `\nYou already opened the call by saying: "${FREE_OPENER}"`;
+      if (chosen.voice || chosen.ear || chosen.brain) chosen = await loadCallAi(chosen, system);
+      if (!alive.current) return;
+      setAi(chosen);
+      setMicOk(chosen.ear ? true : await canListen());
+      const wait = MIN_RING - (Date.now() - t0);
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      if (!alive.current) return;
       stop();
       sfxPickup();
       setPhase('talk');
-    }, 4300);
+    })();
     return () => {
       alive.current = false;
       stop();
-      clearTimeout(t);
       stopSpeaking();
+      releaseCallAi();
     };
   }, []);
+
+  // Si la app pasa a segundo plano, se corta la llamada (y se libera la IA).
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || phase !== 'talk') return;
+    const l = CapApp.addListener('pause', () => hangUpRef.current());
+    return () => {
+      l.then((x) => x.remove());
+    };
+  }, [phase]);
 
   useEffect(() => {
     if (phase !== 'talk') return;
@@ -69,25 +130,44 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
     return () => clearInterval(id);
   }, [phase]);
 
+  // Nivel del micrófono (solo con el oído de IA): el botón late con tu voz.
+  useEffect(() => {
+    if (!ai.ear) return;
+    const l = OliverAi.addListener('level', (e) => setLevel(e.level));
+    return () => {
+      l.then((x) => x.remove());
+    };
+  }, [ai.ear]);
+
   const speak = async (text: string) => {
     lastSaid.current = text;
-    setLine(text);
     setTalking(true);
     try {
-      await say(text, { lang: 'en-AU' });
+      if (aiRef.current.voice) await OliverAi.speak({ text, speaker: aiRef.current.speaker });
+      else await say(text, { lang: 'en-AU' });
     } catch {
-      /* sin voz: queda el subtítulo */
+      try {
+        await say(text, { lang: 'en-AU' });
+      } catch {
+        /* sin voz */
+      }
     }
     if (alive.current) setTalking(false);
   };
 
-  // Avanza el guion: Oliver habla hasta que te toca a vos.
+  const stopAll = () => {
+    stopSpeaking();
+    if (aiRef.current.voice) OliverAi.stopSpeaking().catch(() => {});
+    if (aiRef.current.ear) OliverAi.stopListening().catch(() => {});
+    if (aiRef.current.brain) OliverAi.cancelChat().catch(() => {});
+  };
+
+  // ── Con guion (sin IA de charla): Oliver habla hasta que te toca a vos ──
   useEffect(() => {
-    if (phase !== 'talk') return;
+    if (phase !== 'talk' || brain || !script) return;
     const turn = script.turns[idx];
     if (!turn) {
-      sfxHangup();
-      setPhase('review');
+      finish();
       return;
     }
     if ('o' in turn) {
@@ -102,25 +182,37 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
     }
     attempts.current = 0;
     setHint(false);
-    setYou('');
     setWaiting(true);
-  }, [phase, idx]);
+  }, [phase, idx, brain]);
+
+  // ── Con IA de charla: Oliver abre la llamada y después responde a lo que digas ──
+  useEffect(() => {
+    if (phase !== 'talk' || !brain) return;
+    const opener = script ? (script.turns[0] as { o: string }).o : FREE_OPENER;
+    setLog([{ who: 'oliver', text: opener }]);
+    speak(opener).then(() => alive.current && setWaiting(true));
+  }, [phase, brain]);
 
   // Como en una llamada de verdad: cuando Oliver termina de hablar, el micrófono se abre solo.
   useEffect(() => {
-    if (phase !== 'talk' || !waiting || talking || listening || typing || !micOk) return;
+    if (phase !== 'talk' || !waiting || talking || thinking || listening || typing || !micOk || ending) return;
     const t = setTimeout(() => talkNow(), 250);
     return () => clearTimeout(t);
-  }, [phase, waiting, talking, typing, micOk, idx]);
+  }, [phase, waiting, talking, thinking, typing, micOk, idx, ending]);
 
-  const current = script.turns[idx];
-  const userTurn: UserTurn | null = current && 'u' in current ? current.u : null;
+  const current = script && !brain ? script.turns[idx] : undefined;
+  const scriptTurn: UserTurn | null = current && 'u' in current ? current.u : null;
+  // Pista: en la charla con IA, la respuesta modelo del paso del guion más cercano.
+  const hintTurn: UserTurn | null =
+    scriptTurn ??
+    (script && brain
+      ? ((script.turns.filter((t) => 'u' in t)[Math.min(doneTurns, userTurns - 1)] as { u: UserTurn } | undefined)?.u ?? null)
+      : null);
 
-  const answer = async (heard: string[]) => {
-    if (!userTurn) return;
+  const answerScript = async (heard: string[]) => {
+    if (!scriptTurn || !script) return;
     const best = heard.find((h) => h.trim()) ?? '';
-    setYou(best);
-    const branch = matchTurn(userTurn, heard);
+    const branch = matchTurn(scriptTurn, heard);
     const last = idx === script.turns.length - 1;
     if (branch) {
       sfxCorrect();
@@ -139,47 +231,106 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
       await speak(pick(SORRY));
       return;
     }
-    // Segundo intento sin coincidir: seguimos igual y queda el consejo para el repaso.
     setWaiting(false);
-    setLog((l) => [...l, { who: 'you', text: best || '(sin respuesta)', tip: userTurn.tip, model: userTurn.model }]);
+    setLog((l) => [...l, { who: 'you', text: best || '(sin respuesta)', tip: scriptTurn.tip, model: scriptTurn.model }]);
     const reply = last ? 'Anyway, gotta go. See ya!' : 'No worries, mate.';
     setLog((l) => [...l, { who: 'oliver', text: reply }]);
     await speak(reply);
     if (alive.current) setIdx((i) => i + 1);
   };
 
-  const talkNow = async () => {
-    if (!waiting || listening || talking) return;
-    setListening(true);
-    setMicIdle(false);
+  const answerAi = async (said: string) => {
+    setWaiting(false);
+    setLog((l) => [...l, { who: 'you', text: said }]);
+    const turns = logRef.current.filter((l) => l.who === 'you').length + 1;
+    const userBye = BYE_RE.test(said);
+    const wrap = userBye || (maxTurns > 0 && turns >= maxTurns);
+    setThinking(true);
+    let reply = '';
     try {
-      const heard = await listen('en-AU');
+      const res = await OliverAi.chat({ text: wrap ? `${said}\n(Wrap up the call now: answer briefly and say goodbye.)` : said });
+      reply = shortReply(cleanReply(res.text), 3);
+    } catch {
+      reply = '';
+    }
+    if (!alive.current) return;
+    setThinking(false);
+    if (!reply) reply = wrap ? 'No worries, mate. See ya!' : pick(SORRY);
+    setLog((l) => [...l, { who: 'oliver', text: reply }]);
+    await speak(reply);
+    if (!alive.current) return;
+    if (wrap || BYE_RE.test(reply)) {
+      setEnding(true);
+      finish();
+    } else setWaiting(true);
+  };
+
+  const answer = (heard: string[]) => (brain ? answerAi(heard.find((h) => h.trim()) ?? '') : answerScript(heard));
+
+  const talkNow = async () => {
+    if (listening) {
+      // Tocar el micrófono mientras escucha: terminaste de hablar.
+      if (aiRef.current.ear) OliverAi.stopListening().catch(() => {});
+      return;
+    }
+    if (!waiting || talking || thinking) return;
+    setListening(true);
+    try {
+      let heard: string[];
+      if (aiRef.current.ear) heard = [(await OliverAi.listen({})).text];
+      else heard = await listen('en-AU');
       setListening(false);
-      if (!heard.some((h) => h.trim())) {
-        // No escuchó nada: no cuenta como intento; queda el botón para volver a hablar.
-        setMicIdle(true);
-        return;
-      }
+      setLevel(0);
+      if (!heard.some((h) => h.trim())) return; // no escuchó nada: queda el micrófono para volver a hablar
       await answer(heard);
     } catch {
       setListening(false);
-      setMicIdle(true);
+      setLevel(0);
     }
   };
 
-  const hangUp = () => {
-    alive.current = false;
-    stopSpeaking();
+  const finish = () => {
     sfxHangup();
-    if (log.some((l) => l.who === 'you')) {
-      alive.current = true;
-      setPhase('review');
-    } else onExit();
+    setPhase('review');
   };
+
+  const hangUp = () => {
+    stopAll();
+    sfxHangup();
+    if (logRef.current.some((l) => l.who === 'you')) setPhase('review');
+    else onExit();
+  };
+  const hangUpRef = useRef(hangUp);
+  hangUpRef.current = hangUp;
+
   // Botón «atrás»: mientras suena corta; durante la charla cuelga y muestra el repaso.
-  useBack(phase === 'ringing' || phase === 'review', onExit, 3);
+  useBack(phase === 'ringing' || phase === 'review' || phase === 'needs-ai', onExit, 3);
   useBack(phase === 'talk' && drawer, () => setDrawer(false), 4);
   useBack(phase === 'talk' && !drawer, hangUp, 3);
+
+  if (phase === 'needs-ai')
+    return (
+      <div className="call call-ringing">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+          <div className="ring-avatar">
+            <Oliver talking={false} />
+          </div>
+          <p className="ring-name">Llamada libre</p>
+          <p className="ring-sub">
+            Para charlar de cualquier tema, Oliver necesita una IA de charla. Bajala una sola vez en Ajustes › Voces e IA y después funciona sin
+            internet.
+          </p>
+          {onSettings && (
+            <button className="primary" onClick={onSettings}>
+              Ir a Voces e IA
+            </button>
+          )}
+          <button className="link" onClick={onExit} style={{ color: '#dce8ef' }}>
+            Volver
+          </button>
+        </div>
+      </div>
+    );
 
   if (phase === 'ringing')
     return (
@@ -189,10 +340,16 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
             <Oliver talking={false} />
           </div>
           <p className="ring-name">Llamando a Oliver…</p>
-          <p className="ring-sub">
-            {script.scene} · {unit.title}
-          </p>
-          <p className="ring-sub">{script.goal}</p>
+          {script ? (
+            <>
+              <p className="ring-sub">
+                {script.scene} · {unit?.title}
+              </p>
+              <p className="ring-sub">{script.goal}</p>
+            </>
+          ) : (
+            <p className="ring-sub">Llamada libre · charlá de lo que quieras</p>
+          )}
         </div>
         <button className="hangup" aria-label="Cortar" onClick={onExit}>
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -202,48 +359,70 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
       </div>
     );
 
-  if (phase === 'review') return <Review callId={callId} log={log} secs={secs} onExit={onExit} />;
+  if (phase === 'review')
+    return <Review title={script?.title ?? 'Llamada libre'} goal={script?.goal} callId={callId} log={log} secs={secs} withAi={brain} onExit={onExit} />;
 
-  const needsYou = waiting && !talking && !listening;
+  const progress = script ? Math.min(1, doneTurns / (brain ? maxTurns : userTurns)) : 0;
+  const micDisabled = !listening && (!waiting || talking || thinking);
   return (
     <div className="call">
       <div className="call-scene">
         <img className="call-bg" src={bg} alt="" />
         <div className="call-oliver">
           <Oliver talking={talking} />
+          {/* Videollamada tipo selfie: el brazo baja hacia la cámara (sin mano ni celular). */}
+          <div className="oliver-arm-wrap" aria-hidden="true" dangerouslySetInnerHTML={{ __html: arm }} />
         </div>
       </div>
       <div className="call-top">
         <button className="call-x" aria-label="Cortar la llamada" onClick={hangUp}>
           ✕
         </button>
-        <div className="call-progress">
-          <div style={{ width: `${(doneTurns / userTurns) * 100}%` }} />
-        </div>
+        <div className="call-progress">{script && <div style={{ width: `${progress * 100}%` }} />}</div>
         <span className="call-time">
           {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}
         </span>
       </div>
 
-      {/* Abajo no se muestra nada: solo una flechita. La charla escrita aparece en el repaso, al cortar. */}
+      {/* Abajo: solo el micrófono (siempre a mano) y una flechita con lo demás. La charla escrita aparece en el repaso. */}
       {!drawer && (
-        <button
-          className={`call-handle ${listening ? 'listening' : ''} ${needsYou && (micIdle || micOk === false) ? 'attention' : ''}`}
-          aria-label="Mostrar botones"
-          onClick={() => setDrawer(true)}
-        >
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M6 15l6-6 6 6" />
-          </svg>
-        </button>
+        <div className="call-mic-row">
+          {micOk !== false && (
+            <button
+              className={`call-mic ${listening ? 'on' : ''} ${thinking ? 'thinking' : ''}`}
+              style={listening ? { boxShadow: `0 0 0 ${4 + Math.round(level * 18)}px rgba(111, 211, 106, 0.35)` } : undefined}
+              aria-label={listening ? 'Terminé de hablar' : 'Hablar'}
+              onClick={talkNow}
+              disabled={micDisabled}
+            >
+              {thinking ? (
+                <span className="dots" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              ) : (
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="9" y="3" width="6" height="11" rx="3" />
+                  <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                </svg>
+              )}
+            </button>
+          )}
+          <button className="call-handle" aria-label="Más opciones" onClick={() => setDrawer(true)}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6 15l6-6 6 6" />
+            </svg>
+          </button>
+        </div>
       )}
       {drawer && (
         <div className="call-drawer">
-          {hint && userTurn && (
+          {hint && hintTurn && (
             <p className="call-hint">
-              💡 Podés decir: <b>{userTurn.model}</b>
+              💡 Podés decir: <b>{hintTurn.model}</b>
               <br />
-              {userTurn.tip}
+              {hintTurn.tip}
             </p>
           )}
           {typing && waiting && (
@@ -263,25 +442,19 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
           )}
           <div className="call-buttons">
             <span className="cb">
-              <button className="round-btn" aria-label="Repetir lo que dijo" onClick={() => lastSaid.current && speak(lastSaid.current)} disabled={talking}>
+              <button className="round-btn" aria-label="Repetir lo que dijo" onClick={() => lastSaid.current && speak(lastSaid.current)} disabled={talking || thinking}>
                 ↻
               </button>
               <span>Repetir</span>
             </span>
-            {micOk !== false && (
+            {hintTurn && (
               <span className="cb">
-                <button className={`round-btn mic ${listening ? 'on' : ''}`} aria-label="Hablar" onClick={talkNow} disabled={!waiting || talking || listening}>
-                  🎤
+                <button className={`round-btn tip ${hint ? 'glow' : ''}`} aria-label="Pista" onClick={() => setHint(!hint)}>
+                  💡
                 </button>
-                <span>{listening ? 'Te escucho' : 'Hablar'}</span>
+                <span>Pista</span>
               </span>
             )}
-            <span className="cb">
-              <button className={`round-btn tip ${hint ? 'glow' : ''}`} aria-label="Pista" onClick={() => setHint(!hint)} disabled={!waiting}>
-                💡
-              </button>
-              <span>Pista</span>
-            </span>
             <span className="cb">
               <button className={`round-btn ${typing ? 'glow' : ''}`} aria-label="Escribir" onClick={() => setTyping(!typing)}>
                 ⌨️
@@ -289,8 +462,8 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
               <span>Escribir</span>
             </span>
           </div>
-          <button className="call-handle down" aria-label="Ocultar botones" onClick={() => setDrawer(false)}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <button className="call-handle down" aria-label="Ocultar opciones" onClick={() => setDrawer(false)}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M6 9l6 6 6-6" />
             </svg>
           </button>
@@ -300,27 +473,71 @@ export function Call({ callId, onExit }: { callId: string; onExit: () => void })
   );
 }
 
-function Review({ callId, log, secs, onExit }: { callId: string; log: LogLine[]; secs: number; onExit: () => void }) {
-  const script = callById(callId)!;
+function Review({
+  title,
+  goal,
+  callId,
+  log,
+  secs,
+  withAi,
+  onExit,
+}: {
+  title: string;
+  goal?: string;
+  callId?: string;
+  log: LogLine[];
+  secs: number;
+  withAi: boolean;
+  onExit: () => void;
+}) {
   const yours = log.filter((l) => l.who === 'you');
   const good = yours.filter((l) => l.praise).length;
   const saved = useRef(false);
+  const [tips, setTips] = useState<string[] | null>(withAi ? null : []);
+
   useEffect(() => {
     if (saved.current) return;
     saved.current = true;
-    saveCall(callId, yours.length ? good / yours.length : 0);
+    if (callId) saveCall(callId, withAi ? (yours.length >= 3 ? 1 : yours.length / 3) : yours.length ? good / yours.length : 0);
+    if (!withAi) {
+      releaseCallAi();
+      return;
+    }
+    // Con IA de charla: antes de liberarla, le pide a Oliver 3 consejos sobre tu inglés.
+    let done = false;
+    const giveUp = setTimeout(() => {
+      if (!done) {
+        done = true;
+        setTips([]);
+        releaseCallAi();
+      }
+    }, 45000);
+    OliverAi.chat({ text: FEEDBACK_REQUEST })
+      .then((r) => {
+        if (done) return;
+        const lines = cleanReply(r.text.replace(/\n/g, ' ¶ '))
+          .split('¶')
+          .map((x) => x.replace(/^\s*[-•]\s*/, '').trim())
+          .filter(Boolean);
+        setTips(lines.slice(0, 4));
+      })
+      .catch(() => setTips([]))
+      .finally(() => {
+        done = true;
+        clearTimeout(giveUp);
+        releaseCallAi();
+      });
   }, []);
+
   return (
     <div className="screen call-review">
       <p className="eyebrow">Repasá tu conversación</p>
-      <h1>{script.title}</h1>
-      <p className="small">{script.goal}</p>
+      <h1>{title}</h1>
+      {goal && <p className="small">{goal}</p>}
       <div className="summary-stats">
         <div className="stat">
-          <span className="stat-num">
-            {good}/{yours.length}
-          </span>
-          <span className="stat-label">frases bien</span>
+          <span className="stat-num">{withAi ? yours.length : `${good}/${yours.length}`}</span>
+          <span className="stat-label">{withAi ? 'frases tuyas' : 'frases bien'}</span>
         </div>
         <div className="stat">
           <span className="stat-num">
@@ -329,6 +546,22 @@ function Review({ callId, log, secs, onExit }: { callId: string; log: LogLine[];
           <span className="stat-label">de charla</span>
         </div>
       </div>
+      {withAi && (
+        <div className="card">
+          <p className="card-title">Consejos de Oliver</p>
+          {tips === null ? (
+            <p className="small">Oliver está pensando tus consejos…</p>
+          ) : tips.length ? (
+            <ul className="tips">
+              {tips.map((t, i) => (
+                <li key={i}>{t}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="small">Esta vez no pudo armar consejos. ¡Seguí practicando!</p>
+          )}
+        </div>
+      )}
       <div className="chat">
         {log.map((l, i) =>
           l.who === 'oliver' ? (

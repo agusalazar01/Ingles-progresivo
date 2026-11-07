@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AiSettings } from '../components/AiSettings';
 import { LEVELS } from '../content/types';
 import { UNITS } from '../content/curriculum';
 import { daysSince, groupPercent, isDone, lastTest, nextUnit, pathLevel, previousLevelDone, unitPercent, unitStatus } from '../lib/progress';
@@ -413,6 +414,7 @@ export function Progress({ go }: { go: (r: Route) => void }) {
         </button>
       </div>
       <VoiceSettings />
+      <AiSettings />
       <div className="card">
         <p className="card-title">Acento de las voces</p>
         <p className="small">Si no elegiste una voz fija, se usa este acento. "Variado" entrena el oído con muchas voces distintas.</p>

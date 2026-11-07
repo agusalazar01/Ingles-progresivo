@@ -611,3 +611,36 @@ form { display: flex; flex-direction: column; gap: 10px; }
 .call-drawer .call-hint { width: 100%; }
 .call-type { flex-direction: row; }
 .call-type button { min-height: 48px; }
+
+/* v0.8 — llamada tipo selfie: Oliver más grande, el brazo baja hacia la cámara y el micrófono siempre a mano */
+.call-oliver { left: 50%; right: auto; transform: translateX(-50%); width: min(102%, 560px); max-width: none; bottom: 7%; }
+.oliver-arm-wrap { position: absolute; inset: 0; pointer-events: none; }
+.oliver-arm-wrap svg { display: block; width: 100%; height: auto; overflow: visible; animation: ol-breathe 4s ease-in-out infinite; transform-origin: 640px 1300px; transform-box: view-box; }
+.call-mic-row { position: absolute; z-index: 3; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: center; }
+.call-mic {
+  width: 84px; height: 84px; border-radius: 50%; background: #49c0f8; color: #0b1a22; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); transition: box-shadow 0.1s, background 0.2s, opacity 0.2s;
+}
+.call-mic.on { background: #6fd36a; }
+.call-mic:disabled { opacity: 0.55; }
+.call-mic.thinking:disabled { opacity: 0.85; background: #dce8ef; }
+.call-mic-row .call-handle { position: absolute; left: calc(100% + 18px); bottom: auto; transform: none; width: 44px; height: 36px; }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 9px; height: 9px; border-radius: 50%; background: #14202c; animation: dot 1s ease-in-out infinite; }
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dot { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-5px); opacity: 1; } }
+.tips { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; line-height: 1.45; }
+
+/* Ajustes › Voces e IA */
+.ai-pack { border: 1.5px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.ai-pack.chosen { border-color: #49c0f8; }
+.ai-pack-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ai-pack-head b { font-size: 16px; }
+.ai-bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.ai-bar > div { height: 100%; background: #49c0f8; transition: width 0.3s; }
+.ai-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.ai-row button { flex: 1; min-width: 120px; }
+.ai-section { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.ai-section h3 { margin: 6px 0 0; font-size: 15px; }
+.tabs button { font-size: 12.5px; padding-left: 2px; padding-right: 2px; }

@@ -32,13 +32,14 @@ export type Route =
   | { name: 'remedial'; unitIds: string[]; level: Level }
   | { name: 'placement'; retest: boolean }
   | { name: 'lesson'; unitId: string; banner?: string; resume?: boolean }
-  | { name: 'call'; callId: string; unitId?: string }
+  | { name: 'call'; callId?: string; unitId?: string; free?: boolean }
   | { name: 'review'; keys: string[]; title: string };
 
-const TABS: { name: 'home' | 'path' | 'vocab' | 'errors' | 'progress'; label: string }[] = [
+const TABS: { name: 'home' | 'path' | 'vocab' | 'call' | 'errors' | 'progress'; label: string }[] = [
   { name: 'home', label: 'Hoy' },
   { name: 'path', label: 'Camino' },
   { name: 'vocab', label: 'Palabras' },
+  { name: 'call', label: 'Llamar' },
   { name: 'errors', label: 'Errores' },
   { name: 'progress', label: 'Progreso' },
 ];
@@ -135,7 +136,18 @@ export default function App() {
       );
       break;
     case 'call':
-      body = <Call key={route.callId} callId={route.callId} onExit={back} />;
+      body = (
+        <Call
+          key={route.callId ?? 'libre'}
+          callId={route.callId}
+          free={route.free}
+          onExit={back}
+          onSettings={() => {
+            replace({ name: 'progress' });
+            setTimeout(() => document.getElementById('voces-ia')?.scrollIntoView({ behavior: 'smooth' }), 300);
+          }}
+        />
+      );
       break;
     case 'review':
       body = <Review keys={route.keys} title={route.title} onExit={back} />;
@@ -208,7 +220,11 @@ export default function App() {
       {showTabs && (
         <nav className="tabs">
           {TABS.map((t) => (
-            <button key={t.name} className={route.name === t.name ? 'active' : ''} onClick={() => go({ name: t.name } as Route)}>
+            <button
+              key={t.name}
+              className={route.name === t.name ? 'active' : ''}
+              onClick={() => go(t.name === 'call' ? { name: 'call', free: true } : ({ name: t.name } as Route))}
+            >
               {t.label}
             </button>
           ))}

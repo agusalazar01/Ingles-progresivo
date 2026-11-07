@@ -10,7 +10,7 @@ import type { AppState } from './store';
 
 const base = (): AppState => ({
   version: 1, units: {}, cards: {}, errors: {}, tests: [], activity: [], stats: { reviews: 0, correct: 0 },
-  settings: { accent: 'variado', newWords: 10, theme: 'dark', sounds: true, voice: '' }, levels: {}, words: {}, verbs: {}, resume: {}, calls: {},
+  settings: { accent: 'variado', newWords: 10, theme: 'dark', sounds: true, voice: '', ai: { voice: 'system', speaker: 0, ear: 'system', brain: 'off' } }, levels: {}, words: {}, verbs: {}, resume: {}, calls: {},
 });
 
 describe('v0.6', () => {

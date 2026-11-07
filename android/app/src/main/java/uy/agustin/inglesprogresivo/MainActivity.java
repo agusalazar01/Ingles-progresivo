@@ -8,6 +8,8 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // Plugin propio: abrir los ajustes de texto a voz del teléfono.
         registerPlugin(TtsSettingsPlugin.class);
+        // IA sin internet para la llamada con Oliver (voz, oído y charla).
+        registerPlugin(OliverAiPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }
