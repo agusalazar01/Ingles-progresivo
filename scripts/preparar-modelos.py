@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepara los modelos de voz y oído para la llamada con Oliver (se corre en GitHub Actions).
 
-Deja en ./modelos/ los archivos que la app baja una sola vez desde el Release «modelos-2»:
+Deja en ./modelos/ los archivos que la app baja una sola vez desde el Release «modelos-3»:
 
 - Piper australiano (DataCraftsmanAustralia/piper-en_AU-librivox-medium): se le agregan los datos
   que necesita sherpa-onnx (como hace scripts/piper/add_meta_data.py de sherpa-onnx) y tokens.txt.
@@ -57,11 +57,21 @@ def piper_au():
     model = get(base + onnx_name, os.path.join(TMP, "piper-au.onnx"))
     config = json.load(open(get(base + json_name, os.path.join(TMP, "piper-au.onnx.json")), encoding="utf-8"))
 
-    with open(os.path.join(OUT, "piper-au-tokens.txt"), "w", encoding="utf-8") as f:
+    # sherpa-onnx solo acepta un carácter por símbolo: los diptongos («aɪ», «eɪ»…) que trae el mapa de
+    # piper1-gpl cerrarían la app al cargar la voz. Se guardan con un carácter de uso privado (U+E000…),
+    # que el fonemizador nunca produce: el modelo se entrenó sin unir diptongos (vowel_clusters).
+    pua = 0xE000
+    with open(os.path.join(OUT, "piper-au-tokens2.txt"), "w", encoding="utf-8") as f:
         for s, i in config["phoneme_id_map"].items():
             if s == "\n":
                 continue
+            if len(s) != 1:
+                print("Símbolo de varios caracteres:", repr(s), "→", hex(pua))
+                s = chr(pua)
+                pua += 1
             f.write(f"{s} {i[0] if isinstance(i, list) else i}\n")
+    if config.get("vowel_clusters"):
+        print("AVISO: el modelo usa vowel_clusters:", config["vowel_clusters"])
 
     rate = config["audio"]["sample_rate"]
     voice = config.get("lang_code") or config["espeak"]["voice"]

@@ -14,7 +14,7 @@ import { getState } from './store';
  * Lo que decís se procesa en el teléfono y no se manda a ningún lado.
  */
 interface OliverAiPlugin {
-  status(): Promise<{ installed: Record<string, number>; freeBytes: number; loaded: string[] }>;
+  status(): Promise<AiStatus>;
   download(o: { id: string; files: { url: string; name: string; size: number }[] }): Promise<void>;
   cancelDownload(o: { id: string }): Promise<void>;
   remove(o: { id: string }): Promise<void>;
@@ -34,6 +34,16 @@ interface OliverAiPlugin {
   addListener(event: 'token', fn: (e: { text: string }) => void): Promise<PluginListenerHandle>;
   addListener(event: 'level', fn: (e: { level: number }) => void): Promise<PluginListenerHandle>;
   addListener(event: 'speechStart', fn: () => void): Promise<PluginListenerHandle>;
+}
+
+export interface AiStatus {
+  installed: Record<string, number>;
+  /** Archivos de cada paquete bajado. */
+  files?: Record<string, string[]>;
+  freeBytes: number;
+  loaded: string[];
+  /** Si la app se cerró de golpe usando la IA: en qué paso. */
+  crashed?: string | null;
 }
 
 export const OliverAi = registerPlugin<OliverAiPlugin>('OliverAi');
@@ -59,7 +69,7 @@ export interface Pack {
   license: string;
 }
 
-const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-2/';
+const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-3/';
 const HF = 'https://huggingface.co/litert-community/';
 const MB = 1024 * 1024;
 
@@ -75,7 +85,7 @@ export const PACKS: Pack[] = [
     license: 'Grabaciones de dominio público (LibriVox); código CC0.',
     files: [
       { url: REL + 'piper-au-model.onnx', name: 'model.onnx', size: 74 * MB },
-      { url: REL + 'piper-au-tokens.txt', name: 'tokens.txt', size: 1 },
+      { url: REL + 'piper-au-tokens2.txt', name: 'tokens2.txt', size: 1 },
       { url: REL + 'piper-au-speakers.json', name: 'speakers.json', size: 1 },
     ],
   },
@@ -83,7 +93,7 @@ export const PACKS: Pack[] = [
     id: 'kokoro',
     kind: 'voice',
     engine: 'kokoro',
-    espeak: 'en-gb',
+    espeak: 'en',
     title: 'Kokoro',
     desc: 'La voz más natural, pero con acento británico o estadounidense (no tiene australiano). Un poco más lenta.',
     mb: 134,
@@ -137,9 +147,16 @@ export const PACKS: Pack[] = [
 
 export const packById = (id: string) => PACKS.find((p) => p.id === id);
 
-export async function aiStatus() {
-  if (!aiAvailable()) return { installed: {} as Record<string, number>, freeBytes: 0, loaded: [] as string[] };
+export async function aiStatus(): Promise<AiStatus> {
+  if (!aiAvailable()) return { installed: {}, files: {}, freeBytes: 0, loaded: [] };
   return OliverAi.status();
+}
+
+/** Paquete bajado y completo (una versión nueva puede necesitar archivos extra: «Actualizar»). */
+export function packReady(p: Pack, st: AiStatus): boolean {
+  if (!(p.id in st.installed)) return false;
+  const have = st.files?.[p.id];
+  return !have || p.files.every((f) => have.includes(f.name));
 }
 
 /** Nombres de las voces de un paquete (Piper las trae en speakers.json). */
@@ -174,8 +191,11 @@ export async function chosenAi(): Promise<CallAi> {
   if (!aiAvailable()) return none;
   const a = getState().settings.ai;
   try {
-    const { installed } = await OliverAi.status();
-    const ok = (id: string) => (id in installed ? packById(id) ?? null : null);
+    const st = await OliverAi.status();
+    const ok = (id: string) => {
+      const p = packById(id);
+      return p && packReady(p, st) ? p : null;
+    };
     return { voice: ok(a.voice), ear: ok(a.ear), brain: ok(a.brain), speaker: a.speaker };
   } catch {
     return none;

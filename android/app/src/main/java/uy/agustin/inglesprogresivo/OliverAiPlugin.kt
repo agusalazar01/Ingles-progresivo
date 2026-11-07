@@ -88,6 +88,31 @@ class OliverAiPlugin : Plugin() {
 
     @Volatile private var phonemizerReady = false
 
+    /**
+     * Si una librería nativa cierra la app de golpe no hay forma de atrapar el error: antes de cada paso
+     * delicado se anota cuál es y al terminar se borra. Si la app se cerró, la próxima vez queda el aviso.
+     */
+    private var lastCrash: String? = null
+    private fun crumb(): File = File(root(), ".paso")
+    private fun step(what: String) {
+        try {
+            crumb().writeText(what)
+        } catch (_: Throwable) {
+        }
+    }
+    private fun stepDone() {
+        crumb().delete()
+    }
+
+    override fun load() {
+        super.load()
+        val f = crumb()
+        if (f.exists()) {
+            lastCrash = f.readText()
+            f.delete()
+        }
+    }
+
     private fun root(): File = File(context.filesDir, "ai").apply { mkdirs() }
     private fun dir(id: String): File = File(root(), id.replace(Regex("[^a-zA-Z0-9_.-]"), "_"))
 
@@ -96,11 +121,19 @@ class OliverAiPlugin : Plugin() {
     @PluginMethod
     fun status(call: PluginCall) {
         val installed = JSObject()
+        val files = JSObject()
         root().listFiles()?.forEach { d ->
-            if (File(d, ".ok").exists()) installed.put(d.name, d.listFiles()?.sumOf { it.length() } ?: 0L)
+            if (File(d, ".ok").exists()) {
+                installed.put(d.name, d.listFiles()?.sumOf { it.length() } ?: 0L)
+                val names = JSArray()
+                d.listFiles()?.filter { !it.name.startsWith(".") && !it.name.endsWith(".part") }?.forEach { names.put(it.name) }
+                files.put(d.name, names)
+            }
         }
         val ret = JSObject()
         ret.put("installed", installed)
+        ret.put("files", files)
+        ret.put("crashed", lastCrash)
         ret.put("freeBytes", context.filesDir.usableSpace)
         val loaded = JSArray()
         listOfNotNull(ttsId, earId, engineId).forEach { loaded.put(it) }
@@ -251,11 +284,17 @@ class OliverAiPlugin : Plugin() {
             try {
                 if (ttsId != id) {
                     releaseTts()
+                    val d = dir(id)
+                    if (kind != "kokoro" && !File(d, "tokens2.txt").exists()) {
+                        call.reject("Hay que actualizar esta voz (Ajustes › Voces e IA)")
+                        return@execute
+                    }
                     if (!phonemizerReady) {
+                        step("preparar el fonemizador")
                         piperPhonemizeInitialize(context)
                         phonemizerReady = true
                     }
-                    val d = dir(id)
+                    step("cargar la voz $id")
                     val model = OfflineTtsModelConfig()
                     model.numThreads = 2
                     if (kind == "kokoro") {
@@ -267,13 +306,14 @@ class OliverAiPlugin : Plugin() {
                     } else {
                         val v = OfflineTtsVitsModelConfig()
                         v.model = File(d, "model.onnx").absolutePath
-                        v.tokens = File(d, "tokens.txt").absolutePath
+                        v.tokens = File(d, "tokens2.txt").absolutePath
                         model.vits = v
                     }
                     val config = OfflineTtsConfig()
                     config.model = model
                     tts = OfflineTts(null, config)
                     ttsId = id
+                    stepDone()
                 }
                 espeakVoice = voice
                 val ret = JSObject()
@@ -281,6 +321,7 @@ class OliverAiPlugin : Plugin() {
                 ret.put("sampleRate", tts?.sampleRate() ?: 22050)
                 call.resolve(ret)
             } catch (e: Throwable) {
+                stepDone()
                 releaseTts()
                 call.reject("No se pudo cargar la voz: ${e.message}")
             }
@@ -324,7 +365,8 @@ class OliverAiPlugin : Plugin() {
                 player.play()
                 var frames = 0L
                 // Frase por frase: mientras suena una, se genera la siguiente.
-                for (sentence in splitSentences(text)) {
+                step("hablar con la voz $ttsId")
+                for (sentence in splitSentences(forSpeech(text))) {
                     if (stopSpeech) break
                     val res = piperPhonemizeText(sentence, espeakVoice) ?: continue
                     val phonemes: Array<IntArray>
@@ -349,6 +391,7 @@ class OliverAiPlugin : Plugin() {
                     }
                     frames += samples.size
                 }
+                stepDone()
                 // Esperar a que termine de sonar.
                 val deadline = SystemClock.elapsedRealtime() + frames * 1000 / rate + 1500
                 while (!stopSpeech && player.playbackHeadPosition < frames && SystemClock.elapsedRealtime() < deadline) {
@@ -356,6 +399,7 @@ class OliverAiPlugin : Plugin() {
                 }
                 call.resolve()
             } catch (e: Throwable) {
+                stepDone()
                 call.reject("No se pudo hablar: ${e.message}")
             } finally {
                 try {
@@ -379,6 +423,11 @@ class OliverAiPlugin : Plugin() {
         call.resolve()
     }
 
+    /** Palabras que el fonemizador lee mal (por ejemplo «G'day» como la letra G). */
+    private fun forSpeech(text: String): String =
+        text.replace(Regex("\\bG'?day\\b", RegexOption.IGNORE_CASE), "gidday")
+            .replace(Regex("\\bHooroo\\b", RegexOption.IGNORE_CASE), "hoo-roo")
+
     private fun splitSentences(text: String): List<String> {
         val parts = text.trim().split(Regex("(?<=[.!?])\\s+")).map { it.trim() }.filter { it.isNotEmpty() }
         return parts.ifEmpty { listOf(text) }
@@ -393,6 +442,7 @@ class OliverAiPlugin : Plugin() {
             try {
                 if (earId != id) {
                     releaseEar()
+                    step("cargar el reconocimiento de voz")
                     val d = dir(id)
                     val moon = OfflineMoonshineModelConfig()
                     moon.encoder = File(d, "encoder_model.ort").absolutePath
@@ -405,9 +455,11 @@ class OliverAiPlugin : Plugin() {
                     config.modelConfig = model
                     ear = OfflineRecognizer(null, config)
                     earId = id
+                    stepDone()
                 }
                 call.resolve()
             } catch (e: Throwable) {
+                stepDone()
                 releaseEar()
                 call.reject("No se pudo cargar el reconocimiento de voz: ${e.message}")
             }
@@ -501,6 +553,7 @@ class OliverAiPlugin : Plugin() {
                     return@execute
                 }
                 val samples = FloatArray(audio.size - speechStart) { audio[speechStart + it] }
+                step("entender lo que dijiste")
                 val stream = recognizer.createStream()
                 try {
                     stream.acceptWaveform(samples, rate)
@@ -508,6 +561,7 @@ class OliverAiPlugin : Plugin() {
                     ret.put("text", recognizer.getResult(stream).text.trim())
                 } finally {
                     stream.release()
+                    stepDone()
                 }
                 call.resolve(ret)
             } catch (e: Throwable) {
@@ -541,14 +595,17 @@ class OliverAiPlugin : Plugin() {
                         maxNumTokens = 4096,
                         cacheDir = context.cacheDir.absolutePath,
                     )
+                    step("cargar la IA de charla $id")
                     val e = Engine(config)
                     e.initialize()
+                    stepDone()
                     engine = e
                     engineId = id
                 }
                 newConversation(system)
                 call.resolve()
             } catch (e: Throwable) {
+                stepDone()
                 releaseBrain()
                 call.reject("No se pudo cargar la IA: ${e.message}")
             }

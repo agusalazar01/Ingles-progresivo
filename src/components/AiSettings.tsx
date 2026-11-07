@@ -5,12 +5,14 @@ import {
   aiStatus,
   cancelDownload,
   getDownloads,
+  packReady,
   packSpeakers,
   PACKS,
   removePack,
   startDownload,
   subscribeDownloads,
   tryVoice,
+  type AiStatus,
   type Pack,
   type PackKind,
 } from '../lib/ai';
@@ -25,24 +27,21 @@ export function AiSettings() {
   const s = useAppState();
   const ai = s.settings.ai;
   const dl = useSyncExternalStore(subscribeDownloads, getDownloads);
-  const [installed, setInstalled] = useState<Record<string, number>>({});
-  const [free, setFree] = useState(0);
+  const [st, setSt] = useState<AiStatus>({ installed: {}, files: {}, freeBytes: 0, loaded: [] });
+  const installed = st.installed;
+  const free = st.freeBytes;
   const [speakers, setSpeakers] = useState<{ id: number; name: string }[]>([]);
   const [testing, setTesting] = useState<number | null>(null);
   const [msg, setMsg] = useState('');
 
   const set = (patch: Partial<AiChoice>) => setState((st) => ({ ...st, settings: { ...st.settings, ai: { ...st.settings.ai, ...patch } } }));
-  const refresh = () =>
-    aiStatus().then((r) => {
-      setInstalled(r.installed);
-      setFree(r.freeBytes);
-    });
+  const refresh = () => aiStatus().then(setSt);
 
   useEffect(() => {
     refresh();
   }, [Object.keys(dl).join()]);
 
-  const voicePack = PACKS.find((p) => p.id === ai.voice && p.id in installed);
+  const voicePack = PACKS.find((p) => p.id === ai.voice && packReady(p, st));
   useEffect(() => {
     if (voicePack) packSpeakers(voicePack).then(setSpeakers);
     else setSpeakers([]);
@@ -82,7 +81,8 @@ export function AiSettings() {
   };
 
   const packCard = (p: Pack) => {
-    const has = p.id in installed;
+    const has = packReady(p, st);
+    const outdated = !has && p.id in installed;
     const d = dl[p.id];
     const chosen = ai[KEY[p.kind]] === p.id && has;
     return (
@@ -113,9 +113,14 @@ export function AiSettings() {
         {d?.error && <p className="small">⚠️ No se pudo bajar ({d.error}). Probá de nuevo con wifi: sigue desde donde quedó.</p>}
         {!d && (
           <div className="ai-row">
-            {!has && (
+            {!has && !outdated && (
               <button className="secondary" onClick={() => download(p)}>
                 ⬇️ Bajar ({size(p.mb)})
+              </button>
+            )}
+            {outdated && (
+              <button className="primary" onClick={() => download(p)}>
+                ⬆️ Actualizar (unos pocos KB)
               </button>
             )}
             {has && !chosen && (
@@ -123,7 +128,7 @@ export function AiSettings() {
                 Usar
               </button>
             )}
-            {has && (
+            {(has || outdated) && (
               <button className="secondary" onClick={() => remove(p)}>
                 🗑️ Borrar
               </button>
@@ -161,7 +166,8 @@ export function AiSettings() {
 
   const systemOption = (kind: PackKind, label: string) => {
     const value = kind === 'brain' ? 'off' : 'system';
-    const on = ai[KEY[kind]] === value || !(ai[KEY[kind]] in installed);
+    const cur = PACKS.find((p) => p.id === ai[KEY[kind]]);
+    const on = ai[KEY[kind]] === value || !cur || !packReady(cur, st);
     return (
       <button className={`option ${on ? 'right' : ''}`} onClick={() => set({ [KEY[kind]]: value } as Partial<AiChoice>)}>
         {label}
@@ -176,6 +182,11 @@ export function AiSettings() {
         Se bajan una sola vez (mejor con wifi) y después funcionan sin conexión y gratis. Solo usan memoria y batería mientras dura la llamada: al cortar se
         liberan. Lo que decís se procesa en el teléfono y no se manda a ningún lado.
       </p>
+      {st.crashed && (
+        <p className="small">
+          ⚠️ La última vez la app se cerró al {st.crashed}. Si vuelve a pasar, elegí otra opción (o la del teléfono) y contame en qué paso fue.
+        </p>
+      )}
       {free > 0 && <p className="small">Espacio libre en el teléfono: {size(Math.round(free / 1024 / 1024))}</p>}
 
       <div className="ai-section">

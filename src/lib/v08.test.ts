@@ -24,6 +24,10 @@ describe('v0.8 — IA sin internet', () => {
       if (p.kind === 'voice') expect(p.files.some((f) => f.name === 'model.onnx')).toBe(true);
     }
     expect(PACKS.filter((p) => p.kind === 'voice').length).toBeGreaterThanOrEqual(2);
+    // Piper usa tokens2.txt (diptongos guardados como un solo carácter; con el original la app se cerraba).
+    expect(PACKS.find((p) => p.id === 'piper-au')!.files.map((f) => f.name)).toContain('tokens2.txt');
+    // espeak-ng no tiene la voz «en-gb»: el inglés británico es «en».
+    expect(PACKS.find((p) => p.id === 'kokoro')!.espeak).toBe('en');
   });
 
   it('las llamadas con IA mantienen la temática de la unidad', () => {
