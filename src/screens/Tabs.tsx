@@ -1,14 +1,10 @@
-import { useState } from 'react';
-import { AiSettings } from '../components/AiSettings';
 import { LEVELS } from '../content/types';
 import { UNITS } from '../content/curriculum';
 import { daysSince, groupPercent, isDone, lastTest, nextUnit, pathLevel, previousLevelDone, unitPercent, unitStatus } from '../lib/progress';
 import { THEMES, themeOf, themeUnits } from '../content/themes';
 import { unitById } from '../content/curriculum';
-import { dueKeys, lastRun, resetAll, setState, streak, useAppState } from '../lib/store';
+import { dueKeys, lastRun, streak, useAppState } from '../lib/store';
 import { activeSteps } from '../lib/ladder';
-import { ACCENT_LABEL, listVoices, openVoiceSettings, say, SYSTEM_VOICE, type Accent } from '../lib/speech';
-import { sfxCorrect } from '../lib/sfx';
 import { callsForUnit } from '../content/calls';
 import { APP_VERSION, BUILD } from '../lib/update';
 import type { Route } from '../App';
@@ -389,57 +385,8 @@ export function Progress({ go }: { go: (r: Route) => void }) {
           </li>
         </ul>
       </div>
-      <div className="card">
-        <p className="card-title">Apariencia y sonido</p>
-        <div className="row">
-          {(['dark', 'light'] as const).map((t) => (
-            <button
-              key={t}
-              className={`option grow ${s.settings.theme === t ? 'right' : ''}`}
-              onClick={() => setState((st) => ({ ...st, settings: { ...st.settings, theme: t } }))}
-            >
-              {t === 'dark' ? '🌙 Oscuro' : '☀️ Claro'}
-            </button>
-          ))}
-        </div>
-        <button
-          className={`option ${s.settings.sounds ? 'right' : ''}`}
-          onClick={() => {
-            const on = !s.settings.sounds;
-            setState((st) => ({ ...st, settings: { ...st.settings, sounds: on } }));
-            if (on) setTimeout(sfxCorrect, 50);
-          }}
-        >
-          {s.settings.sounds ? '🔊 Sonidos de acierto y error: prendidos' : '🔇 Sonidos de acierto y error: apagados'}
-        </button>
-      </div>
-      <VoiceSettings />
-      <AiSettings />
-      <div className="card">
-        <p className="card-title">Acento de las voces</p>
-        <p className="small">Si no elegiste una voz fija, se usa este acento. "Variado" entrena el oído con muchas voces distintas.</p>
-        <div className="options">
-          {(Object.keys(ACCENT_LABEL) as Accent[]).map((a) => (
-            <button
-              key={a}
-              className={`option ${s.settings.accent === a ? 'right' : ''}`}
-              onClick={() => {
-                setState((st) => ({ ...st, settings: { ...st.settings, accent: a } }));
-                say('Hello! This is how I sound.', { accent: a, voice: '' });
-              }}
-            >
-              {ACCENT_LABEL[a]}
-            </button>
-          ))}
-        </div>
-      </div>
-      <button
-        className="link"
-        onClick={() => {
-          if (window.confirm('¿Borrar todo el progreso? No se puede deshacer.')) resetAll();
-        }}
-      >
-        Borrar mi progreso
+      <button className="secondary" onClick={() => go({ name: 'settings' })}>
+        ⚙️ Configuración (apariencia, voces, IA y más)
       </button>
       <p className="small center">
         CriollEnglish · Learn English, a lo criollo · v{APP_VERSION}
@@ -473,66 +420,3 @@ export function Welcome({ go }: { go: (r: Route) => void }) {
 }
 
 /** Elegir la voz: la del teléfono (recomendado) o una voz fija de la lista. */
-function VoiceSettings() {
-  const s = useAppState();
-  const [voices, setVoices] = useState<{ id: string; name: string; lang: string; local: boolean }[] | null>(null);
-  const [open, setOpen] = useState(false);
-  const [msg, setMsg] = useState('');
-  const set = (voice: string) => setState((st) => ({ ...st, settings: { ...st.settings, voice } }));
-  const load = () => {
-    setOpen(true);
-    listVoices().then((v) => setVoices([...v].sort((a, b) => Number(b.lang === 'en-AU') - Number(a.lang === 'en-AU') || a.lang.localeCompare(b.lang) || a.id.localeCompare(b.id))));
-  };
-  const pick = (id: string) => {
-    set(id);
-    say("G'day! This is how I sound.", { voice: id, lang: 'en-AU' });
-  };
-  const current = s.settings.voice === SYSTEM_VOICE ? 'la voz del teléfono (Ajustes › Texto a voz)' : s.settings.voice || 'según el acento elegido';
-  return (
-    <div className="card">
-      <p className="card-title">Voz (Oliver y ejercicios)</p>
-      <p className="small">
-        Ahora: <b>{current}</b>
-      </p>
-      <button
-        className={`option ${s.settings.voice === SYSTEM_VOICE ? 'right' : ''}`}
-        onClick={() => {
-          set(SYSTEM_VOICE);
-          say("G'day! This is how I sound.", { voice: SYSTEM_VOICE, lang: 'en-AU' });
-        }}
-      >
-        📱 Usar la voz del teléfono (recomendado)
-      </button>
-      <button
-        className="secondary"
-        onClick={async () => {
-          const ok = await openVoiceSettings();
-          setMsg(ok ? 'Elegí el motor (por ejemplo Samsung), el idioma English (Australia) y la voz que te guste. Después volvé y tocá «Usar la voz del teléfono».' : 'En este dispositivo no puedo abrir los ajustes de voz. Buscá «Texto a voz» en los ajustes del teléfono.');
-        }}
-      >
-        ⚙️ Abrir los ajustes de voz del teléfono
-      </button>
-      {msg && <p className="small">{msg}</p>}
-      {!open && (
-        <button className="link" onClick={load}>
-          O elegir una voz de la lista
-        </button>
-      )}
-      {open && voices === null && <p className="small">Buscando voces…</p>}
-      {open && voices && (
-        <div className="options">
-          <button className={`option ${!s.settings.voice ? 'right' : ''}`} onClick={() => set('')}>
-            Ninguna fija (usar el acento)
-          </button>
-          {voices.length === 0 && <p className="small">No encontré voces en inglés. Revisá el motor de texto a voz del teléfono.</p>}
-          {voices.map((v) => (
-            <button key={v.id} className={`option ${s.settings.voice === v.id ? 'right' : ''}`} onClick={() => pick(v.id)}>
-              {v.lang === 'en-AU' ? '🇦🇺 ' : ''}
-              {v.name} <span className="small">· {v.id}{v.local ? '' : ' · necesita internet'}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
