@@ -21,7 +21,7 @@ describe('v0.8 — IA sin internet', () => {
       expect(p.files.length).toBeGreaterThan(0);
       for (const f of p.files) expect(f.url).toMatch(/^https:\/\//);
       if (p.kind === 'brain') expect(p.files.some((f) => f.name === p.file)).toBe(true);
-      if (p.kind === 'voice') expect(p.files.some((f) => f.name === 'model.onnx')).toBe(true);
+      if (p.engine === 'piper' || p.engine === 'kokoro') expect(p.files.some((f) => f.name === 'model.onnx')).toBe(true);
     }
     expect(PACKS.filter((p) => p.kind === 'voice').length).toBeGreaterThanOrEqual(2);
     // Piper usa tokens2.txt (diptongos guardados como un solo carácter; con el original la app se cerraba).
@@ -40,5 +40,17 @@ describe('v0.8 — IA sin internet', () => {
     expect(FREE_PROMPT).toContain('free chat');
     // Todas las llamadas empiezan con Oliver (la IA usa esa frase para abrir).
     for (const call of CALLS) expect('o' in call.turns[0]).toBe(true);
+  });
+});
+
+describe('v0.8.2 — ajustes de la voz', () => {
+  it('los narradores apurados arrancan más lentos y el resto a velocidad normal', async () => {
+    const { tuneFor, referenceFor, MY_RECORDING } = await import('./ai');
+    expect(tuneFor('piper-au', 0).speed).toBe(0.8); // clancy
+    expect(tuneFor('piper-au', 4).speed).toBe(1); // angus
+    expect(tuneFor('kokoro', 0).speed).toBe(1);
+    expect(tuneFor('piper-au', 4).volume).toBe(1); // sin subir el volumen solo
+    expect(referenceFor(MY_RECORDING)).toBe('mi-voz.wav');
+    expect(referenceFor(0)).toBe('ref-1.wav');
   });
 });

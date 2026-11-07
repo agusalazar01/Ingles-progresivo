@@ -5,14 +5,21 @@ import {
   aiStatus,
   cancelDownload,
   getDownloads,
+  DEFAULT_TUNE,
+  MY_RECORDING,
+  OliverAi,
   packReady,
   packSpeakers,
+  recordMyVoice,
+  tuneFor,
+  tuneKey,
   PACKS,
   removePack,
   startDownload,
   subscribeDownloads,
   tryVoice,
   type AiStatus,
+  type Tune,
   type Pack,
   type PackKind,
 } from '../lib/ai';
@@ -42,10 +49,45 @@ export function AiSettings() {
   }, [Object.keys(dl).join()]);
 
   const voicePack = PACKS.find((p) => p.id === ai.voice && packReady(p, st));
+  const filesKey = (voicePack && st.files?.[voicePack.id]?.join()) ?? '';
   useEffect(() => {
-    if (voicePack) packSpeakers(voicePack).then(setSpeakers);
+    if (voicePack) packSpeakers(voicePack, st.files?.[voicePack.id]).then(setSpeakers);
     else setSpeakers([]);
-  }, [voicePack?.id]);
+  }, [voicePack?.id, filesKey]);
+
+  const [rec, setRec] = useState<number | null>(null);
+  const tune: Tune = voicePack ? tuneFor(voicePack.id, ai.speaker) : DEFAULT_TUNE;
+  const setTune = (patch: Partial<Tune>) => {
+    if (!voicePack) return;
+    const k = tuneKey(voicePack.id, ai.speaker);
+    setState((x) => ({
+      ...x,
+      settings: { ...x.settings, ai: { ...x.settings.ai, tune: { ...x.settings.ai.tune, [k]: { ...x.settings.ai.tune?.[k], ...patch } } } },
+    }));
+  };
+  const resetTune = () => {
+    if (!voicePack) return;
+    const k = tuneKey(voicePack.id, ai.speaker);
+    setState((x) => {
+      const t = { ...x.settings.ai.tune };
+      delete t[k];
+      return { ...x, settings: { ...x.settings, ai: { ...x.settings.ai, tune: t } } };
+    });
+  };
+  const record = async () => {
+    setMsg('');
+    setRec(0);
+    const l = await OliverAi.addListener('recording', (e) => setRec(e.progress));
+    try {
+      await recordMyVoice(10);
+      await refresh();
+      set({ speaker: MY_RECORDING });
+    } catch (e) {
+      setMsg(`No se pudo grabar: ${(e as Error).message ?? e}`);
+    }
+    l.remove();
+    setRec(null);
+  };
 
   if (!aiAvailable())
     return (
@@ -73,7 +115,7 @@ export function AiSettings() {
   const test = async (p: Pack, speaker: number) => {
     setTesting(speaker);
     try {
-      await tryVoice(p, speaker);
+      await tryVoice(p, speaker, tuneFor(p.id, speaker));
     } catch (e) {
       setMsg(`No pude probar la voz: ${(e as Error).message ?? e}`);
     }
@@ -160,6 +202,24 @@ export function AiSettings() {
             ))}
           </div>
         )}
+        {chosen && p.engine === 'pocket' && (
+          <div className="options">
+            <p className="small">
+              Grabá 10 segundos de un australiano hablando normal (con su permiso, por ejemplo tu profe): Oliver va a hablar con esa voz. La grabación queda
+              solo en el teléfono.
+            </p>
+            {rec !== null ? (
+              <div className="ai-bar">
+                <div style={{ width: `${Math.round(rec * 100)}%` }} />
+              </div>
+            ) : (
+              <button className="secondary" onClick={record}>
+                🎙️ Grabar una voz (10 s)
+              </button>
+            )}
+          </div>
+        )}
+        {chosen && p.kind === 'voice' && <TunePanel tune={tune} piper={p.engine === 'piper'} onChange={setTune} onReset={resetTune} onTry={() => test(p, ai.speaker)} busy={testing !== null} />}
       </div>
     );
   };
@@ -211,6 +271,37 @@ export function AiSettings() {
         {PACKS.filter((p) => p.kind === 'brain').map(packCard)}
       </div>
       {msg && <p className="small">{msg}</p>}
+    </div>
+  );
+}
+
+/** Ajustes de la voz elegida: se guardan por voz y se escuchan con ▶. */
+function TunePanel({ tune, piper, onChange, onReset, onTry, busy }: { tune: Tune; piper: boolean; onChange: (t: Partial<Tune>) => void; onReset: () => void; onTry: () => void; busy: boolean }) {
+  const slider = (label: string, key: keyof Tune, min: number, max: number, step: number, fmt: (v: number) => string) => (
+    <label className="tune">
+      <span>
+        {label}: <b>{fmt(tune[key])}</b>
+      </span>
+      <input type="range" min={min} max={max} step={step} value={tune[key]} onChange={(e) => onChange({ [key]: Number(e.target.value) } as Partial<Tune>)} />
+    </label>
+  );
+  const pct = (v: number) => `${Math.round(v * 100)}%`;
+  return (
+    <div className="options">
+      <p className="small">Ajustá cómo suena esta voz (solo en la app: no cambia el volumen ni nada del teléfono).</p>
+      {slider('Velocidad', 'speed', 0.6, 1.4, 0.02, pct)}
+      {slider('Tono', 'pitch', 0.85, 1.15, 0.01, pct)}
+      {slider('Volumen de la voz', 'volume', 0.5, 2.5, 0.05, pct)}
+      {piper && slider('Expresividad (entonación)', 'noise', 0.2, 1.0, 0.01, (v) => (v < 0.5 ? `${v.toFixed(2)} · monótona` : v > 0.8 ? `${v.toFixed(2)} · muy viva` : v.toFixed(2)))}
+      {piper && slider('Ritmo variado', 'noiseW', 0.2, 1.3, 0.01, (v) => v.toFixed(2))}
+      <div className="ai-row">
+        <button className="primary" onClick={onTry} disabled={busy}>
+          {busy ? '…' : '▶ Escuchar'}
+        </button>
+        <button className="secondary" onClick={onReset}>
+          Restablecer
+        </button>
+      </div>
     </div>
   );
 }

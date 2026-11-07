@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepara los modelos de voz y oído para la llamada con Oliver (se corre en GitHub Actions).
 
-Deja en ./modelos/ los archivos que la app baja una sola vez desde el Release «modelos-3»:
+Deja en ./modelos/ los archivos que la app baja una sola vez desde el Release «modelos-4»:
 
 - Piper australiano (DataCraftsmanAustralia/piper-en_AU-librivox-medium): se le agregan los datos
   que necesita sherpa-onnx (como hace scripts/piper/add_meta_data.py de sherpa-onnx) y tokens.txt.
@@ -24,6 +24,8 @@ HF_REPO = "DataCraftsmanAustralia/piper-en_AU-librivox-medium"
 SHERPA = "https://github.com/k2-fsa/sherpa-onnx/releases/download"
 KOKORO = f"{SHERPA}/tts-models/kokoro-int8-en-v0_19.tar.bz2"
 MOONSHINE = f"{SHERPA}/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2"
+SUPERTONIC = f"{SHERPA}/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2"
+POCKET = f"{SHERPA}/tts-models/sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2"
 
 
 def get(url: str, dest: str) -> str:
@@ -143,12 +145,43 @@ def moonshine():
     print("Moonshine listo")
 
 
+def supertonic():
+    d = untar(get(SUPERTONIC, os.path.join(TMP, "supertonic.tar.bz2")))
+    for part in ["duration_predictor", "text_encoder", "vector_estimator", "vocoder"]:
+        shutil.copy(find(d, lambda f, p=part: f.startswith(p) and f.endswith(".onnx")), os.path.join(OUT, f"supertonic-{part}.onnx"))
+    for f in ["tts.json", "unicode_indexer.bin", "voice.bin"]:
+        shutil.copy(find(d, lambda x, f=f: x == f), os.path.join(OUT, f"supertonic-{f}"))
+    print("Supertonic listo")
+
+
+def pocket():
+    d = untar(get(POCKET, os.path.join(TMP, "pocket.tar.bz2")))
+    for part in ["lm_flow", "lm_main", "encoder", "decoder", "text_conditioner"]:
+        shutil.copy(find(d, lambda f, p=part: f.startswith(p) and f.endswith(".onnx")), os.path.join(OUT, f"pocket-{part}.onnx"))
+    for f in ["vocab.json", "token_scores.json"]:
+        shutil.copy(find(d, lambda x, f=f: x == f), os.path.join(OUT, f"pocket-{f}"))
+    # Voces de ejemplo (grabaciones de referencia): siempre 4 archivos, con sus nombres en pocket-voices.json.
+    wavs = []
+    for root, _, files in os.walk(d):
+        wavs += [os.path.join(root, f) for f in sorted(files) if f.endswith(".wav")]
+    print("Voces de ejemplo de Pocket TTS:", [os.path.basename(w) for w in wavs])
+    wavs = (wavs * 4)[:4]
+    names = []
+    for i, w in enumerate(wavs, 1):
+        shutil.copy(w, os.path.join(OUT, f"pocket-ref-{i}.wav"))
+        names.append(os.path.splitext(os.path.basename(w))[0])
+    json.dump({"speakers": names}, open(os.path.join(OUT, "pocket-voices.json"), "w"))
+    print("Pocket TTS listo")
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(TMP, exist_ok=True)
     piper_au()
     kokoro()
     moonshine()
+    supertonic()
+    pocket()
     sizes = {f: os.path.getsize(os.path.join(OUT, f)) for f in sorted(os.listdir(OUT))}
     json.dump(sizes, open(os.path.join(OUT, "modelos.json"), "w"), indent=1)
     print(json.dumps(sizes, indent=1))

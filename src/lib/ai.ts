@@ -19,8 +19,9 @@ interface OliverAiPlugin {
   cancelDownload(o: { id: string }): Promise<void>;
   remove(o: { id: string }): Promise<void>;
   readText(o: { id: string; name: string }): Promise<{ text: string }>;
-  loadVoice(o: { id: string; kind: string; espeak: string }): Promise<{ speakers: number; sampleRate: number }>;
-  speak(o: { text: string; speaker: number; speed?: number }): Promise<void>;
+  loadVoice(o: { id: string; kind: string; espeak: string; noise?: number; noiseW?: number }): Promise<{ speakers: number; sampleRate: number }>;
+  speak(o: { text: string; speaker: number; speed?: number; pitch?: number; volume?: number; reference?: string }): Promise<void>;
+  recordReference(o: { id: string; seconds: number }): Promise<{ seconds: number }>;
   stopSpeaking(): Promise<void>;
   loadEar(o: { id: string }): Promise<void>;
   listen(o: { maxMs?: number; silenceMs?: number; waitMs?: number }): Promise<{ text: string }>;
@@ -34,6 +35,7 @@ interface OliverAiPlugin {
   addListener(event: 'token', fn: (e: { text: string }) => void): Promise<PluginListenerHandle>;
   addListener(event: 'level', fn: (e: { level: number }) => void): Promise<PluginListenerHandle>;
   addListener(event: 'speechStart', fn: () => void): Promise<PluginListenerHandle>;
+  addListener(event: 'recording', fn: (e: { progress: number }) => void): Promise<PluginListenerHandle>;
 }
 
 export interface AiStatus {
@@ -60,7 +62,7 @@ export interface Pack {
   /** Tamaño aproximado en MB. */
   mb: number;
   files: { url: string; name: string; size: number }[];
-  engine?: 'piper' | 'kokoro';
+  engine?: 'piper' | 'kokoro' | 'supertonic' | 'pocket';
   espeak?: string;
   /** Voces fijas (Kokoro). Piper las lee de speakers.json. */
   speakers?: { id: number; name: string }[];
@@ -69,7 +71,7 @@ export interface Pack {
   license: string;
 }
 
-const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-3/';
+const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-4/';
 const HF = 'https://huggingface.co/litert-community/';
 const MB = 1024 * 1024;
 
@@ -108,6 +110,48 @@ export const PACKS: Pack[] = [
       { url: REL + 'kokoro-model.onnx', name: 'model.onnx', size: 128 * MB },
       { url: REL + 'kokoro-voices.bin', name: 'voices.bin', size: 6 * MB },
       { url: REL + 'kokoro-tokens.txt', name: 'tokens.txt', size: 1 },
+    ],
+  },
+  {
+    id: 'supertonic',
+    kind: 'voice',
+    engine: 'supertonic',
+    title: 'Supertonic 3',
+    desc: 'Muy rápida y clara, con 10 voces (de hombre y de mujer: probalas con ▶). Acento estadounidense. Lee el texto tal cual, sin pasar por fonemas.',
+    mb: 110,
+    license: 'OpenRAIL-M (modelo) y MIT (código).',
+    speakers: Array.from({ length: 10 }, (_, i) => ({ id: i, name: `Voz ${i + 1}` })),
+    files: [
+      { url: REL + 'supertonic-duration_predictor.onnx', name: 'duration_predictor.onnx', size: 3 * MB },
+      { url: REL + 'supertonic-text_encoder.onnx', name: 'text_encoder.onnx', size: 30 * MB },
+      { url: REL + 'supertonic-vector_estimator.onnx', name: 'vector_estimator.onnx', size: 60 * MB },
+      { url: REL + 'supertonic-vocoder.onnx', name: 'vocoder.onnx', size: 20 * MB },
+      { url: REL + 'supertonic-tts.json', name: 'tts.json', size: 1 },
+      { url: REL + 'supertonic-unicode_indexer.bin', name: 'unicode_indexer.bin', size: 1 * MB },
+      { url: REL + 'supertonic-voice.bin', name: 'voice.bin', size: 1 * MB },
+    ],
+  },
+  {
+    id: 'pocket',
+    kind: 'voice',
+    engine: 'pocket',
+    title: 'Pocket TTS (imita una voz)',
+    desc: 'Habla con la voz de una grabación de 10 segundos. Podés grabar a un australiano (con su permiso) y Oliver va a sonar como él. Es la más natural, pero la más lenta.',
+    mb: 190,
+    license: 'MIT. Solo grabá a alguien que te dé permiso.',
+    files: [
+      { url: REL + 'pocket-lm_flow.onnx', name: 'lm_flow.onnx', size: 10 * MB },
+      { url: REL + 'pocket-lm_main.onnx', name: 'lm_main.onnx', size: 80 * MB },
+      { url: REL + 'pocket-encoder.onnx', name: 'encoder.onnx', size: 40 * MB },
+      { url: REL + 'pocket-decoder.onnx', name: 'decoder.onnx', size: 25 * MB },
+      { url: REL + 'pocket-text_conditioner.onnx', name: 'text_conditioner.onnx', size: 16 * MB },
+      { url: REL + 'pocket-vocab.json', name: 'vocab.json', size: 1 * MB },
+      { url: REL + 'pocket-token_scores.json', name: 'token_scores.json', size: 1 * MB },
+      { url: REL + 'pocket-voices.json', name: 'speakers.json', size: 1 },
+      { url: REL + 'pocket-ref-1.wav', name: 'ref-1.wav', size: 1 * MB },
+      { url: REL + 'pocket-ref-2.wav', name: 'ref-2.wav', size: 1 * MB },
+      { url: REL + 'pocket-ref-3.wav', name: 'ref-3.wav', size: 1 * MB },
+      { url: REL + 'pocket-ref-4.wav', name: 'ref-4.wav', size: 1 * MB },
     ],
   },
   {
@@ -160,8 +204,21 @@ export function packReady(p: Pack, st: AiStatus): boolean {
 }
 
 /** Nombres de las voces de un paquete (Piper las trae en speakers.json). */
-export async function packSpeakers(pack: Pack): Promise<{ id: number; name: string }[]> {
+export const MY_RECORDING = 100;
+
+export async function packSpeakers(pack: Pack, files?: string[]): Promise<{ id: number; name: string }[]> {
   if (pack.speakers) return pack.speakers;
+  if (pack.engine === 'pocket') {
+    let names: string[] = [];
+    try {
+      names = JSON.parse((await OliverAi.readText({ id: pack.id, name: 'speakers.json' })).text).speakers ?? [];
+    } catch {
+      /* sin nombres */
+    }
+    const list = names.map((n, i) => ({ id: i, name: `Ejemplo ${i + 1}: ${n}` }));
+    if (files?.includes('mi-voz.wav')) list.unshift({ id: MY_RECORDING, name: '🎙️ Mi grabación' });
+    return list;
+  }
   try {
     const { text } = await OliverAi.readText({ id: pack.id, name: 'speakers.json' });
     const names: string[] = JSON.parse(text).speakers ?? [];
@@ -175,6 +232,50 @@ const prettyName = (n: string, i: number) => {
   const clean = n.replace(/[_-]+/g, ' ').trim();
   return clean && clean !== 'default' ? `${i + 1}. ${clean[0].toUpperCase()}${clean.slice(1)}` : `Voz ${i + 1}`;
 };
+
+// ───────────── ajustes de la voz ─────────────
+
+export interface Tune {
+  /** Velocidad (1 = la del modelo). */
+  speed: number;
+  /** Tono (1 = el natural). */
+  pitch: number;
+  /** Volumen de la voz dentro de la app (no cambia el volumen del teléfono). */
+  volume: number;
+  /** Piper: expresividad (variación de la entonación). */
+  noise: number;
+  /** Piper: variación del ritmo. */
+  noiseW: number;
+}
+export const DEFAULT_TUNE: Tune = { speed: 1, pitch: 1, volume: 1, noise: 0.667, noiseW: 0.8 };
+
+/** Narradores que leen apurados (según los autores del modelo): clancy y tully ×1,25 más lentos, marlo ×1,08. */
+const PIPER_SLOW: Record<number, number> = { 0: 0.8, 8: 0.8, 2: 0.93 };
+
+export const tuneKey = (packId: string, speaker: number) => `${packId}:${speaker}`;
+
+export function tuneFor(packId: string, speaker: number): Tune {
+  const base = { ...DEFAULT_TUNE, speed: packId === 'piper-au' ? (PIPER_SLOW[speaker] ?? 1) : 1 };
+  return { ...base, ...(getState().settings.ai.tune?.[tuneKey(packId, speaker)] ?? {}) };
+}
+
+/** Grabación que usa Pocket TTS para cada voz. */
+export const referenceFor = (speaker: number) => (speaker === MY_RECORDING ? 'mi-voz.wav' : `ref-${speaker + 1}.wav`);
+
+export async function loadVoicePack(pack: Pack, speaker: number, tune = tuneFor(pack.id, speaker)) {
+  await OliverAi.loadVoice({ id: pack.id, kind: pack.engine ?? 'piper', espeak: pack.espeak ?? 'en', noise: tune.noise, noiseW: tune.noiseW });
+}
+
+export async function speakWith(pack: Pack, speaker: number, text: string, tune = tuneFor(pack.id, speaker)) {
+  await OliverAi.speak({
+    text,
+    speaker: pack.engine === 'pocket' ? 0 : speaker,
+    speed: tune.speed,
+    pitch: tune.pitch,
+    volume: tune.volume,
+    reference: pack.engine === 'pocket' ? referenceFor(speaker) : undefined,
+  });
+}
 
 // ───────────── la llamada ─────────────
 
@@ -207,7 +308,7 @@ export async function loadCallAi(ai: CallAi, system: string): Promise<CallAi & {
   const out = { ...ai, errors: [] as string[] };
   if (ai.voice) {
     try {
-      await OliverAi.loadVoice({ id: ai.voice.id, kind: ai.voice.engine ?? 'piper', espeak: ai.voice.espeak ?? 'en-gb' });
+      await loadVoicePack(ai.voice, ai.speaker);
     } catch (e) {
       out.errors.push(String((e as Error).message ?? e));
       out.voice = null;
@@ -336,11 +437,15 @@ export async function startDownload(pack: Pack): Promise<boolean> {
 export const cancelDownload = (id: string) => OliverAi.cancelDownload({ id });
 export const removePack = (id: string) => OliverAi.remove({ id });
 
+/** Graba la voz de referencia para Pocket TTS (queda solo en el teléfono). */
+export const recordMyVoice = (seconds = 10) => OliverAi.recordReference({ id: 'pocket', seconds });
+
 /** Prueba una voz (se carga solo mientras suena y después se libera). */
-export async function tryVoice(pack: Pack, speaker: number) {
-  await OliverAi.loadVoice({ id: pack.id, kind: pack.engine ?? 'piper', espeak: pack.espeak ?? 'en-gb' });
+export async function tryVoice(pack: Pack, speaker: number, tune?: Tune) {
+  const t = tune ?? tuneFor(pack.id, speaker);
+  await loadVoicePack(pack, speaker, t);
   try {
-    await OliverAi.speak({ text: "G'day mate! I'm Oliver. How are you going today?", speaker });
+    await speakWith(pack, speaker, "G'day mate! I'm Oliver. How are you going today? Reckon we'll have a good yarn.", t);
   } finally {
     await OliverAi.unloadAll().catch(() => {});
   }

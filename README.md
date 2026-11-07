@@ -15,7 +15,7 @@ App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en e
 - **Las llamadas mantienen su temática**: con IA, Oliver responde a lo que digas pero siempre dentro del roleplay de la unidad, y al final te da 3 consejos sobre tu inglés.
 - **Llamada libre**: pestaña «Llamar» para charlar con Oliver de cualquier tema (necesita una IA de charla descargada).
 
-Los modelos de voz y oído se preparan en GitHub Actions (`scripts/preparar-modelos.py`) y quedan en el Release «modelos-3»; las IA de charla se bajan de Hugging Face (litert-community).
+Los modelos de voz y oído se preparan en GitHub Actions (`scripts/preparar-modelos.py`) y quedan en el Release «modelos-4»; las IA de charla se bajan de Hugging Face (litert-community).
 
 ## Qué hace la versión 0.7
 

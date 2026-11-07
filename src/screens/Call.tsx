@@ -21,6 +21,7 @@ import {
   releaseCallAi,
   roleplayPrompt,
   shortReply,
+  speakWith,
   type CallAi,
 } from '../lib/ai';
 
@@ -143,7 +144,7 @@ export function Call({ callId, free = false, onExit, onSettings }: { callId?: st
     lastSaid.current = text;
     setTalking(true);
     try {
-      if (aiRef.current.voice) await OliverAi.speak({ text, speaker: aiRef.current.speaker });
+      if (aiRef.current.voice) await speakWith(aiRef.current.voice, aiRef.current.speaker, text);
       else await say(text, { lang: 'en-AU' });
     } catch {
       try {

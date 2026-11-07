@@ -7,6 +7,7 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
+import android.media.PlaybackParams
 import android.os.Build
 import android.os.SystemClock
 import com.getcapacitor.JSArray
@@ -39,6 +40,8 @@ import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsKokoroModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsPocketModelConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsSupertonicModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
 import java.io.File
 import java.io.FileOutputStream
@@ -277,21 +280,34 @@ class OliverAiPlugin : Plugin() {
 
     // ───────────── voz de Oliver ─────────────
 
+    @Volatile private var ttsKind = "piper"
+    @Volatile private var ttsKey = ""
+    @Volatile private var reference: FloatArray? = null
+    @Volatile private var referenceRate = 16000
+    @Volatile private var referenceName = ""
+
+    /**
+     * Carga una voz: piper (Piper australiano), kokoro, supertonic o pocket (Pocket TTS, que imita la voz de
+     * una grabación). La expresividad y el ritmo de Piper son parte del modelo: si cambian, se vuelve a cargar.
+     */
     @PluginMethod
     fun loadVoice(call: PluginCall) {
         val id = call.getString("id") ?: return call.reject("Falta id")
         val kind = call.getString("kind") ?: "piper"
         val voice = call.getString("espeak") ?: "en-gb-x-rp"
+        val noise = call.getFloat("noise") ?: 0.667f
+        val noiseW = call.getFloat("noiseW") ?: 0.8f
         work.execute {
             try {
-                if (ttsId != id) {
+                val key = "$id|$noise|$noiseW"
+                if (ttsKey != key) {
                     releaseTts()
                     val d = dir(id)
-                    if (kind != "kokoro" && !File(d, "tokens2.txt").exists()) {
+                    if (kind == "piper" && !File(d, "tokens2.txt").exists()) {
                         call.reject("Hay que actualizar esta voz (Ajustes › Voces e IA)")
                         return@execute
                     }
-                    if (!phonemizerReady) {
+                    if ((kind == "piper" || kind == "kokoro") && !phonemizerReady) {
                         step("preparar el fonemizador")
                         piperPhonemizeInitialize(context)
                         phonemizerReady = true
@@ -299,22 +315,53 @@ class OliverAiPlugin : Plugin() {
                     step("cargar la voz $id")
                     val model = OfflineTtsModelConfig()
                     model.numThreads = 2
-                    if (kind == "kokoro") {
-                        val k = OfflineTtsKokoroModelConfig()
-                        k.model = File(d, "model.onnx").absolutePath
-                        k.voices = File(d, "voices.bin").absolutePath
-                        k.tokens = File(d, "tokens.txt").absolutePath
-                        model.kokoro = k
-                    } else {
-                        val v = OfflineTtsVitsModelConfig()
-                        v.model = File(d, "model.onnx").absolutePath
-                        v.tokens = File(d, "tokens2.txt").absolutePath
-                        model.vits = v
+                    when (kind) {
+                        "kokoro" -> {
+                            val k = OfflineTtsKokoroModelConfig()
+                            k.model = File(d, "model.onnx").absolutePath
+                            k.voices = File(d, "voices.bin").absolutePath
+                            k.tokens = File(d, "tokens.txt").absolutePath
+                            model.kokoro = k
+                        }
+                        "supertonic" -> {
+                            val t = OfflineTtsSupertonicModelConfig()
+                            t.durationPredictor = File(d, "duration_predictor.onnx").absolutePath
+                            t.textEncoder = File(d, "text_encoder.onnx").absolutePath
+                            t.vectorEstimator = File(d, "vector_estimator.onnx").absolutePath
+                            t.vocoder = File(d, "vocoder.onnx").absolutePath
+                            t.ttsJson = File(d, "tts.json").absolutePath
+                            t.unicodeIndexer = File(d, "unicode_indexer.bin").absolutePath
+                            t.voiceStyle = File(d, "voice.bin").absolutePath
+                            model.supertonic = t
+                        }
+                        "pocket" -> {
+                            val t = OfflineTtsPocketModelConfig()
+                            t.lmFlow = File(d, "lm_flow.onnx").absolutePath
+                            t.lmMain = File(d, "lm_main.onnx").absolutePath
+                            t.encoder = File(d, "encoder.onnx").absolutePath
+                            t.decoder = File(d, "decoder.onnx").absolutePath
+                            t.textConditioner = File(d, "text_conditioner.onnx").absolutePath
+                            t.vocabJson = File(d, "vocab.json").absolutePath
+                            t.tokenScoresJson = File(d, "token_scores.json").absolutePath
+                            model.pocket = t
+                        }
+                        else -> {
+                            val v = OfflineTtsVitsModelConfig()
+                            v.model = File(d, "model.onnx").absolutePath
+                            v.tokens = File(d, "tokens2.txt").absolutePath
+                            v.noiseScale = noise
+                            v.noiseScaleW = noiseW
+                            model.vits = v
+                        }
                     }
                     val config = OfflineTtsConfig()
                     config.model = model
                     tts = OfflineTts(null, config)
                     ttsId = id
+                    ttsKind = kind
+                    ttsKey = key
+                    reference = null
+                    referenceName = ""
                     stepDone()
                 }
                 espeakVoice = voice
@@ -330,11 +377,59 @@ class OliverAiPlugin : Plugin() {
         }
     }
 
+    /** Pocket TTS: la voz sale de una grabación (ref-N.wav del paquete o mi-voz.wav grabada en la app). */
+    private fun loadReference(file: String) {
+        if (referenceName == file && reference != null) return
+        val f = File(dir(ttsId ?: "pocket"), file)
+        if (!f.exists()) throw IllegalStateException("Falta la grabación de la voz")
+        val (data, rate) = readWav(f)
+        reference = data
+        referenceRate = rate
+        referenceName = file
+    }
+
+    /** Lee un WAV PCM de 16 bits o float de 32 bits (mono, o se queda con el primer canal). */
+    private fun readWav(f: File): Pair<FloatArray, Int> {
+        val b = f.readBytes()
+        val bb = java.nio.ByteBuffer.wrap(b).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        var pos = 12
+        var rate = 16000
+        var channels = 1
+        var bits = 16
+        var format = 1
+        while (pos + 8 <= b.size) {
+            val id = String(b, pos, 4, Charsets.US_ASCII)
+            val size = bb.getInt(pos + 4)
+            val body = pos + 8
+            if (id == "fmt ") {
+                format = bb.getShort(body).toInt()
+                channels = bb.getShort(body + 2).toInt()
+                rate = bb.getInt(body + 4)
+                bits = bb.getShort(body + 14).toInt()
+            } else if (id == "data") {
+                val len = min(size, b.size - body)
+                val frame = channels * bits / 8
+                val n = len / frame
+                val out = FloatArray(n)
+                for (i in 0 until n) {
+                    val at = body + i * frame
+                    out[i] = if (format == 3 || bits == 32) bb.getFloat(at) else bb.getShort(at) / 32768f
+                }
+                return Pair(out, rate)
+            }
+            pos = body + size + (size and 1)
+        }
+        throw IllegalStateException("Grabación inválida")
+    }
+
     @PluginMethod
     fun speak(call: PluginCall) {
         val text = call.getString("text") ?: ""
         val sid = call.getInt("speaker") ?: 0
         val speed = call.getFloat("speed") ?: 1.0f
+        val pitch = call.getFloat("pitch") ?: 1.0f
+        val volume = call.getFloat("volume") ?: 1.0f
+        val ref = call.getString("reference")
         stopSpeech = false
         work.execute {
             val voice = tts
@@ -344,6 +439,7 @@ class OliverAiPlugin : Plugin() {
             }
             var player: AudioTrack? = null
             try {
+                if (ttsKind == "pocket") loadReference(ref ?: "ref-1.wav")
                 val rate = voice.sampleRate()
                 val minBuf = AudioTrack.getMinBufferSize(rate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)
                 player = AudioTrack.Builder()
@@ -361,7 +457,7 @@ class OliverAiPlugin : Plugin() {
                             .build(),
                     )
                     // Búfer chico (~0,2 s): con uno grande, Android esperaba a llenarlo antes de sonar y el final
-                    // de cada frase quedaba trabado hasta cortar (la voz salía entrecortada y «robótica»).
+                    // de cada frase quedaba trabado hasta cortar (la voz salía entrecortada).
                     .setBufferSizeInBytes(max(minBuf * 2, rate / 5 * 4))
                     .setTransferMode(AudioTrack.MODE_STREAM)
                     .build()
@@ -371,40 +467,58 @@ class OliverAiPlugin : Plugin() {
                     } catch (_: Throwable) {
                     }
                 }
+                // Tono: se cambia al reproducir, sin cambiar la velocidad.
+                if (pitch != 1.0f) {
+                    try {
+                        player.playbackParams = PlaybackParams().setPitch(pitch).setSpeed(1.0f)
+                    } catch (_: Throwable) {
+                    }
+                }
                 track = player
                 player.play()
                 var frames = 0L
-                // Frase por frase: mientras suena una, se genera la siguiente.
+                val pause = FloatArray(rate * 18 / 100) // pausa natural entre frases
                 step("hablar con la voz $ttsId")
-                for (sentence in splitSentences(forSpeech(text))) {
+                val sentences = splitSentences(forSpeech(text))
+                for ((n, sentence) in sentences.withIndex()) {
                     if (stopSpeech) break
-                    val res = piperPhonemizeText(sentence, espeakVoice) ?: continue
-                    val phonemes: Array<IntArray>
-                    try {
-                        phonemes = Array(res.numSentences) { res.getPhonemes(it) }
-                    } finally {
-                        res.close()
-                    }
-                    if (phonemes.isEmpty()) continue
                     val gen = GenerationConfig()
                     gen.sid = sid
                     gen.speed = speed
-                    gen.phonemeCodepoints = phonemes
-                    val audio = voice.generateWithConfig("", gen)
+                    if (ttsKind == "piper" || ttsKind == "kokoro") {
+                        val res = piperPhonemizeText(sentence, espeakVoice) ?: continue
+                        val phonemes: Array<IntArray>
+                        try {
+                            phonemes = Array(res.numSentences) { res.getPhonemes(it) }
+                        } finally {
+                            res.close()
+                        }
+                        if (phonemes.isEmpty()) continue
+                        gen.phonemeCodepoints = phonemes
+                    }
+                    if (ttsKind == "supertonic") {
+                        gen.numSteps = 8
+                        gen.extra = mapOf("lang" to "en")
+                    }
+                    if (ttsKind == "pocket") {
+                        gen.sid = 0
+                        gen.numSteps = 5
+                        gen.referenceAudio = reference
+                        gen.referenceSampleRate = referenceRate
+                    }
+                    val audio = voice.generateWithConfig(if (gen.phonemeCodepoints != null) "" else sentence, gen)
                     val samples = audio.samples
                     if (stopSpeech) break
-                    // Piper sale muy bajito: se sube el volumen hasta un pico de 0,9 (como mucho ×3).
-                    var peak = 0f
-                    for (v in samples) peak = max(peak, abs(v))
-                    if (peak > 0.01f) {
-                        val gain = min(3f, 0.9f / peak)
-                        for (j in samples.indices) samples[j] *= gain
+                    shape(samples, rate, volume)
+                    if (n > 0) {
+                        player.write(pause, 0, pause.size, AudioTrack.WRITE_BLOCKING)
+                        frames += pause.size
                     }
                     var off = 0
                     while (off < samples.size && !stopSpeech) {
-                        val n = player.write(samples, off, min(4096, samples.size - off), AudioTrack.WRITE_BLOCKING)
-                        if (n <= 0) break
-                        off += n
+                        val k = player.write(samples, off, min(4096, samples.size - off), AudioTrack.WRITE_BLOCKING)
+                        if (k <= 0) break
+                        off += k
                     }
                     frames += samples.size
                 }
@@ -416,7 +530,7 @@ class OliverAiPlugin : Plugin() {
                     frames += tail.size
                 }
                 // Esperar a que termine de sonar.
-                val deadline = SystemClock.elapsedRealtime() + frames * 1000 / rate + 1500
+                val deadline = SystemClock.elapsedRealtime() + (frames * 1000 / rate * 1.3).toLong() + 1500
                 while (!stopSpeech && player.playbackHeadPosition < frames && SystemClock.elapsedRealtime() < deadline) {
                     Thread.sleep(30)
                 }
@@ -433,6 +547,103 @@ class OliverAiPlugin : Plugin() {
                 track = null
             }
         }
+    }
+
+    /**
+     * Pule cada frase: saca el zumbido grave de las grabaciones caseras, suaviza el comienzo y el final
+     * (sin clics) y aplica el volumen que elegiste (sin tocar el volumen del teléfono). Si el volumen
+     * sube, un limitador suave evita que suene saturado.
+     */
+    private fun shape(x: FloatArray, rate: Int, volume: Float) {
+        if (x.isEmpty()) return
+        // Filtro pasa-altos de 1er orden a ~70 Hz.
+        val rc = 1.0 / (2 * Math.PI * 70)
+        val dt = 1.0 / rate
+        val alpha = (rc / (rc + dt)).toFloat()
+        var prevIn = x[0]
+        var prevOut = 0f
+        for (i in x.indices) {
+            val v = x[i]
+            val o = alpha * (prevOut + v - prevIn)
+            prevIn = v
+            prevOut = o
+            x[i] = o
+        }
+        val fade = min(x.size / 2, rate / 100) // 10 ms
+        for (i in 0 until fade) {
+            val g = i.toFloat() / fade
+            x[i] *= g
+            x[x.size - 1 - i] *= g
+        }
+        if (volume != 1.0f) {
+            for (i in x.indices) {
+                val v = x[i] * volume
+                x[i] = if (volume > 1f) (kotlin.math.tanh(v.toDouble() * 1.1) / 1.1).toFloat() else v
+            }
+        }
+    }
+
+    /** Graba una voz de referencia para Pocket TTS (con permiso de la persona). Se guarda en el teléfono. */
+    @PluginMethod
+    fun recordReference(call: PluginCall) {
+        if (getPermissionState("microphone") != PermissionState.GRANTED) {
+            requestPermissionForAlias("microphone", call, "recordPermission")
+            return
+        }
+        doRecordReference(call)
+    }
+
+    @PermissionCallback
+    private fun recordPermission(call: PluginCall) {
+        if (getPermissionState("microphone") == PermissionState.GRANTED) doRecordReference(call)
+        else call.reject("Sin permiso para el micrófono")
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun doRecordReference(call: PluginCall) {
+        val id = call.getString("id") ?: "pocket"
+        val seconds = min(20, max(3, call.getInt("seconds") ?: 10))
+        stopListen = false
+        ioWork.execute {
+            val rate = 16000
+            var rec: AudioRecord? = null
+            try {
+                val minBuf = AudioRecord.getMinBufferSize(rate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
+                rec = AudioRecord(MediaRecorder.AudioSource.MIC, rate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, max(minBuf, rate))
+                val total = rate * seconds
+                val pcm = ShortArray(total)
+                rec.startRecording()
+                var got = 0
+                while (got < total && !stopListen) {
+                    val n = rec.read(pcm, got, min(2400, total - got))
+                    if (n <= 0) continue
+                    got += n
+                    val ev = JSObject()
+                    ev.put("progress", got.toDouble() / total)
+                    notifyListeners("recording", ev)
+                }
+                rec.stop()
+                val out = File(dir(id), "mi-voz.wav")
+                writeWav(out, pcm, got, rate)
+                if (ttsId == id && referenceName == "mi-voz.wav") reference = null
+                val ret = JSObject()
+                ret.put("seconds", got.toDouble() / rate)
+                call.resolve(ret)
+            } catch (e: Throwable) {
+                call.reject("No se pudo grabar: ${e.message}")
+            } finally {
+                rec?.release()
+            }
+        }
+    }
+
+    private fun writeWav(f: File, pcm: ShortArray, n: Int, rate: Int) {
+        val bb = java.nio.ByteBuffer.allocate(44 + n * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        bb.put("RIFF".toByteArray()).putInt(36 + n * 2).put("WAVE".toByteArray())
+        bb.put("fmt ".toByteArray()).putInt(16).putShort(1).putShort(1).putInt(rate).putInt(rate * 2).putShort(2).putShort(16)
+        bb.put("data".toByteArray()).putInt(n * 2)
+        for (i in 0 until n) bb.putShort(pcm[i])
+        f.writeBytes(bb.array())
     }
 
     @PluginMethod
@@ -753,6 +964,9 @@ class OliverAiPlugin : Plugin() {
         }
         tts = null
         ttsId = null
+        ttsKey = ""
+        reference = null
+        referenceName = ""
     }
 
     private fun releaseEar() {

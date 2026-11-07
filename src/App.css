@@ -644,3 +644,5 @@ form { display: flex; flex-direction: column; gap: 10px; }
 .ai-section { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 .ai-section h3 { margin: 6px 0 0; font-size: 15px; }
 .tabs button { font-size: 12.5px; padding-left: 2px; padding-right: 2px; }
+.tune { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.tune input[type='range'] { width: 100%; accent-color: #49c0f8; }
