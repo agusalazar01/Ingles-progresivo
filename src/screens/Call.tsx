@@ -371,7 +371,7 @@ export function Call({ callId, free = false, onExit, onSettings }: { callId?: st
         <img className="call-bg" src={bg} alt="" />
         <div className="call-oliver">
           <Oliver talking={talking} />
-          {/* Videollamada tipo selfie: el brazo baja hacia la cámara (sin mano ni celular). */}
+          {/* El polo sigue hacia abajo del cuadro (sin brazo). */}
           <div className="oliver-arm-wrap" aria-hidden="true" dangerouslySetInnerHTML={{ __html: arm }} />
         </div>
       </div>

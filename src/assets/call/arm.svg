@@ -1,17 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1300" class="oliver-arm" overflow="visible">
-<defs>
- <linearGradient id="arm-skin" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f9ac7f"/><stop offset="1" stop-color="#fdbd8f"/></linearGradient>
- <linearGradient id="arm-polo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a55ab"/><stop offset="1" stop-color="#1f4693"/></linearGradient>
-</defs>
-<!-- el polo sigue hacia abajo, fuera del cuadro -->
+<!-- el polo sigue hacia abajo, fuera del cuadro (Oliver queda más arriba y no se corta el cuerpo) -->
 <path d="M150 1298 L1130 1298 L1140 1500 L140 1500 Z" fill="#1f4693"/>
 <path d="M640 1298 L720 1298 L720 1500 L640 1500 Z" fill="#1c3f86"/>
-<!-- brazo de selfie: sale del hombro y baja en diagonal hacia la cámara; no se ve la mano ni el celular -->
-<path d="M60 1170 Q190 1250 330 1225 Q300 1340 290 1500 L-260 1500 Q-110 1290 60 1170 Z" fill="url(#arm-skin)"/>
-<path d="M60 1170 Q-40 1270 -110 1500 L-260 1500 Q-110 1290 60 1170 Z" fill="#f59a68" opacity="0.5"/>
-<path d="M170 1330 Q140 1400 130 1480" stroke="#f59a68" stroke-width="14" fill="none" stroke-linecap="round" opacity="0.5"/>
-<!-- manga del polo -->
-<path d="M120 1050 Q215 965 340 980 Q385 1110 345 1240 Q190 1265 45 1185 Q65 1100 120 1050 Z" fill="url(#arm-polo)"/>
-<path d="M45 1185 Q190 1265 345 1240 L352 1205 Q200 1228 62 1155 Z" fill="#1c3f86"/>
-<path d="M255 990 Q310 1090 300 1200" stroke="#1f4590" stroke-width="16" fill="none" stroke-linecap="round" opacity="0.6"/>
 </svg>
