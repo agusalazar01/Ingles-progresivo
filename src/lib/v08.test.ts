@@ -60,3 +60,19 @@ describe('v0.8.2 — ajustes de la voz', () => {
     expect(pocket.files.some((f) => /^ref-\d\.wav$/.test(f.name))).toBe(false);
   });
 });
+
+describe('v0.8.5 — pasar a pregunta manteniendo la persona', () => {
+  it('acepta «my» además de «your», y «Am I» además de «Are you»', async () => {
+    const { matches, samePersonVariants } = await import('./answer');
+    const a = samePersonVariants('My mates are at the beach this arvo.', ['Are your mates at the beach this arvo?']);
+    expect(matches('are my mates at the beach this arvo?', a)).toBe(true);
+    expect(matches('Are your mates at the beach this arvo?', a)).toBe(true);
+    expect(matches('are his mates at the beach this arvo?', a)).toBe(false);
+    const b = samePersonVariants('I am from Uruguay.', ['Are you from Uruguay?']);
+    expect(matches('am I from Uruguay?', b)).toBe(true);
+    const c = samePersonVariants('We are at home.', ["Are you at home?"]);
+    expect(matches('are we at home', c)).toBe(true);
+    // Si la oración no tiene «my», no se inventan variantes.
+    expect(samePersonVariants('She is tired today.', ['Is she tired today?'])).toEqual(['Is she tired today?']);
+  });
+});

@@ -60,3 +60,32 @@ export function nearMiss(given: string, answers: string[]): boolean {
   if (g.length < 4) return false;
   return answers.some((a) => levenshtein(g, normalize(a)) === 1);
 }
+
+/**
+ * Al pasar a pregunta, los bancos cambian de persona como si le preguntaras a otro («My mates are…» →
+ * «Are your mates…?»). Pero mantener la persona también es correcto («Are my mates…?»), así que se aceptan las dos.
+ */
+export function samePersonVariants(prompt: string, answers: string[]): string[] {
+  const p = ` ${normalize(prompt)} `;
+  const out = new Set(answers);
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  for (const a of answers) {
+    let v = a;
+    if (/ my /.test(p)) v = v.replace(/\byour\b/g, 'my').replace(/\bYour\b/g, 'My');
+    else if (/ our /.test(p)) v = v.replace(/\byour\b/g, 'our').replace(/\bYour\b/g, 'Our');
+    if (/ mine /.test(p)) v = v.replace(/\byours\b/g, 'mine');
+    else if (/ ours /.test(p)) v = v.replace(/\byours\b/g, 'ours');
+    // Sujeto: «I am…» → «Am I…?» y «We are…» → «Are we…?» además de «Are you…?».
+    const subj = p.match(/^ (i|we) /)?.[1];
+    if (subj) {
+      const m = v.match(/^(\w+) you\b/i);
+      if (m) {
+        const aux = m[1].toLowerCase();
+        const verb = subj === 'i' && aux === 'are' ? 'am' : subj === 'i' && aux === "weren't" ? "wasn't" : subj === 'i' && aux === 'were' ? 'was' : aux;
+        v = cap(`${verb} ${subj === 'i' ? 'I' : 'we'}${v.slice(m[0].length)}`);
+      }
+    }
+    out.add(v);
+  }
+  return [...out];
+}
