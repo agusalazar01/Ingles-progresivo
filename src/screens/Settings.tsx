@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AiSettings } from '../components/AiSettings';
+import { forgetFact, forgetOliverMemory } from '../lib/oliver';
 import { BackButton } from '../components/BackButton';
 import { resetAll, setState, useAppState } from '../lib/store';
 import { ACCENT_LABEL, listVoices, openVoiceSettings, say, SYSTEM_VOICE, type Accent } from '../lib/speech';
@@ -68,7 +69,12 @@ export function Settings({ initial, onExit }: { initial?: SettingsSection; onExi
           <AccentSettings />
         </>
       )}
-      {section === 'ai' && <AiSettings />}
+      {section === 'ai' && (
+        <>
+          <AiSettings />
+          <OliverMemoryCard />
+        </>
+      )}
       {section === 'study' && <StudySettings />}
       {section === 'about' && <About />}
     </div>
@@ -238,6 +244,34 @@ function VoiceSettings() {
             </button>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Lo que Oliver anotó de vos en las llamadas libres (queda solo en el teléfono). */
+function OliverMemoryCard() {
+  const s = useAppState();
+  const facts = s.oliver?.facts ?? [];
+  return (
+    <div className="card">
+      <p className="card-title">🧠 Lo que Oliver recuerda de vos</p>
+      <p className="small">
+        Después de cada llamada libre con IA, Oliver anota datos que le contaste para retomarlos la próxima vez. Queda solo en tu teléfono.
+      </p>
+      {!facts.length && <p className="small">Todavía nada.</p>}
+      {facts.map((f, i) => (
+        <div key={i} className="row between">
+          <span>{f}</span>
+          <button className="link" aria-label="Olvidar" onClick={() => forgetFact(i)}>
+            ✕
+          </button>
+        </div>
+      ))}
+      {facts.length > 0 && (
+        <button className="link" onClick={() => forgetOliverMemory()}>
+          Que olvide todo
+        </button>
       )}
     </div>
   );

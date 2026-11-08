@@ -9,13 +9,13 @@ import arm from '../assets/call/arm.svg?raw';
 import { ack, matchTurn } from '../lib/call';
 import { canListen, listen, say, stopSpeaking } from '../lib/speech';
 import { ringtone, sfxCorrect, sfxHangup, sfxPickup, sfxWrong } from '../lib/sfx';
-import { saveCall } from '../lib/store';
+import { getState, saveCall } from '../lib/store';
+import { coachWhisper, EXTRACT_FACTS, isRepeat, planFreeCall, rememberFacts, type CoachState } from '../lib/oliver';
 import { useBack } from '../lib/nav';
 import {
   chosenAi,
   cleanReply,
   FEEDBACK_REQUEST,
-  FREE_PROMPT,
   loadCallAi,
   OliverAi,
   releaseCallAi,
@@ -38,6 +38,9 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 const FREE_OPENER = "G'day mate! Good to see ya. How are you going? What do you reckon we have a yarn about today?";
 const BYE_RE = /\b(bye|see ya|see you|gotta go|got to go|hooroo|catch you|talk later|good night)\b/i;
 const MIN_RING = 4300;
+/** Llamada libre: cuántas respuestas tuyas antes de que Oliver se despida, y cada cuántas se resume la charla. */
+const FREE_MAX_TURNS = 16;
+const FREE_RESET_EVERY = 6;
 
 /**
  * Llamada con Oliver: suena, atiende y charla. Con un guion de la unidad (roleplay) o libre.
@@ -64,6 +67,9 @@ export function Call({ callId, free = false, onExit, onSettings }: { callId?: st
   const [secs, setSecs] = useState(0);
   const [ending, setEnding] = useState(false);
   const attempts = useRef(0);
+  const openerRef = useRef('');
+  const systemRef = useRef('');
+  const coach = useRef<CoachState>({ turn: 0, sameTopic: 0 });
   const alive = useRef(true);
   const lastSaid = useRef('');
   const aiRef = useRef(ai);
@@ -88,7 +94,11 @@ export function Call({ callId, free = false, onExit, onSettings }: { callId?: st
         setPhase('needs-ai');
         return;
       }
-      const opener = script ? (script.turns[0] as { o: string }).o : FREE_OPENER;
+      // Llamada libre: la app la prepara (tema nuevo, novedad de Oliver, lo que recuerda de vos y tus frases).
+      const plan = script ? null : planFreeCall((getState().phrases ?? []).slice(-3).map((p) => p.en));
+      const opener = script ? (script.turns[0] as { o: string }).o : plan!.opener;
+      openerRef.current = opener;
+      systemRef.current = plan?.system ?? '';
       const system = script
         ? roleplayPrompt({
             scene: script.scene,
@@ -96,8 +106,8 @@ export function Call({ callId, free = false, onExit, onSettings }: { callId?: st
             unit: unit?.title ?? '',
             lines: script.turns.filter((t): t is { o: string } => 'o' in t).map((t) => t.o),
           }) + `\nYou already opened the call by saying: "${opener}"`
-        : FREE_PROMPT + `\nYou already opened the call by saying: "${FREE_OPENER}"`;
-      if (chosen.voice || chosen.ear || chosen.brain) chosen = await loadCallAi(chosen, system);
+        : plan!.system;
+      if (chosen.voice || chosen.ear || chosen.brain) chosen = await loadCallAi(chosen, system, script ? 0.8 : 0.9);
       if (!alive.current) return;
       setAi(chosen);
       setMicOk(chosen.ear ? true : await canListen());
@@ -189,7 +199,7 @@ export function Call({ callId, free = false, onExit, onSettings }: { callId?: st
   // ── Con IA de charla: Oliver abre la llamada y después responde a lo que digas ──
   useEffect(() => {
     if (phase !== 'talk' || !brain) return;
-    const opener = script ? (script.turns[0] as { o: string }).o : FREE_OPENER;
+    const opener = openerRef.current || FREE_OPENER;
     setLog([{ who: 'oliver', text: opener }]);
     speak(opener).then(() => alive.current && setWaiting(true));
   }, [phase, brain]);
@@ -245,12 +255,36 @@ export function Call({ callId, free = false, onExit, onSettings }: { callId?: st
     setLog((l) => [...l, { who: 'you', text: said }]);
     const turns = logRef.current.filter((l) => l.who === 'you').length + 1;
     const userBye = BYE_RE.test(said);
-    const wrap = userBye || (maxTurns > 0 && turns >= maxTurns);
+    const limit = script ? maxTurns : FREE_MAX_TURNS;
+    const wrap = userBye || turns >= limit;
+    const before = logRef.current.filter((l) => l.who === 'oliver').map((l) => l.text);
     setThinking(true);
     let reply = '';
     try {
-      const res = await OliverAi.chat({ text: wrap ? `${said}\n(Wrap up the call now: answer briefly and say goodbye.)` : said });
+      // Llamada libre larga: se reinicia la charla de la IA con un resumen, para que no se degrade.
+      if (!script && turns > 1 && turns % FREE_RESET_EVERY === 1) {
+        const recap = logRef.current
+          .slice(-8)
+          .map((l) => `${l.who === 'oliver' ? 'You' : 'Learner'}: ${l.text}`)
+          .join('\n');
+        await OliverAi.resetChat({ system: `${systemRef.current}\n\nThe conversation so far (most recent turns):\n${recap}`, temperature: 0.9 });
+      }
+      coach.current.turn = turns;
+      coach.current.sameTopic += 1;
+      const whisper = wrap
+        ? 'Coach: wrap up the call now. Answer briefly and say goodbye.'
+        : script
+          ? ''
+          : coachWhisper(said, before, coach.current, limit);
+      if (whisper.includes('fresh topic')) coach.current.sameTopic = 0;
+      const res = await OliverAi.chat({ text: whisper ? `${said}\n(${whisper})` : said });
       reply = shortReply(cleanReply(res.text), 3);
+      // Si Oliver repite casi lo mismo que hace poco, se le pide otra cosa.
+      if (reply && isRepeat(reply, before)) {
+        const again = await OliverAi.chat({ text: '(Coach: you just said almost the same thing as before. Say something new and different, and ask a different question.)' });
+        const alt = shortReply(cleanReply(again.text), 3);
+        if (alt) reply = alt;
+      }
     } catch {
       reply = '';
     }
@@ -361,7 +395,7 @@ export function Call({ callId, free = false, onExit, onSettings }: { callId?: st
     );
 
   if (phase === 'review')
-    return <Review title={script?.title ?? 'Llamada libre'} goal={script?.goal} callId={callId} log={log} secs={secs} withAi={brain} onExit={onExit} />;
+    return <Review title={script?.title ?? 'Llamada libre'} goal={script?.goal} callId={callId} log={log} secs={secs} withAi={brain} free={!script} onExit={onExit} />;
 
   const progress = script ? Math.min(1, doneTurns / (brain ? maxTurns : userTurns)) : 0;
   const micDisabled = !listening && (!waiting || talking || thinking);
@@ -481,6 +515,7 @@ function Review({
   log,
   secs,
   withAi,
+  free = false,
   onExit,
 }: {
   title: string;
@@ -489,6 +524,7 @@ function Review({
   log: LogLine[];
   secs: number;
   withAi: boolean;
+  free?: boolean;
   onExit: () => void;
 }) {
   const yours = log.filter((l) => l.who === 'you');
@@ -514,13 +550,22 @@ function Review({
       }
     }, 45000);
     OliverAi.chat({ text: FEEDBACK_REQUEST })
-      .then((r) => {
+      .then(async (r) => {
         if (done) return;
         const lines = cleanReply(r.text.replace(/\n/g, ' ¶ '))
           .split('¶')
           .map((x) => x.replace(/^\s*[-•]\s*/, '').trim())
           .filter(Boolean);
         setTips(lines.slice(0, 4));
+        // Llamada libre: Oliver anota lo que contaste para retomarlo la próxima vez (queda solo en el teléfono).
+        if (free && yours.length >= 2) {
+          try {
+            const f = await OliverAi.chat({ text: EXTRACT_FACTS });
+            rememberFacts(f.text.split('\n'));
+          } catch {
+            /* sin memoria esta vez */
+          }
+        }
       })
       .catch(() => setTips([]))
       .finally(() => {

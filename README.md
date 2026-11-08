@@ -4,6 +4,13 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 0.9
+
+- **🗣️ Decilo en inglés** (tarjeta en «Hoy»): escribí o decí algo en español, intentalo vos en inglés y la IA del teléfono te da la versión natural (como en Australia), una más simple, bloques para reusar y una devolución en español. Botones «Esto no suena bien» (otra versión) y «Para revisar con la profe». Las frases quedan en tu mazo con repaso espaciado (FSRS), se practican diciéndolas, con variaciones hechas por la IA (en pasado, con «she», como pregunta…), y Oliver las usa en la llamada libre. Sin IA hay un banco de 30 frases comunes.
+- **Oído nivel ChatGPT**: se suman **Parakeet TDT 0.6B v2** (NVIDIA, solo inglés, muy preciso y rápido) y **Qwen3-ASR 0.6B** (entiende también español).
+- **Oliver libre mucho mejor**: personaje con vida propia (Oliver Dawson, cellar hand en el Barossa, su kelpie Bluey, el cacatúa Kev…), 30 temas que no se repiten entre llamadas, novedades que te cuenta, memoria de lo que le contaste (Configuración › Voces e IA › «Lo que Oliver recuerda de vos», se puede borrar), un «entrenador» que lo guía en cada turno para que pregunte, cuente historias y cambie de tema si se estanca, y control para que no repita frases.
+- Corrección: en «pasar a pregunta» se acepta cambiar la persona (my → your).
+
 ## Novedades de la versión 0.8
 
 - **Llamada tipo selfie**: Oliver más grande, con más outback y menos cielo, y el brazo bajando hacia la cámara (como una videollamada). El micrófono grande queda siempre a mano y se sigue abriendo solo cuando Oliver termina de hablar; lo demás (repetir, pista, escribir) sigue detrás de la flechita.
@@ -15,7 +22,7 @@ App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en e
 - **Las llamadas mantienen su temática**: con IA, Oliver responde a lo que digas pero siempre dentro del roleplay de la unidad, y al final te da 3 consejos sobre tu inglés.
 - **Llamada libre**: pestaña «Llamar» para charlar con Oliver de cualquier tema (necesita una IA de charla descargada).
 
-Los modelos de voz y oído se preparan en GitHub Actions (`scripts/preparar-modelos.py`) y quedan en el Release «modelos-5»; las IA de charla se bajan de Hugging Face (litert-community).
+Los modelos de voz y oído se preparan en GitHub Actions (`scripts/preparar-modelos.py`) y quedan en el Release «modelos-6»; las IA de charla se bajan de Hugging Face (litert-community).
 
 ## Qué hace la versión 0.7
 

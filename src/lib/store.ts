@@ -79,6 +79,24 @@ export interface AppState {
   resume: Record<string, SavedRun>;
   /** Llamadas con Oliver hechas: proporción de frases bien. */
   calls: Record<string, { date: string; score: number }>;
+  /** Lo que Oliver recuerda de la Llamada libre (solo en el teléfono). */
+  oliver?: import('./oliver').OliverMemory;
+  /** «Decilo en inglés»: frases propias para practicar. */
+  phrases?: Phrase[];
+}
+
+/** Una frase propia de «Decilo en inglés». */
+export interface Phrase {
+  id: string;
+  es: string;
+  en: string;
+  simple?: string;
+  chunks?: string[];
+  note?: string;
+  /** Marcada para revisar con la profe. */
+  review?: boolean;
+  created: string;
+  card?: StoredCard;
 }
 
 const KEY = 'ingles-progresivo-v1';
@@ -169,6 +187,13 @@ export function gradeCard(s: AppState, key: string, outcome: Outcome, now = new 
   const current = s.cards[key] ? fromStored(s.cards[key]) : createEmptyCard(now);
   const next = scheduler.next(current, now, RATING[outcome]).card;
   return { ...s, cards: { ...s.cards, [key]: toStored(next) } };
+}
+
+/** Reprograma una tarjeta suelta (frases propias) con el mismo FSRS. */
+export function nextCard(card: StoredCard | undefined, outcome: Outcome, now = new Date()): StoredCard {
+  const current = card ? fromStored(card) : createEmptyCard(now);
+  if (outcome === 'skip') return toStored(current);
+  return toStored(scheduler.next(current, now, RATING[outcome]).card);
 }
 
 /** Siembra tarjetas de una unidad "ubicada" por el test: se reparten en los próximos días para detectar huecos sin saturar. */

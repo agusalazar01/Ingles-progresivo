@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepara los modelos de voz y oído para la llamada con Oliver (se corre en GitHub Actions).
 
-Deja en ./modelos/ los archivos que la app baja una sola vez desde el Release «modelos-5»:
+Deja en ./modelos/ los archivos que la app baja una sola vez desde el Release «modelos-6»:
 
 - Piper australiano (DataCraftsmanAustralia/piper-en_AU-librivox-medium): se le agregan los datos
   que necesita sherpa-onnx (como hace scripts/piper/add_meta_data.py de sherpa-onnx) y tokens.txt.
@@ -26,6 +26,8 @@ KOKORO = f"{SHERPA}/tts-models/kokoro-int8-en-v0_19.tar.bz2"
 MOONSHINE = f"{SHERPA}/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2"
 SUPERTONIC = f"{SHERPA}/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2"
 POCKET = f"{SHERPA}/tts-models/sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2"
+PARAKEET = f"{SHERPA}/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2"
+QWEN3_ASR = f"{SHERPA}/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2"
 
 
 def get(url: str, dest: str) -> str:
@@ -172,6 +174,24 @@ def pocket():
     print("Pocket TTS listo")
 
 
+def parakeet():
+    d = untar(get(PARAKEET, os.path.join(TMP, "parakeet.tar.bz2")))
+    for part in ["encoder", "decoder", "joiner"]:
+        shutil.copy(find(d, lambda f, p=part: f.startswith(p) and f.endswith(".onnx")), os.path.join(OUT, f"parakeet-{part}.onnx"))
+    shutil.copy(find(d, lambda f: f == "tokens.txt"), os.path.join(OUT, "parakeet-tokens.txt"))
+    print("Parakeet listo")
+
+
+def qwen3_asr():
+    d = untar(get(QWEN3_ASR, os.path.join(TMP, "qwen3asr.tar.bz2")))
+    for part in ["conv_frontend", "encoder", "decoder"]:
+        shutil.copy(find(d, lambda f, p=part: f.startswith(p) and f.endswith(".onnx")), os.path.join(OUT, f"qwen3asr-{part}.onnx"))
+    tok = next(os.path.join(r, x) for r, dirs, _ in os.walk(d) for x in dirs if x.lower().startswith("tokenizer") or x.startswith("Qwen3"))
+    print("Tokenizer de Qwen3-ASR:", tok, os.listdir(tok))
+    shutil.make_archive(os.path.join(OUT, "qwen3asr-tokenizer"), "zip", tok)
+    print("Qwen3-ASR listo")
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(TMP, exist_ok=True)
@@ -180,6 +200,8 @@ def main():
     moonshine()
     supertonic()
     pocket()
+    parakeet()
+    qwen3_asr()
     sizes = {f: os.path.getsize(os.path.join(OUT, f)) for f in sorted(os.listdir(OUT))}
     json.dump(sizes, open(os.path.join(OUT, "modelos.json"), "w"), indent=1)
     print(json.dumps(sizes, indent=1))

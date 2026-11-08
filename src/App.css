@@ -658,3 +658,16 @@ form { display: flex; flex-direction: column; gap: 10px; }
 main.has-gear > .screen > :first-child { padding-right: 52px; }
 .app { position: relative; }
 .lab-log { white-space: pre-wrap; font-size: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; max-height: 320px; overflow: auto; }
+
+/* Decilo en inglés */
+.phrases .chip.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+.phrase-es { font-size: 1.05rem; font-style: italic; margin: 4px 0; }
+.phrase-en { font-size: 1.2rem; font-weight: 700; margin: 2px 0 6px; }
+.phrase-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; margin: 10px 0 2px; }
+.phrase-out { display: flex; flex-direction: column; gap: 2px; }
+.phrase-row { border-top: 1px solid var(--line, rgba(0,0,0,0.08)); padding: 8px 0; }
+.phrase-row p { margin: 2px 0; }
+.phrases textarea.answer { width: 100%; resize: vertical; font: inherit; }
+.check { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.bank { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow: auto; margin-top: 8px; }
+.bank-item { text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line, rgba(0,0,0,0.1)); background: transparent; color: inherit; font: inherit; }

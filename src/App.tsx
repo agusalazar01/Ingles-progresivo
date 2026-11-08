@@ -9,6 +9,7 @@ import { Errors, Home, Path, Progress, Welcome } from './screens/Tabs';
 import { Exam, Mixed, Remedial } from './screens/Practice';
 import { Vocab } from './screens/Vocab';
 import { Call } from './screens/Call';
+import { Phrases } from './screens/Phrases';
 import { Settings, type SettingsSection } from './screens/Settings';
 import { VerbLesson, VerbWorkshop } from './screens/Verbs';
 import type { Level } from './content/types';
@@ -27,6 +28,7 @@ export type Route =
   | { name: 'progress' }
   | { name: 'settings'; section?: SettingsSection }
   | { name: 'vocab' }
+  | { name: 'phrases' }
   | { name: 'verbs' }
   | { name: 'verb'; verbId: string; banner?: string }
   | { name: 'mixed'; family: string }
@@ -192,6 +194,9 @@ export default function App() {
       break;
     case 'progress':
       body = <Progress go={go} />;
+      break;
+    case 'phrases':
+      body = <Phrases onExit={back} />;
       break;
     case 'settings':
       body = <Settings key={route.section ?? 'menu'} initial={route.section} onExit={back} />;

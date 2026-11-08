@@ -12,6 +12,7 @@ import { availableFamilies } from './Practice';
 import { nextVerb } from './Verbs';
 import { WORKSHOP } from '../gen/verbs';
 import { levelUnitsDone } from '../lib/progress';
+import { duePhrases } from '../lib/phrases';
 import { BAND_NAME, bandProgress, defaultBand, nextNewWords } from '../lib/vocab';
 
 const REVIEW_BATCH = 20;
@@ -117,6 +118,21 @@ export function Home({ go }: { go: (r: Route) => void }) {
           );
         })()}
       </div>
+      {(() => {
+        const ph = s.phrases ?? [];
+        const dueP = duePhrases(ph).length;
+        return (
+          <div className="card">
+            <p className="card-title">🗣️ Decilo en inglés</p>
+            <p className="small">
+              {ph.length ? `${ph.length} frases tuyas${dueP ? ` · ${dueP} para repasar hoy` : ''}.` : 'Algo que pensaste en español: intentalo en inglés y mirá cómo lo diría un australiano.'}
+            </p>
+            <button className="secondary" onClick={() => go({ name: 'phrases' })}>
+              {dueP ? 'Repasar mis frases' : 'Decir algo nuevo'}
+            </button>
+          </div>
+        );
+      })()}
       {(() => {
         // Llamada sugerida: de la unidad que estás haciendo (o la última dominada), la que todavía no hiciste.
         const started = UNITS.filter((u) => s.units[u.id]?.step || s.units[u.id]?.status === 'mastered');

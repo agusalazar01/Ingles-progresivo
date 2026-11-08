@@ -98,7 +98,7 @@ jobs:
           files: criollenglish.apk
 
   # Voces (Piper australiano, Kokoro) y oído (Moonshine) para la llamada con Oliver, listos para que la app
-  # los baje una sola vez. Se arman solo la primera vez (si ya existe el Release «modelos-5», no hace nada).
+  # los baje una sola vez. Se arman solo la primera vez (si ya existe el Release «modelos-6», no hace nada).
   modelos:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -110,7 +110,7 @@ jobs:
       - name: ¿Ya están preparados?
         id: check
         run: |
-          if gh release view modelos-5 >/dev/null 2>&1; then echo "listo=true" >> "$GITHUB_OUTPUT"; fi
+          if gh release view modelos-6 >/dev/null 2>&1; then echo "listo=true" >> "$GITHUB_OUTPUT"; fi
 
       - uses: actions/setup-python@v6
         if: steps.check.outputs.listo != 'true'
@@ -125,10 +125,10 @@ jobs:
           gh release download voces-pocket-prueba --pattern 'ref-*.wav' --dir voces-pocket
           python3 scripts/preparar-modelos.py
 
-      - name: Subirlos al Release «modelos-5»
+      - name: Subirlos al Release «modelos-6»
         if: steps.check.outputs.listo != 'true'
         run: |
-          gh release create modelos-5 modelos/* --prerelease --latest=false \
+          gh release create modelos-6 modelos/* --prerelease --latest=false \
             --title "Modelos de voz para la llamada con Oliver" \
             --notes "Archivos que la app baja una sola vez (Ajustes › Voces e IA). No es una versión de la app."
 

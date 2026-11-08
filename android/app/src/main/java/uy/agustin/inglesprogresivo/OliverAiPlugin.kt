@@ -34,6 +34,8 @@ import com.google.ai.edge.litertlm.ThinkingConfig
 import com.k2fsa.sherpa.onnx.GenerationConfig
 import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineMoonshineModelConfig
+import com.k2fsa.sherpa.onnx.OfflineQwen3AsrModelConfig
+import com.k2fsa.sherpa.onnx.OfflineTransducerModelConfig
 import com.k2fsa.sherpa.onnx.OfflineRecognizer
 import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
 import com.k2fsa.sherpa.onnx.OfflineTts
@@ -168,6 +170,7 @@ class OliverAiPlugin : Plugin() {
                     val (url, name, _) = f
                     val out = File(target, name)
                     if (!out.exists()) {
+                        out.parentFile?.mkdirs()
                         val part = File(target, "$name.part")
                         fetch(url, part, id) { got, len ->
                             val now = SystemClock.elapsedRealtime()
@@ -182,12 +185,14 @@ class OliverAiPlugin : Plugin() {
                             }
                         }
                         if (!part.renameTo(out)) throw Exception("No se pudo guardar $name")
+                        // Un .zip se descomprime en una carpeta con su nombre (por ejemplo, el tokenizer de Qwen3-ASR).
+                        if (name.endsWith(".zip")) unzip(out, File(target, name.removeSuffix(".zip")))
                     }
                     before += weights[i]
                 }
                 // Borra archivos viejos que el paquete ya no usa (por ejemplo, voces de ejemplo reemplazadas).
                 val keep = list.map { it.second }.toSet() + setOf("mi-voz.wav", ".ok")
-                target.listFiles()?.forEach { if (it.isFile && it.name !in keep) it.delete() }
+                target.listFiles()?.forEach { if (it.isFile && it.name !in keep && !it.name.endsWith(".part")) it.delete() }
                 File(target, ".ok").writeText("ok")
                 val ev = JSObject()
                 ev.put("id", id)
@@ -201,6 +206,23 @@ class OliverAiPlugin : Plugin() {
                 ev.put("error", e.message ?: "error")
                 notifyListeners("download", ev)
                 call.reject(if (cancelled[id] == true) "cancelado" else (e.message ?: "No se pudo descargar"))
+            }
+        }
+    }
+
+    private fun unzip(zip: File, dest: File) {
+        dest.deleteRecursively()
+        dest.mkdirs()
+        java.util.zip.ZipInputStream(zip.inputStream().buffered()).use { zin ->
+            while (true) {
+                val e = zin.nextEntry ?: break
+                val f = File(dest, e.name)
+                if (!f.canonicalPath.startsWith(dest.canonicalPath + File.separator)) continue
+                if (e.isDirectory) f.mkdirs()
+                else {
+                    f.parentFile?.mkdirs()
+                    FileOutputStream(f).use { zin.copyTo(it) }
+                }
             }
         }
     }
@@ -774,26 +796,53 @@ class OliverAiPlugin : Plugin() {
 
     // ───────────── oído ─────────────
 
+    @Volatile private var earKind = "moonshine"
+
+    /** Carga el reconocimiento de voz: moonshine (liviano), parakeet (NVIDIA, inglés) o qwen3 (Qwen3-ASR, multilingüe). */
     @PluginMethod
     fun loadEar(call: PluginCall) {
         val id = call.getString("id") ?: return call.reject("Falta id")
+        val kind = call.getString("kind") ?: "moonshine"
         work.execute {
             try {
                 if (earId != id) {
                     releaseEar()
-                    step("cargar el reconocimiento de voz")
+                    step("cargar el reconocimiento de voz $id")
                     val d = dir(id)
-                    val moon = OfflineMoonshineModelConfig()
-                    moon.encoder = File(d, "encoder_model.ort").absolutePath
-                    moon.mergedDecoder = File(d, "decoder_model_merged.ort").absolutePath
                     val model = OfflineModelConfig()
-                    model.moonshine = moon
-                    model.tokens = File(d, "tokens.txt").absolutePath
-                    model.numThreads = 2
+                    model.numThreads = if (kind == "moonshine") 2 else 4
+                    when (kind) {
+                        "parakeet" -> {
+                            val t = OfflineTransducerModelConfig()
+                            t.encoder = File(d, "encoder.onnx").absolutePath
+                            t.decoder = File(d, "decoder.onnx").absolutePath
+                            t.joiner = File(d, "joiner.onnx").absolutePath
+                            model.transducer = t
+                            model.tokens = File(d, "tokens.txt").absolutePath
+                            model.modelType = "nemo_transducer"
+                        }
+                        "qwen3" -> {
+                            val q = OfflineQwen3AsrModelConfig()
+                            q.convFrontend = File(d, "conv_frontend.onnx").absolutePath
+                            q.encoder = File(d, "encoder.onnx").absolutePath
+                            q.decoder = File(d, "decoder.onnx").absolutePath
+                            q.tokenizer = File(d, "tokenizer").absolutePath
+                            model.qwen3Asr = q
+                            model.tokens = ""
+                        }
+                        else -> {
+                            val moon = OfflineMoonshineModelConfig()
+                            moon.encoder = File(d, "encoder_model.ort").absolutePath
+                            moon.mergedDecoder = File(d, "decoder_model_merged.ort").absolutePath
+                            model.moonshine = moon
+                            model.tokens = File(d, "tokens.txt").absolutePath
+                        }
+                    }
                     val config = OfflineRecognizerConfig()
                     config.modelConfig = model
                     ear = OfflineRecognizer(null, config)
                     earId = id
+                    earKind = kind
                     stepDone()
                 }
                 call.resolve()
@@ -825,6 +874,7 @@ class OliverAiPlugin : Plugin() {
         val maxMs = (call.getInt("maxMs") ?: 15000).toLong()
         val silenceMs = (call.getInt("silenceMs") ?: 1100).toLong()
         val waitMs = (call.getInt("waitMs") ?: 8000).toLong()
+        val language = call.getString("language") ?: "English"
         stopListen = false
         ioWork.execute {
             val recognizer = ear
@@ -895,6 +945,7 @@ class OliverAiPlugin : Plugin() {
                 step("entender lo que dijiste")
                 val stream = recognizer.createStream()
                 try {
+                    if (earKind == "qwen3") stream.setOption("language", language)
                     stream.acceptWaveform(samples, rate)
                     recognizer.decode(stream)
                     ret.put("text", recognizer.getResult(stream).text.trim())
@@ -924,6 +975,7 @@ class OliverAiPlugin : Plugin() {
         val id = call.getString("id") ?: return call.reject("Falta id")
         val file = call.getString("file") ?: return call.reject("Falta archivo")
         val system = call.getString("system") ?: ""
+        temperature = (call.getDouble("temperature") ?: 0.8)
         brainWork.execute {
             try {
                 if (engineId != id) {
@@ -961,15 +1013,18 @@ class OliverAiPlugin : Plugin() {
         conversation = e.createConversation(
             ConversationConfig(
                 systemInstruction = if (system.isNotBlank()) Contents.of(system) else null,
-                samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = 0.8),
+                samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = temperature),
                 thinkingConfig = ThinkingConfig(enableThinking = false),
             ),
         )
     }
 
+    @Volatile private var temperature = 0.8
+
     @PluginMethod
     fun resetChat(call: PluginCall) {
         val system = call.getString("system") ?: ""
+        call.getDouble("temperature")?.let { temperature = it }
         brainWork.execute {
             try {
                 newConversation(system)

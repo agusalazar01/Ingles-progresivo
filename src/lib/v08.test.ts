@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanReply, FREE_PROMPT, PACKS, roleplayPrompt, shortReply } from './ai';
+import { cleanReply, PACKS, roleplayPrompt, shortReply } from './ai';
 import { CALLS } from '../content/calls';
 
 describe('v0.8 — IA sin internet', () => {
@@ -37,7 +37,6 @@ describe('v0.8 — IA sin internet', () => {
     expect(p).toContain(c.scene);
     expect(p).toContain(c.goal);
     expect(p).toContain(lines[0]);
-    expect(FREE_PROMPT).toContain('free chat');
     // Todas las llamadas empiezan con Oliver (la IA usa esa frase para abrir).
     for (const call of CALLS) expect('o' in call.turns[0]).toBe(true);
   });

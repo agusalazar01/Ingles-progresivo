@@ -23,11 +23,11 @@ interface OliverAiPlugin {
   speak(o: { text: string; speaker: number; speed?: number; pitch?: number; volume?: number; reference?: string } & AudioTest): Promise<AudioDiag>;
   recordReference(o: { id: string; seconds: number }): Promise<{ seconds: number }>;
   stopSpeaking(): Promise<void>;
-  loadEar(o: { id: string }): Promise<void>;
-  listen(o: { maxMs?: number; silenceMs?: number; waitMs?: number }): Promise<{ text: string }>;
+  loadEar(o: { id: string; kind?: string }): Promise<void>;
+  listen(o: { maxMs?: number; silenceMs?: number; waitMs?: number; language?: string }): Promise<{ text: string }>;
   stopListening(): Promise<void>;
-  loadBrain(o: { id: string; file: string; system: string }): Promise<void>;
-  resetChat(o: { system: string }): Promise<void>;
+  loadBrain(o: { id: string; file: string; system: string; temperature?: number }): Promise<void>;
+  resetChat(o: { system: string; temperature?: number }): Promise<void>;
   chat(o: { text: string }): Promise<{ text: string }>;
   cancelChat(): Promise<void>;
   unloadAll(): Promise<void>;
@@ -101,6 +101,9 @@ export interface Pack {
   mb: number;
   files: { url: string; name: string; size: number }[];
   engine?: 'piper' | 'kokoro' | 'supertonic' | 'pocket';
+  /** Reconocimiento de voz: motor y si entiende español. */
+  asr?: 'moonshine' | 'parakeet' | 'qwen3';
+  spanish?: boolean;
   espeak?: string;
   /** Voces fijas (Kokoro). Piper las lee de speakers.json. */
   speakers?: { id: number; name: string }[];
@@ -109,7 +112,7 @@ export interface Pack {
   license: string;
 }
 
-const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-5/';
+const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-6/';
 
 /**
  * Voces australianas de Pocket TTS: grabaciones reales de narradores australianos de LibriVox (dominio público),
@@ -210,14 +213,46 @@ export const PACKS: Pack[] = [
   {
     id: 'moonshine',
     kind: 'ear',
+    asr: 'moonshine',
     title: 'Moonshine Tiny',
-    desc: 'Entiende lo que decís en inglés sin internet. Muy liviano.',
+    desc: 'Entiende lo que decís en inglés sin internet. Muy liviano, pero el menos preciso.',
     mb: 42,
     license: 'MIT.',
     files: [
       { url: REL + 'moonshine-encoder_model.ort', name: 'encoder_model.ort', size: 13 * MB },
       { url: REL + 'moonshine-decoder_model_merged.ort', name: 'decoder_model_merged.ort', size: 29 * MB },
       { url: REL + 'moonshine-tokens.txt', name: 'tokens.txt', size: 1 * MB },
+    ],
+  },
+  {
+    id: 'parakeet',
+    kind: 'ear',
+    asr: 'parakeet',
+    title: 'Parakeet TDT 0.6B v2 (NVIDIA)',
+    desc: 'Nivel ChatGPT en inglés y muy rápido: de los más precisos del ranking de Hugging Face. Solo inglés. Recomendado para la llamada.',
+    mb: 640,
+    license: 'CC-BY-4.0 (NVIDIA).',
+    files: [
+      { url: REL + 'parakeet-encoder.onnx', name: 'encoder.onnx', size: 620 * MB },
+      { url: REL + 'parakeet-decoder.onnx', name: 'decoder.onnx', size: 12 * MB },
+      { url: REL + 'parakeet-joiner.onnx', name: 'joiner.onnx', size: 6 * MB },
+      { url: REL + 'parakeet-tokens.txt', name: 'tokens.txt', size: 1 },
+    ],
+  },
+  {
+    id: 'qwen3asr',
+    kind: 'ear',
+    asr: 'qwen3',
+    spanish: true,
+    title: 'Qwen3-ASR 0.6B (Alibaba)',
+    desc: 'Muy preciso y entiende 52 idiomas, también español: sirve para «Decilo en inglés». Más pesado y un poco más lento que Parakeet.',
+    mb: 900,
+    license: 'Apache-2.0.',
+    files: [
+      { url: REL + 'qwen3asr-conv_frontend.onnx', name: 'conv_frontend.onnx', size: 30 * MB },
+      { url: REL + 'qwen3asr-encoder.onnx', name: 'encoder.onnx', size: 200 * MB },
+      { url: REL + 'qwen3asr-decoder.onnx', name: 'decoder.onnx', size: 650 * MB },
+      { url: REL + 'qwen3asr-tokenizer.zip', name: 'tokenizer.zip', size: 5 * MB },
     ],
   },
   {
@@ -391,7 +426,7 @@ export async function chosenAi(): Promise<CallAi> {
 }
 
 /** Carga en memoria lo elegido. Devuelve lo que se pudo cargar. */
-export async function loadCallAi(ai: CallAi, system: string): Promise<CallAi & { errors: string[] }> {
+export async function loadCallAi(ai: CallAi, system: string, temperature = 0.8): Promise<CallAi & { errors: string[] }> {
   const out = { ...ai, errors: [] as string[] };
   if (ai.voice) {
     try {
@@ -403,7 +438,7 @@ export async function loadCallAi(ai: CallAi, system: string): Promise<CallAi & {
   }
   if (ai.ear) {
     try {
-      await OliverAi.loadEar({ id: ai.ear.id });
+      await OliverAi.loadEar({ id: ai.ear.id, kind: ai.ear.asr ?? 'moonshine' });
     } catch (e) {
       out.errors.push(String((e as Error).message ?? e));
       out.ear = null;
@@ -411,7 +446,7 @@ export async function loadCallAi(ai: CallAi, system: string): Promise<CallAi & {
   }
   if (ai.brain) {
     try {
-      await OliverAi.loadBrain({ id: ai.brain.id, file: ai.brain.file ?? 'model.litertlm', system });
+      await OliverAi.loadBrain({ id: ai.brain.id, file: ai.brain.file ?? 'model.litertlm', system, temperature });
     } catch (e) {
       out.errors.push(String((e as Error).message ?? e));
       out.brain = null;
@@ -463,12 +498,6 @@ Stay inside this scene the whole call. Here is the planned script for your lines
 ${o.lines.map((l) => `- ${l}`).join('\n')}
 When the goal is done or after about 8 exchanges, wrap up and say goodbye.`;
 }
-
-/** Instrucciones para la llamada libre. */
-export const FREE_PROMPT = `${OLIVER}
-
-This is a free chat: talk about whatever they want (life in Australia, wine, travel, Uruguay, work, hobbies…).
-Start by asking how they're going and what they'd like to chat about.`;
 
 /** Pedido final: consejos para el repaso, en español. */
 export const FEEDBACK_REQUEST = `The call is over. Now, in Spanish from Uruguay (voseo), give the learner feedback on their English in this call.
