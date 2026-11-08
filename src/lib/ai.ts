@@ -109,7 +109,26 @@ export interface Pack {
   license: string;
 }
 
-const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-4/';
+const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-5/';
+
+/**
+ * Voces australianas de Pocket TTS: grabaciones reales de narradores australianos de LibriVox (dominio público),
+ * con el acento verificado. Ordenadas de la más grave/rústica a la más clara.
+ */
+export const POCKET_VOICES: { file: string; name: string }[] = [
+  { file: 'ref-howard-skyman-2.wav', name: 'Howard Skyman 2 · grave y claro' },
+  { file: 'ref-howard-skyman-1.wav', name: 'Howard Skyman 1 · más grave' },
+  { file: 'ref-howard-skyman-3.wav', name: 'Howard Skyman 3 · el más grave' },
+  { file: 'ref-son-of-the-exiles-2.wav', name: 'Son of the Exiles 2 · más áspero' },
+  { file: 'ref-son-of-the-exiles-1.wav', name: 'Son of the Exiles 1' },
+  { file: 'ref-son-of-the-exiles-3.wav', name: 'Son of the Exiles 3' },
+  { file: 'ref-algy-pug-3.wav', name: 'Algy Pug 3' },
+  { file: 'ref-algy-pug-2.wav', name: 'Algy Pug 2' },
+  { file: 'ref-algy-pug-1.wav', name: 'Algy Pug 1' },
+  { file: 'ref-timothy-ferguson-3.wav', name: 'Timothy Ferguson 3' },
+  { file: 'ref-timothy-ferguson-2.wav', name: 'Timothy Ferguson 2' },
+  { file: 'ref-timothy-ferguson-1.wav', name: 'Timothy Ferguson 1 · el más claro' },
+];
 const HF = 'https://huggingface.co/litert-community/';
 const MB = 1024 * 1024;
 
@@ -174,9 +193,9 @@ export const PACKS: Pack[] = [
     kind: 'voice',
     engine: 'pocket',
     title: 'Pocket TTS (imita una voz)',
-    desc: 'Habla con la voz de una grabación de 10 segundos. Podés grabar a un australiano (con su permiso) y Oliver va a sonar como él. Es la más natural, pero la más lenta.',
+    desc: '12 voces australianas de hombre sacadas de grabaciones reales (narradores de LibriVox), o la de una grabación tuya de 10 segundos. La más natural, pero la más lenta.',
     mb: 190,
-    license: 'MIT. Solo grabá a alguien que te dé permiso.',
+    license: 'MIT; voces de LibriVox de dominio público (CC0). Si grabás a alguien, que te dé permiso.',
     files: [
       { url: REL + 'pocket-lm_flow.onnx', name: 'lm_flow.onnx', size: 10 * MB },
       { url: REL + 'pocket-lm_main.onnx', name: 'lm_main.onnx', size: 80 * MB },
@@ -185,11 +204,7 @@ export const PACKS: Pack[] = [
       { url: REL + 'pocket-text_conditioner.onnx', name: 'text_conditioner.onnx', size: 16 * MB },
       { url: REL + 'pocket-vocab.json', name: 'vocab.json', size: 1 * MB },
       { url: REL + 'pocket-token_scores.json', name: 'token_scores.json', size: 1 * MB },
-      { url: REL + 'pocket-voices.json', name: 'speakers.json', size: 1 },
-      { url: REL + 'pocket-ref-1.wav', name: 'ref-1.wav', size: 1 * MB },
-      { url: REL + 'pocket-ref-2.wav', name: 'ref-2.wav', size: 1 * MB },
-      { url: REL + 'pocket-ref-3.wav', name: 'ref-3.wav', size: 1 * MB },
-      { url: REL + 'pocket-ref-4.wav', name: 'ref-4.wav', size: 1 * MB },
+      ...POCKET_VOICES.map((v) => ({ url: REL + 'pocket-' + v.file, name: v.file, size: 700 * 1024 })),
     ],
   },
   {
@@ -247,13 +262,7 @@ export const MY_RECORDING = 100;
 export async function packSpeakers(pack: Pack, files?: string[]): Promise<{ id: number; name: string }[]> {
   if (pack.speakers) return pack.speakers;
   if (pack.engine === 'pocket') {
-    let names: string[] = [];
-    try {
-      names = JSON.parse((await OliverAi.readText({ id: pack.id, name: 'speakers.json' })).text).speakers ?? [];
-    } catch {
-      /* sin nombres */
-    }
-    const list = names.map((n, i) => ({ id: i, name: `Ejemplo ${i + 1}: ${n}` }));
+    const list = POCKET_VOICES.map((v, i) => ({ id: i, name: v.name }));
     if (files?.includes('mi-voz.wav')) list.unshift({ id: MY_RECORDING, name: '🎙️ Mi grabación' });
     return list;
   }
@@ -298,7 +307,7 @@ export function tuneFor(packId: string, speaker: number): Tune {
 }
 
 /** Grabación que usa Pocket TTS para cada voz. */
-export const referenceFor = (speaker: number) => (speaker === MY_RECORDING ? 'mi-voz.wav' : `ref-${speaker + 1}.wav`);
+export const referenceFor = (speaker: number) => (speaker === MY_RECORDING ? 'mi-voz.wav' : (POCKET_VOICES[speaker] ?? POCKET_VOICES[0]).file);
 
 export async function loadVoicePack(pack: Pack, speaker: number, tune = tuneFor(pack.id, speaker)) {
   await OliverAi.loadVoice({ id: pack.id, kind: pack.engine ?? 'piper', espeak: pack.espeak ?? 'en', noise: tune.noise, noiseW: tune.noiseW });
@@ -318,8 +327,19 @@ export async function speakWith(pack: Pack, speaker: number, text: string, tune 
 
 export const LAB_TEXT = "G'day mate! I'm Oliver. How are you going today? Reckon we'll have a good yarn.";
 
+/** Las pruebas de voz van de a una: si no, la que termina libera la voz de la que está empezando («La voz no está cargada»). */
+let voiceQueue: Promise<unknown> = Promise.resolve();
+function serial<T>(fn: () => Promise<T>): Promise<T> {
+  const run = voiceQueue.then(fn, fn);
+  voiceQueue = run.catch(() => {});
+  return run;
+}
+
 /** Corre una prueba del laboratorio: carga la voz, habla y la libera. */
-export async function labTest(pack: Pack, speaker: number, test: AudioTest): Promise<AudioDiag> {
+export function labTest(pack: Pack, speaker: number, test: AudioTest): Promise<AudioDiag> {
+  return serial(() => labTestNow(pack, speaker, test));
+}
+async function labTestNow(pack: Pack, speaker: number, test: AudioTest): Promise<AudioDiag> {
   const t = tuneFor(pack.id, speaker);
   await loadVoicePack(pack, speaker, t);
   try {
@@ -508,7 +528,10 @@ export const removePack = (id: string) => OliverAi.remove({ id });
 export const recordMyVoice = (seconds = 10) => OliverAi.recordReference({ id: 'pocket', seconds });
 
 /** Prueba una voz (se carga solo mientras suena y después se libera). */
-export async function tryVoice(pack: Pack, speaker: number, tune?: Tune) {
+export function tryVoice(pack: Pack, speaker: number, tune?: Tune) {
+  return serial(() => tryVoiceNow(pack, speaker, tune));
+}
+async function tryVoiceNow(pack: Pack, speaker: number, tune?: Tune) {
   const t = tune ?? tuneFor(pack.id, speaker);
   await loadVoicePack(pack, speaker, t);
   try {

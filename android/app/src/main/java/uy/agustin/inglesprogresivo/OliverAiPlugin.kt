@@ -185,6 +185,9 @@ class OliverAiPlugin : Plugin() {
                     }
                     before += weights[i]
                 }
+                // Borra archivos viejos que el paquete ya no usa (por ejemplo, voces de ejemplo reemplazadas).
+                val keep = list.map { it.second }.toSet() + setOf("mi-voz.wav", ".ok")
+                target.listFiles()?.forEach { if (it.isFile && it.name !in keep) it.delete() }
                 File(target, ".ok").writeText("ok")
                 val ev = JSObject()
                 ev.put("id", id)
@@ -453,7 +456,7 @@ class OliverAiPlugin : Plugin() {
             val diag = JSObject()
             val log = StringBuilder()
             try {
-                if (ttsKind == "pocket") loadReference(ref ?: "ref-1.wav")
+                if (ttsKind == "pocket") loadReference(ref ?: "ref-howard-skyman-2.wav")
                 val rate = voice.sampleRate()
                 val encoding = if (pcm16) AudioFormat.ENCODING_PCM_16BIT else AudioFormat.ENCODING_PCM_FLOAT
                 val bytes = if (pcm16) 2 else 4

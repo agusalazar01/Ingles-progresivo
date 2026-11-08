@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepara los modelos de voz y oído para la llamada con Oliver (se corre en GitHub Actions).
 
-Deja en ./modelos/ los archivos que la app baja una sola vez desde el Release «modelos-4»:
+Deja en ./modelos/ los archivos que la app baja una sola vez desde el Release «modelos-5»:
 
 - Piper australiano (DataCraftsmanAustralia/piper-en_AU-librivox-medium): se le agregan los datos
   que necesita sherpa-onnx (como hace scripts/piper/add_meta_data.py de sherpa-onnx) y tokens.txt.
@@ -160,17 +160,15 @@ def pocket():
         shutil.copy(find(d, lambda f, p=part: f.startswith(p) and f.endswith(".onnx")), os.path.join(OUT, f"pocket-{part}.onnx"))
     for f in ["vocab.json", "token_scores.json"]:
         shutil.copy(find(d, lambda x, f=f: x == f), os.path.join(OUT, f"pocket-{f}"))
-    # Voces de ejemplo (grabaciones de referencia): siempre 4 archivos, con sus nombres en pocket-voices.json.
-    wavs = []
-    for root, _, files in os.walk(d):
-        wavs += [os.path.join(root, f) for f in sorted(files) if f.endswith(".wav")]
-    print("Voces de ejemplo de Pocket TTS:", [os.path.basename(w) for w in wavs])
-    wavs = (wavs * 4)[:4]
-    names = []
-    for i, w in enumerate(wavs, 1):
-        shutil.copy(w, os.path.join(OUT, f"pocket-ref-{i}.wav"))
-        names.append(os.path.splitext(os.path.basename(w))[0])
-    json.dump({"speakers": names}, open(os.path.join(OUT, "pocket-voices.json"), "w"))
+    # Voces australianas: grabaciones reales de LibriVox (CC0) que arma scripts/voces-pocket.py
+    # (Release «voces-pocket-prueba»). El workflow las baja a ./voces-pocket antes de correr este script.
+    refs = sorted(f for f in os.listdir("voces-pocket") if f.startswith("ref-") and f.endswith(".wav"))
+    if len(refs) < 12:
+        raise SystemExit(f"Faltan voces australianas para Pocket TTS: {refs}")
+    for f in refs:
+        shutil.copy(os.path.join("voces-pocket", f), os.path.join(OUT, "pocket-" + f))
+    json.dump({"speakers": [f[4:-4] for f in refs]}, open(os.path.join(OUT, "pocket-voices.json"), "w"))
+    print("Voces australianas de Pocket TTS:", refs)
     print("Pocket TTS listo")
 
 
