@@ -1,0 +1,40 @@
+# Arma voces australianas de hombre para Pocket TTS a partir de grabaciones reales (LibriVox, CC0)
+# y deja los audios de prueba en el Release «voces-pocket-prueba» para elegir la de Oliver.
+name: Voces australianas para Pocket TTS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/voces-pocket.py
+      - .github/workflows/voces-pocket.yml
+
+permissions:
+  contents: write
+
+jobs:
+  voces:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Preparar
+        run: pip install "datasets>=3" soundfile librosa numpy sherpa-onnx==2.0.1
+
+      - name: Armar las voces
+        run: python3 scripts/voces-pocket.py
+
+      - name: Subir los audios de prueba
+        run: |
+          gh release delete voces-pocket-prueba --yes --cleanup-tag 2>/dev/null || true
+          gh release create voces-pocket-prueba voces-pocket/* --prerelease --latest=false \
+            --title "Voces australianas para Pocket TTS (prueba)" \
+            --notes "Grabaciones reales de LibriVox (dominio público) y Pocket TTS hablando con cada una. Para elegir la voz de Oliver."
