@@ -8,6 +8,7 @@ export function normalize(s: string): string {
     .replace(/\s+/g, ' ')
     .trim();
   t = t
+    .replace(/\bgonna\b/g, 'going to')
     .replace(/\bcan't\b/g, 'can not')
     .replace(/\bcannot\b/g, 'can not')
     .replace(/\bwon't\b/g, 'will not')
@@ -86,6 +87,28 @@ export function samePersonVariants(prompt: string, answers: string[]): string[] 
       }
     }
     out.add(v);
+    // Y al revés: si la respuesta deja «I»/«we» («Do I send…?»), también vale preguntarle al otro («Do you send…?»).
+    const own = a.match(/^(\w+) (I|we)\b/);
+    if (own) {
+      const aux = own[1].toLowerCase();
+      const toYou: Record<string, string> = { am: 'are', was: 'were', "wasn't": "weren't" };
+      out.add(
+        cap(`${toYou[aux] ?? aux} you${a.slice(own[0].length)}`)
+          .replace(/\b(my|our)\b/g, 'your')
+          .replace(/\b(mine|ours)\b/g, 'yours'),
+      );
+    }
+  }
+  // Futuro: «will» y «going to» valen los dos.
+  for (const a of [...out]) {
+    const g = a.match(/^(.*?)\b(am|is|are|'m|'s|'re) going to\b(.*)$/i);
+    if (g) out.add(`${g[1]}will${g[3]}`);
+    const w = a.match(/^(.*?)\bwill\b(.*)$/i);
+    if (w && w[1].trim() && !/^\s*(be|have)\b/i.test(w[2])) {
+      const subj = w[1].trim().toLowerCase();
+      const be = subj === 'i' ? 'am' : /^(you|we|they)$/.test(subj) || / and /.test(subj) || /s$/.test(subj) ? 'are' : 'is';
+      out.add(`${w[1]}${be} going to${w[2]}`);
+    }
   }
   return [...out];
 }

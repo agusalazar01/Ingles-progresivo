@@ -4,6 +4,12 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 0.9.1
+
+- **Escalones más justos**: lo que sale bien después de la pista cuenta igual, y se pasa con **70 %**.
+- **🔁 Lo que te costó**: lo que sigue mal después de la pista queda anotado en la unidad y vuelve con otra oración del mismo formato (misma consigna y mismo tiempo verbal), hasta que te salga.
+- En «Transformar» se acepta «Do you…?» cuando la oración era con «I», y «will» o «going to» en el futuro.
+
 ## Novedades de la versión 0.9
 
 - **🗣️ Decilo en inglés** (tarjeta en «Hoy»): escribí o decí algo en español, intentalo vos en inglés y la IA del teléfono te da la versión natural (como en Australia), una más simple, bloques para reusar y una devolución en español. Botones «Esto no suena bien» (otra versión) y «Para revisar con la profe». Las frases quedan en tu mazo con repaso espaciado (FSRS), se practican diciéndolas, con variaciones hechas por la IA (en pasado, con «she», como pregunta…), y Oliver las usa en la llamada libre. Sin IA hay un banco de 30 frases comunes.

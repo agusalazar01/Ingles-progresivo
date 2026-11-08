@@ -22,7 +22,7 @@ export const STEPS: Step[] = [
   { id: 'fluency', title: 'Fluidez', desc: 'Todo mezclado, contra reloj' },
 ];
 
-export const STEP_PASS = 0.8;
+export { STEP_PASS } from './actions';
 const PER_STEP = 8;
 const FLUENCY_ITEMS = 10;
 

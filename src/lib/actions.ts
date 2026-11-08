@@ -90,6 +90,8 @@ export interface ItemResult {
   correct: string;
   outcome: Outcome;
   ms?: number;
+  /** Bien pero fuera de tiempo (solo en Fluidez). */
+  slow?: boolean;
 }
 
 /** Registra una respuesta de repaso: reprograma la tarjeta y actualiza el registro de errores. */
@@ -152,7 +154,17 @@ export function saveLevelScore(level: Level, score: number) {
   });
 }
 
-export const STEP_PASS = 0.8;
+export const STEP_PASS = 0.7;
+
+/**
+ * Proporción bien de un escalón. Lo que sale bien después de la pista cuenta igual que al primer intento;
+ * solo resta lo que sigue mal después de la pista (y, en Fluidez, lo que se respondió fuera de tiempo).
+ */
+export function stepScore(results: ItemResult[]): number {
+  const graded = results.filter((r) => r.outcome !== 'skip');
+  if (!graded.length) return 1;
+  return graded.filter((r) => r.outcome === 'good' || (r.outcome === 'hard' && !r.slow)).length / graded.length;
+}
 
 /** Reconstruye un ejercicio a partir de su clave de repaso. Los generados traen una oración nueva. */
 export function exerciseRef(key: string) {

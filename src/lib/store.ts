@@ -83,6 +83,17 @@ export interface AppState {
   oliver?: import('./oliver').OliverMemory;
   /** «Decilo en inglés»: frases propias para practicar. */
   phrases?: Phrase[];
+  /** Ejercicios que salieron mal en los escalones, por unidad: vuelven con otra oración del mismo formato. */
+  missed?: Record<string, MissedItem[]>;
+}
+
+export interface MissedItem {
+  id: string;
+  key: string;
+  /** Formato del ejercicio (tipo + consigna), para generar otro igual. */
+  sig: string;
+  exercise: import('../content/types').Exercise;
+  date: string;
 }
 
 /** Una frase propia de «Decilo en inglés». */

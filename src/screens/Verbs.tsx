@@ -2,7 +2,7 @@ import { useBack } from '../lib/nav';
 import { BackButton } from '../components/BackButton';
 import { useRef, useState } from 'react';
 import { ExerciseRunner, type RunnerItem } from '../components/ExerciseRunner';
-import { completeVerbStage, STEP_PASS, VERB_UNIT, type ItemResult } from '../lib/actions';
+import { completeVerbStage, STEP_PASS, stepScore, VERB_UNIT, type ItemResult } from '../lib/actions';
 import { say } from '../lib/speech';
 import { getState, useAppState } from '../lib/store';
 import { ingOf, third } from '../gen/english';
@@ -107,8 +107,7 @@ export function VerbLesson({ verbId, banner, onExit, onNext }: { verbId: string;
             if (first) firstTry.current.push(r);
           }}
           onDone={() => {
-            const graded = firstTry.current.filter((r) => r.outcome !== 'skip');
-            const score = graded.length ? graded.filter((r) => r.outcome === 'good').length / graded.length : 1;
+            const score = stepScore(firstTry.current);
             const passed = score >= STEP_PASS;
             completeVerbStage(v.id, running.index, firstTry.current, passed);
             if (!passed) {

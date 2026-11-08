@@ -8,7 +8,8 @@ import { sfxFinish } from '../lib/sfx';
 import { normalize } from '../lib/answer';
 import { Explanation, ExplanationSheet, axisClass } from '../components/Explanation';
 import { unitById } from '../content/curriculum';
-import { completeStep, readExplanation, STEP_PASS, type ItemResult } from '../lib/actions';
+import { completeStep, readExplanation, recordReview, STEP_PASS, stepScore, type ItemResult } from '../lib/actions';
+import { addMissed, missedItems, removeMissed } from '../lib/missed';
 import { activeSteps, stepItems, type Step } from '../lib/ladder';
 import { clearRun, getState, saveRun, useAppState, type SavedRun } from '../lib/store';
 import { levelUnitsDone, nextUnit, unitPercent } from '../lib/progress';
@@ -41,7 +42,8 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
     items: r.queue.map((q) => ({ key: q.key, unit, exercise: q.exercise })),
     initial: { queue: r.queue.map((q) => ({ item: { key: q.key, unit, exercise: q.exercise }, first: q.first })), pos: r.pos },
   });
-  const [running, setRunning] = useState<{ index: number; items: RunnerItem[]; initial?: { queue: RunnerQueue; pos: number } } | null>(() => {
+  // index -1 = repaso de lo que te costó (ids = ejercicio anotado de cada ítem).
+  const [running, setRunning] = useState<{ index: number; items: RunnerItem[]; initial?: { queue: RunnerQueue; pos: number }; ids?: string[] } | null>(() => {
     const r = getState().resume[unitId];
     if (!resume || !r || r.pos >= r.queue.length) return null;
     return fromSaved(r);
@@ -77,14 +79,15 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
   const finishStep = (index: number) => {
     clearRun(unit.id);
     const graded = firstTry.current.filter((r) => r.outcome !== 'skip');
-    const score = graded.length ? graded.filter((r) => r.outcome === 'good').length / graded.length : 1;
+    const score = stepScore(firstTry.current);
     const passed = score >= STEP_PASS;
     completeStep(unit.id, index, steps.length - 1, firstTry.current, passed);
     // Resumen del escalón: aciertos, tiempo, palabras usadas y mejor racha.
     let best = 0;
     let run = 0;
+    const ok = (r: ItemResult) => r.outcome === 'good' || (r.outcome === 'hard' && !r.slow);
     for (const r of graded) {
-      run = r.outcome === 'good' ? run + 1 : 0;
+      run = ok(r) ? run + 1 : 0;
       best = Math.max(best, run);
     }
     const words = new Set(graded.filter((r) => r.outcome !== 'again').flatMap((r) => normalize(r.correct).split(' ').filter(Boolean)));
@@ -92,7 +95,7 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
     if (passed) sfxFinish();
     setNotice(undefined);
     setRunning(null);
-    setSummary({ index, score, passed, good: graded.filter((r) => r.outcome === 'good').length, total: graded.length, secs, words: words.size, best });
+    setSummary({ index, score, passed, good: graded.filter(ok).length, total: graded.length, secs, words: words.size, best });
   };
 
   /** Después de aprobar: siguiente escalón, siguiente unidad o examen de nivel, sin volver al menú. */
@@ -111,6 +114,14 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
     if (nxt && nxt.id !== unit.id) return onNextUnit(nxt.id, msg);
     setRunning(null);
     setResult({ index, score, passed: true });
+  };
+
+  const missed = s.missed?.[unitId] ?? [];
+  const startMissed = () => {
+    const m = missedItems(unit);
+    if (!m.items.length) return;
+    setResult(null);
+    setRunning({ index: -1, items: m.items, ids: m.ids });
   };
 
   /** Salir del escalón al menú de la unidad (queda guardado para retomar). */
@@ -140,7 +151,7 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
         <div className="summary-stats">
           <div className="stat">
             <span className="stat-num">{Math.round(summary.score * 100)}%</span>
-            <span className="stat-label">bien de una</span>
+            <span className="stat-label">bien</span>
           </div>
           <div className="stat">
             <span className="stat-num">{summary.words}</span>
@@ -158,7 +169,7 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
           </div>
         </div>
         <p className="center">
-          {summary.good} de {summary.total} al primer intento.{' '}
+          {summary.good} de {summary.total} bien (con la pista también cuenta).{' '}
           {summary.passed ? '' : `Necesitás ${Math.round(STEP_PASS * 100)}%; las oraciones van a ser otras.`}
         </p>
         <button
@@ -177,13 +188,14 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
   }
 
   if (running) {
-    const step = steps[running.index];
+    const review = running.index < 0;
+    const step = review ? { title: 'Lo que te costó' } : steps[running.index];
     return (
       <div className="screen">
         <div className="top-bar">
           <BackButton onClick={leaveRun} label="Volver al menú de la unidad" />
           <p className="eyebrow">
-            {unit.title} · escalón {running.index + 1} de {steps.length}: {step.title}
+            {review ? `${unit.title} · repaso: lo que te costó, con oraciones nuevas` : `${unit.title} · escalón ${running.index + 1} de ${steps.length}: ${step.title}`}
           </p>
           <button className="link" onClick={() => setSheet(true)}>
             📖
@@ -196,12 +208,29 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
           items={running.items}
           initial={running.initial}
           requeue
-          timed={step.id === 'fluency'}
+          timed={!review && steps[running.index].id === 'fluency'}
           onItem={(r, first) => {
-            if (first) firstTry.current.push(r);
+            if (!first) return;
+            const i = running.items.findIndex((x) => x.key === r.key && x.exercise.prompt === r.prompt);
+            if (review) {
+              // Repaso: si ahora sale (con o sin pista), se saca de la lista; si no, queda para la próxima.
+              recordReview(r);
+              if (r.outcome !== 'again' && r.outcome !== 'skip' && i >= 0 && running.ids?.[i]) removeMissed(unit.id, running.ids[i]);
+              return;
+            }
+            firstTry.current.push(r);
+            // Lo que sigue mal después de la pista queda anotado para repasarlo con otra oración.
+            if (r.outcome === 'again' && i >= 0) addMissed(unit.id, r.key, running.items[i].exercise);
           }}
-          onProgress={(queue, pos) => saveRun(unit.id, { stepIndex: running.index, queue: toSaved(queue), pos, firstTry: firstTry.current })}
-          onDone={() => finishStep(running.index)}
+          onProgress={(queue, pos) => {
+            if (!review) saveRun(unit.id, { stepIndex: running.index, queue: toSaved(queue), pos, firstTry: firstTry.current });
+          }}
+          onDone={() => {
+            if (!review) return finishStep(running.index);
+            const left = (getState().missed?.[unit.id] ?? []).length;
+            setRunning(null);
+            setNotice(left ? `Repaso hecho. Te quedan ${left} para la próxima, con oraciones distintas.` : '✓ Repaso hecho: ya te salió todo lo que te había costado.');
+          }}
         />
       </div>
     );
@@ -237,15 +266,25 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
       {result && (
         <div className={`feedback ${result.passed ? 'good' : 'bad'}`}>
           <p className="verdict">
-            {result.passed ? `¡Escalón «${steps[result.index].title}» superado!` : `Todavía no: ${Math.round(result.score * 100)}% bien al primer intento`}
+            {result.passed ? `¡Escalón «${steps[result.index].title}» superado!` : `Todavía no: ${Math.round(result.score * 100)}% bien`}
           </p>
           <p>
             {result.passed
               ? result.index === steps.length - 1
                 ? 'Dominaste la unidad. Va a volver en tus repasos para que no se olvide.'
-                : `${Math.round(result.score * 100)}% bien al primer intento${steps[result.index].id === 'fluency' ? ' y a tiempo' : ''}. Se abre el siguiente escalón.`
+                : `${Math.round(result.score * 100)}% bien${steps[result.index].id === 'fluency' ? ' y a tiempo' : ''}. Se abre el siguiente escalón.`
               : `Necesitás ${Math.round(STEP_PASS * 100)}%${steps[result.index].id === 'fluency' ? ', respondiendo a tiempo' : ''}. Repetilo: las oraciones van a ser otras.`}
           </p>
+        </div>
+      )}
+
+      {missed.length > 0 && !(done > 0 && done < steps.length && result && !result.passed) && (
+        <div className="card">
+          <p className="card-title">🔁 Lo que te costó ({missed.length})</p>
+          <p className="small">Los ejercicios que te salieron mal, con el mismo formato pero otra oración.</p>
+          <button className="secondary" onClick={startMissed}>
+            Repasarlos
+          </button>
         </div>
       )}
 

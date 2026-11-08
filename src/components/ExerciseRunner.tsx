@@ -150,7 +150,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
       if (c > 0 && c % 5 === 0) sfxCombo();
       else sfxCorrect();
     }
-    onItem({ key: item.key, unitId: item.unit.id, prompt: ex.prompt, given, correct: correctText(ex), outcome, ms }, first);
+    onItem({ key: item.key, unitId: item.unit.id, prompt: ex.prompt, given, correct: correctText(ex), outcome, ms, ...(tooSlow ? { slow: true } : {}) }, first);
     const nextQueue = requeue && first && outcome === 'again' ? [...queue, { item, first: false }] : queue;
     if (nextQueue !== queue) setQueue(nextQueue);
     onProgress?.(nextQueue, pos + 1);
