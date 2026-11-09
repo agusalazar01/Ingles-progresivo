@@ -36,7 +36,7 @@ export const EXTRA_FIX: Record<string, Exercise[]> = {
     f('I go to work on the Mondays.', ['I go to work on Mondays.'], 'Los días van sin the: on Mondays.'),
   ],
   'pres-simple': [
-    f('She work in a winery.', ['She works in a winery.'], 'Con he / she / it el verbo lleva -s.'),
+    f('She work in a bank.', ['She works in a bank.'], 'Con he / she / it el verbo lleva -s.'),
     f("He don't like coffee.", ["He doesn't like coffee."], "Con he / she / it la negativa es doesn't."),
     f('Do she live here?', ['Does she live here?'], 'Con he / she / it la pregunta va con does.'),
     f('My parents lives in Salto.', ['My parents live in Salto.'], 'My parents = they: el verbo va sin -s.'),
@@ -119,7 +119,7 @@ export const EXTRA_FIX: Record<string, Exercise[]> = {
   ],
   comparatives: [
     f('He is more tall than me.', ['He is taller than me.', 'He is taller than I am.'], 'Adjetivos cortos: -er (taller).'),
-    f('This is the most good wine.', ['This is the best wine.'], 'Good → better → the best.'),
+    f('This is the most good pizza.', ['This is the best pizza.'], 'Good → better → the best.'),
     f('She is more older than me.', ['She is older than me.', 'She is older than I am.'], 'Older ya es comparativo: sin more.'),
     f('My car is more fast that yours.', ['My car is faster than yours.'], 'Fast → faster, y la comparación va con than.'),
     f('It is the same that mine.', ['It is the same as mine.'], 'The same as, no that.'),
@@ -175,7 +175,7 @@ export const EXTRA_FIX: Record<string, Exercise[]> = {
     f('English is speak here.', ['English is spoken here.'], 'Participio de speak: spoken.'),
     f('I born in 1998.', ['I was born in 1998.'], 'Nacer = be born: I was born.'),
     f('The car was stole.', ['The car was stolen.'], 'Participio de steal: stolen.'),
-    f('The grapes are pick in February.', ['The grapes are picked in February.'], 'Participio: picked.'),
+    f('The rubbish is collect on Mondays.', ['The rubbish is collected on Mondays.'], 'Participio: collected.'),
     f('It was wrote by my sister.', ['It was written by my sister.'], 'Participio de write: written.'),
   ],
   connectors: [

@@ -9,7 +9,7 @@
 import { getState, nextCard, setState, type Outcome, type Phrase } from './store';
 import { cleanReply } from './ai';
 
-export const TRANSLATOR = `You are an English coach for a Spanish speaker from Uruguay who is going to work a wine vintage in Australia.
+export const TRANSLATOR = `You are an English coach for a Spanish speaker from Uruguay who wants to sound natural in everyday Australian English.
 The learner gives you a sentence in Spanish and, sometimes, their own attempt in English.
 Answer EXACTLY in this format, with these four lines and nothing else:
 NATURAL: how a friendly Australian would really say it (casual, natural, not slangy to the point of being hard)
@@ -78,7 +78,7 @@ export const BANK: { es: string; en: string; simple?: string; chunks: string[] }
   { es: '¿Qué quiere decir eso?', en: 'What does that mean?', chunks: ['What does … mean?'] },
   { es: 'Estoy aprendiendo inglés, tené paciencia.', en: "I'm still learning English, so bear with me.", simple: "I'm learning English, sorry.", chunks: ["I'm still learning", 'bear with me'] },
   { es: 'Soy de Uruguay, está entre Argentina y Brasil.', en: "I'm from Uruguay. It's between Argentina and Brazil.", chunks: ["I'm from …", "It's between … and …"] },
-  { es: 'Vine a trabajar la vendimia.', en: "I'm here to work the vintage.", chunks: ["I'm here to …", 'work the vintage'] },
+  { es: 'Vine a trabajar y a viajar.', en: "I'm here to work and travel.", chunks: ["I'm here to …"] },
   { es: '¿A qué hora empezamos mañana?', en: 'What time do we start tomorrow?', chunks: ['What time do we …?'] },
   { es: '¿Me podés mostrar cómo se hace?', en: 'Could you show me how to do it?', simple: 'Can you show me?', chunks: ['Could you show me how to …?'] },
   { es: 'Ya terminé con esto, ¿qué hago ahora?', en: "I'm done with this. What should I do next?", chunks: ["I'm done with …", 'What should I do next?'] },

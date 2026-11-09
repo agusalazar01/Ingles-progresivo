@@ -40,7 +40,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
   ],
   'there-is': [
     c("{There's} a feria on my street every Sunday.", ['There are', 'It has'], 'Todos los domingos hay feria en mi calle.', { tr: [Q, 'Is there a feria on your street every Sunday?'] }),
-    c('{There are} heaps of kangaroos near the vineyard.', ['There is', 'It has'], 'Hay pila de canguros cerca del viñedo.'),
+    c('{There are} heaps of kangaroos near the river.', ['There is', 'It has'], 'Hay pila de canguros cerca del río.'),
     c("{Is there} a servo near here? I need petrol.", ['Are there', 'Has'], '¿Hay una estación de servicio por acá? Necesito nafta.'),
     c("{There isn't} any yerba left.", ["There aren't", "It hasn't"], 'No queda yerba.'),
     c('{There were} a lot of people at the rambla.', ['There was', 'Had'], 'Había pila de gente en la rambla.', { tr: [N, "There weren't a lot of people at the rambla."] }),
@@ -61,7 +61,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
     c('The feria is {on} Sundays.', ['in', 'at'], 'La feria es los domingos.'),
     c("Let's meet {at} the rambla at five.", ['in', 'on'], 'Nos vemos en la rambla a las cinco.'),
     c('I drink mate {in} the morning.', ['on', 'at'], 'Tomo mate a la mañana.'),
-    c('The vintage starts {in} February.', ['on', 'at'], 'La vendimia empieza en febrero.'),
+    c('The footy season starts {in} March.', ['on', 'at'], 'La temporada de footy empieza en marzo.'),
     c('We have a barbie {on} Saturday arvo.', ['in', 'at'], 'Hacemos un asado el sábado de tarde.'),
     c("He's {at} the servo getting petrol.", ['in', 'on'], 'Está en la estación de servicio cargando nafta.'),
     c('My thongs are {in} the car.', ['on', 'at'], 'Mis chancletas están en el auto.'),
@@ -74,7 +74,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
     c('I {never} miss the footy on TV.', ['nothing', 'none'], 'Nunca me pierdo el footy en la tele.'),
     c('At smoko I {have} a cuppa.', ['take', 'make'], 'En el descanso me tomo un té.'),
     c("I {catch} the bus at 7:30.", ['take on', 'grab on'], 'Me tomo el ómnibus a las 7:30.'),
-    c('She {sometimes} works on Saturdays at the winery.', ['some times', 'somewhat'], 'A veces ella trabaja los sábados en la bodega.'),
+    c('She {sometimes} works on Saturdays at the café.', ['some times', 'somewhat'], 'A veces ella trabaja los sábados en el café.'),
   ],
   countables: [
     c("We don't have {much} yerba left.", ['many', 'a few'], 'No nos queda mucha yerba.'),
@@ -96,7 +96,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
   ],
   collocations: [
     c("Let's {have} a barbie this weekend.", ['make', 'do'], 'Hagamos un asado este finde.'),
-    c('I {made} a lot of friends at the vintage.', ['did', 'took'], 'Me hice pila de amigos en la vendimia.'),
+    c('I {made} a lot of friends at the hostel.', ['did', 'took'], 'Me hice pila de amigos en el hostel.'),
     c('Can I {take} a photo of the kangaroo?', ['make', 'do'], '¿Le puedo sacar una foto al canguro?'),
     c("We {had} a ripper of a day at the beach.", ['made', 'did'], 'La pasamos bárbaro en la playa.'),
     c('I need to {do} the shopping at the feria.', ['make', 'take'], 'Tengo que hacer las compras en la feria.'),
@@ -109,7 +109,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
     c("Let's {catch up} for a coffee this arvo.", ['catch on', 'catch out'], 'Juntémonos a tomar un café esta tarde.'),
     c('I {grew up} near the rambla.', ['grew', 'raised up'], 'Me crié cerca de la rambla.'),
     c('{Hurry up}, the bus is coming!', ['Hurry on', 'Fast up'], '¡Apurate, que viene el ómnibus!'),
-    c("I'm {looking for} a job at a winery.", ['looking after', 'looking up'], 'Estoy buscando laburo en una bodega.'),
+    c("I'm {looking for} a job at a café.", ['looking after', 'looking up'], 'Estoy buscando laburo en un café.'),
     c('Please {turn off} the air con.', ['turn on', 'turn out'], 'Por favor, apagá el aire.'),
   ],
   relatives: [
@@ -117,7 +117,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
     c('Pocitos is the neighbourhood {where} I live.', ['which', 'who'], 'Pocitos es el barrio donde vivo.'),
     c("That's the tradie {who} fixed our roof.", ['which', 'whose'], 'Ese es el técnico que nos arregló el techo.'),
     c('I know a café {where} they make a great flat white.', ['which', 'who'], 'Conozco un café donde hacen un café con leche bárbaro.'),
-    c('The winery {which} hired me is in the Barossa Valley.', ['who', 'where'], 'La bodega que me contrató está en el valle de Barossa.'),
+    c('The café {which} hired me is in Bondi.', ['who', 'where'], 'El café que me contrató está en Bondi.'),
     c('My mate, {whose} ute we borrowed, lives in Perth.', ['who', "who's"], 'Mi amigo, cuya camioneta pedimos prestada, vive en Perth.'),
   ],
   connectors: [
@@ -126,11 +126,11 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
     c("I'm saving money {because} I'm going to Australia.", ['so', 'although'], 'Estoy ahorrando plata porque me voy a Australia.'),
     c("Bring your sunnies {in case} it's sunny.", ['unless', 'so'], 'Traé los lentes de sol por si hay sol.'),
     c("We won't make it {unless} we catch the next bus.", ['if', 'although'], 'No llegamos a menos que nos tomemos el próximo ómnibus.'),
-    c("{Despite} the heat, we worked all day in the vineyard.", ['Although', 'Because'], 'A pesar del calor, laburamos todo el día en el viñedo.'),
+    c("{Despite} the heat, we worked all day in the garden.", ['Although', 'Because'], 'A pesar del calor, laburamos todo el día en el jardín.'),
   ],
   passive: [
     c('Mate {is drunk} all over Uruguay.', ['drinks', 'is drinking'], 'El mate se toma en todo Uruguay.', { cue: 'drink' }),
-    c('The grapes {are picked} in autumn.', ['pick', 'are picking'], 'Las uvas se cosechan en otoño.', { cue: 'pick' }),
+    c('The bins {are emptied} on Thursdays.', ['empty', 'are emptying'], 'Los contenedores se vacían los jueves.', { cue: 'empty' }),
     c('The rambla {was built} along the coast.', ['built', 'is built'], 'La rambla se construyó a lo largo de la costa.', { cue: 'build' }),
     c('Snags {are sold} at every sausage sizzle.', ['sell', 'are selling'], 'En cada choripaneada venden chorizos.', { cue: 'sell' }),
     c('The match {was won} by Peñarol.', ['won', 'is winning'], 'El partido lo ganó Peñarol.', { cue: 'win' }),
@@ -139,7 +139,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
   'false-friends': [
     c('I {attended} a footy match in Melbourne.', ['assisted', 'asisted'], 'Asistí a un partido de footy en Melbourne.'),
     c("{Actually}, I'm from Uruguay, not Argentina.", ['Currently', 'Actual'], 'En realidad, soy de Uruguay, no de Argentina.'),
-    c("I'm {currently} working at a winery.", ['actually', 'actual'], 'Actualmente estoy laburando en una bodega.'),
+    c("I'm {currently} working at a café.", ['actually', 'actual'], 'Actualmente estoy laburando en un café.'),
     c('I {realised} I had left my thermos on the bus.', ['made', 'noticed of'], 'Me di cuenta de que me había olvidado el termo en el ómnibus.'),
     c('I was so {embarrassed} when I said it wrong.', ['pregnant', 'embarrassing'], 'Me dio una vergüenza bárbara cuando lo dije mal.'),
     c('The {library} at uni is open until ten.', ['bookshop', 'librery'], 'La biblioteca de la facultad abre hasta las diez.'),
@@ -157,7 +157,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
     c('"I\'m from Montevideo." → She said she {was} from Montevideo.', ['is', 'has been'], '"Soy de Montevideo." → Dijo que era de Montevideo.'),
     c('My boss {told} me to start at 6 am.', ['said', 'asked'], 'Mi jefe me dijo que empezara a las 6.'),
     c('She asked me {if} I wanted a mate.', ['that', 'what'], 'Me preguntó si quería un mate.'),
-    c('"We\'ll pick grapes tomorrow." → They said they {would} pick grapes the next day.', ['will', 'can'], '"Mañana cosechamos uva." → Dijeron que al día siguiente iban a cosechar uva.'),
+    c('"We\'ll go to the beach tomorrow." → They said they {would} go to the beach the next day.', ['will', 'can'], '"Mañana vamos a la playa." → Dijeron que al día siguiente iban a ir a la playa.'),
     c('He asked me how long {I had been} in Australia.', ['had I been', 'have I been'], 'Me preguntó cuánto tiempo hacía que estaba en Australia.'),
   ],
   register: [

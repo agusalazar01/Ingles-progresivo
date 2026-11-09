@@ -40,7 +40,7 @@ const v = (id: string, base: string, past: string, pp: string, es: string, comps
 });
 
 export const VERBS: Verb[] = [
-  v('work', 'work', 'worked', 'worked', 'trabajar', [['in a bank', 'en un banco'], ['from home', 'desde casa'], ['at the hospital', 'en el hospital'], ['at a winery', 'en una bodega'], ['in a café in Sydney', 'en un café en Sídney']]),
+  v('work', 'work', 'worked', 'worked', 'trabajar', [['in a bank', 'en un banco'], ['from home', 'desde casa'], ['at the hospital', 'en el hospital'], ['at a supermarket', 'en un supermercado'], ['in a café in Sydney', 'en un café en Sídney']]),
   v('live', 'live', 'lived', 'lived', 'vivir', [['in Montevideo', 'en Montevideo'], ['near the beach', 'cerca de la playa'], ['with my parents', 'con mis padres']], { stative: true }),
   v('study', 'study', 'studied', 'studied', 'estudiar', [['English', 'inglés'], ['medicine', 'medicina'], ['for the exam', 'para el examen']]),
   v('play-sport', 'play', 'played', 'played', 'jugar', [['football', 'al fútbol'], ['tennis', 'al tenis'], ['cards', 'a las cartas'], ['truco', 'al truco']]),
@@ -68,7 +68,7 @@ export const VERBS: Verb[] = [
   v('take-bus', 'take', 'took', 'taken', 'tomar', [['the bus', 'el ómnibus'], ['a taxi', 'un taxi'], ['the tram', 'el tranvía']], { ing: 'taking' }),
   v('take-photo', 'take', 'took', 'taken', 'sacar', [['photos', 'fotos'], ['a photo', 'una foto']], { ing: 'taking' }),
   v('speak', 'speak', 'spoke', 'spoken', 'hablar', [['English', 'inglés'], ['with the manager', 'con el gerente']]),
-  v('drive', 'drive', 'drove', 'driven', 'manejar', [['to work', 'al laburo'], ['to the coast', 'a la costa'], ['the ute to the vineyard', 'la camioneta al viñedo']], { ing: 'driving' }),
+  v('drive', 'drive', 'drove', 'driven', 'manejar', [['to work', 'al laburo'], ['to the coast', 'a la costa'], ['to the city', 'a la ciudad']], { ing: 'driving' }),
   v('swim', 'swim', 'swam', 'swum', 'nadar', [['in the sea', 'en el mar'], ['at the club', 'en el club']], { ing: 'swimming' }),
   v('run', 'run', 'ran', 'run', 'correr', [['in the park', 'en el parque'], ['by the river', 'junto al río']], { ing: 'running' }),
   v('sleep', 'sleep', 'slept', 'slept', 'dormir', [['in the car', 'en el auto'], ['at my aunt\'s house', 'en la casa de mi tía']]),
