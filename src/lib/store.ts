@@ -12,7 +12,7 @@ const scheduler = fsrs({ request_retention: 0.9, enable_fuzz: true });
 export type Outcome = 'good' | 'hard' | 'again' | 'skip';
 const RATING: Record<Exclude<Outcome, 'skip'>, Grade> = { good: Rating.Good, hard: Rating.Hard, again: Rating.Again };
 
-type StoredCard = Omit<Card, 'due' | 'last_review'> & { due: string; last_review?: string };
+export type StoredCard = Omit<Card, 'due' | 'last_review'> & { due: string; last_review?: string };
 
 export interface ErrorEntry {
   key: string;
@@ -87,6 +87,10 @@ export interface AppState {
   missed?: Record<string, MissedItem[]>;
   /** Últimas oraciones vistas por unidad (normalizadas), para no repetirlas al armar los escalones. */
   seen?: Record<string, string[]>;
+  /** «Frases por estructura»: tarjeta de repaso de cada frase (id estructura:índice). */
+  structs?: Record<string, StoredCard>;
+  /** «Frases por estructura»: consignas de combinar hechas (lo último que escribiste). */
+  combos?: Record<string, { date: string; text: string }>;
 }
 
 export interface MissedItem {

@@ -10,6 +10,7 @@ import { Exam, Mixed, Remedial } from './screens/Practice';
 import { Vocab } from './screens/Vocab';
 import { Call } from './screens/Call';
 import { Phrases } from './screens/Phrases';
+import { Structures } from './screens/Structures';
 import { Settings, type SettingsSection } from './screens/Settings';
 import { VerbLesson, VerbWorkshop } from './screens/Verbs';
 import type { Level } from './content/types';
@@ -29,6 +30,7 @@ export type Route =
   | { name: 'settings'; section?: SettingsSection }
   | { name: 'vocab' }
   | { name: 'phrases' }
+  | { name: 'structures' }
   | { name: 'verbs' }
   | { name: 'verb'; verbId: string; banner?: string }
   | { name: 'mixed'; family: string }
@@ -194,6 +196,9 @@ export default function App() {
       break;
     case 'progress':
       body = <Progress go={go} />;
+      break;
+    case 'structures':
+      body = <Structures onExit={back} />;
       break;
     case 'phrases':
       body = <Phrases onExit={back} />;

@@ -118,6 +118,13 @@ export function Home({ go }: { go: (r: Route) => void }) {
           );
         })()}
       </div>
+      <div className="card">
+        <p className="card-title">🧱 Frases por estructura</p>
+        <p className="small">Patrones con frases reales, la explicación de cada palabra y, al final, oraciones largas combinando todo.</p>
+        <button className="secondary" onClick={() => go({ name: 'structures' })}>
+          Entrar
+        </button>
+      </div>
       {(() => {
         const ph = s.phrases ?? [];
         const dueP = duePhrases(ph).length;

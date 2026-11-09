@@ -671,3 +671,17 @@ main.has-gear > .screen > :first-child { padding-right: 52px; }
 .check { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
 .bank { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow: auto; margin-top: 8px; }
 .bank-item { text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line, rgba(0,0,0,0.1)); background: transparent; color: inherit; font: inherit; }
+
+/* Frases por estructura */
+.structures .pattern { font-weight: 700; color: var(--brand); }
+.structures .phrase-card { gap: 4px; }
+.structures .phrase-en-btn { color: inherit; text-decoration: none; padding: 4px 0; font-size: 17px; }
+.breakdown { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+.breakdown li.key b { color: var(--brand); }
+.status-pill.due { color: var(--bad); font-weight: 600; }
+.status-pill.known { color: var(--good); font-weight: 600; }
+table.forms { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 6px; }
+table.forms th, table.forms td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+table.forms th { background: var(--brand-soft); }
+.combo-text { width: 100%; font: inherit; resize: vertical; }
+.checklist { margin: 0; padding-left: 4px; list-style: none; display: flex; flex-direction: column; gap: 4px; }
