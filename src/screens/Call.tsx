@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { App as CapApp } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { callById, type CallScript, type UserTurn } from '../content/calls';
 import { unitById } from '../content/curriculum';
 import { Oliver } from '../components/Oliver';
@@ -13,7 +13,10 @@ import { getState, saveCall } from '../lib/store';
 import { coachWhisper, EXTRACT_FACTS, isRepeat, planFreeCall, rememberFacts, type CoachState } from '../lib/oliver';
 import { useBack } from '../lib/nav';
 import {
+  BRAIN_EAR,
   chosenAi,
+  listenWith,
+  loadEarOnly,
   cleanReply,
   FEEDBACK_REQUEST,
   loadCallAi,
@@ -106,6 +109,8 @@ export function Call({
     (async () => {
       let chosen = await chosenAi();
       // Las llamadas con guion funcionan con los patrones del guion (más confiable); la IA de charla solo si se pide.
+      // Si el oído es Gemma 4, se carga igual (solo para escuchar), aunque Oliver siga el guion.
+      const earBrain = script && !withAi && chosen.ear?.asr === 'brain' ? chosen.brain : null;
       if (script && !withAi) chosen = { ...chosen, brain: null };
       if (script && withAi && !chosen.brain) {
         stop();
@@ -131,6 +136,7 @@ export function Call({
           }) + `\nYou already opened the call by saying: "${opener}"`
         : plan!.system;
       if (chosen.voice || chosen.ear || chosen.brain) chosen = await loadCallAi(chosen, system, script ? 0.8 : 0.9);
+      if (earBrain) chosen = { ...chosen, ear: await loadEarOnly({ ...chosen, ear: BRAIN_EAR, brain: earBrain }) };
       if (!alive.current) return;
       setAi(chosen);
       setMicOk(chosen.ear ? true : await canListen());
@@ -173,6 +179,7 @@ export function Call({
     };
   }, [ai.ear]);
 
+  const firstSpeech = useRef<Promise<unknown>>(Promise.resolve());
   const speak = async (text: string) => {
     lastSaid.current = text;
     setTalking(true);
@@ -300,8 +307,50 @@ export function Call({
           ? ''
           : coachWhisper(said, before, coach.current, limit);
       if (whisper.includes('fresh topic')) coach.current.sameTopic = 0;
-      const res = await OliverAi.chat({ text: whisper ? `${said}\n(${whisper})` : said });
+      // Respuesta al instante: apenas la IA termina la primera frase, Oliver empieza a decirla
+      // mientras el resto se sigue generando.
+      let streamed = '';
+      let sub: PluginListenerHandle | null = null;
+      const v = aiRef.current.voice;
+      if (v) {
+        let buf = '';
+        sub = await OliverAi.addListener('token', (e) => {
+          if (streamed) return;
+          buf += e.text;
+          const first = cleanReply(buf).match(/^(.{12,}?[.!?])\s/);
+          if (first && !isRepeat(first[1], before)) {
+            streamed = first[1];
+            setThinking(false);
+            lastSaid.current = streamed;
+            setTalking(true);
+            firstSpeech.current = speakWith(v, aiRef.current.speaker, streamed).catch(() => undefined);
+          }
+        });
+      }
+      let res: { text: string };
+      try {
+        res = await OliverAi.chat({ text: whisper ? `${said}\n(${whisper})` : said });
+      } finally {
+        sub?.remove();
+      }
       reply = shortReply(cleanReply(res.text), 3);
+      if (streamed) {
+        if (!alive.current) return;
+        setThinking(false);
+        const rest = reply.startsWith(streamed) ? reply.slice(streamed.length).trim() : shortReply(reply.replace(/^[^.!?]*[.!?]\s*/, ''), 2);
+        const full = rest ? `${streamed} ${rest}` : streamed;
+        setLog((l) => [...l, { who: 'oliver', text: full }]);
+        await firstSpeech.current;
+        if (rest && alive.current) await speak(rest);
+        else if (alive.current) setTalking(false);
+        lastSaid.current = full;
+        if (!alive.current) return;
+        if (wrap || BYE_RE.test(full)) {
+          setEnding(true);
+          finish();
+        } else setWaiting(true);
+        return;
+      }
       // Si Oliver repite casi lo mismo que hace poco, se le pide otra cosa.
       if (reply && isRepeat(reply, before)) {
         const again = await OliverAi.chat({ text: '(Coach: you just said almost the same thing as before. Say something new and different, and ask a different question.)' });
@@ -335,7 +384,7 @@ export function Call({
     setListening(true);
     try {
       let heard: string[];
-      if (aiRef.current.ear) heard = [(await OliverAi.listen({})).text];
+      if (aiRef.current.ear) heard = [(await listenWith(aiRef.current.ear)).text];
       else heard = await listen('en-AU');
       setListening(false);
       setLevel(0);

@@ -1,5 +1,6 @@
 import type { Exercise, Level, Unit } from '../content/types';
 import { NGSL } from '../content/ngsl';
+import { NAWL } from '../content/nawl';
 import type { RunnerItem } from '../components/ExerciseRunner';
 import { getState, gradeCard, markActive, setState, type AppState } from './store';
 
@@ -8,22 +9,27 @@ import { getState, gradeCard, markActive, setState, type AppState } from './stor
  * Palabras nuevas por día → tarjeta de repaso espaciado → producir la palabra en inglés desde el español.
  */
 /** Nombre de cada banda (los niveles A1–C1 se muestran solo al evaluar). */
-export const BAND_NAME: Record<string, string> = { A1: 'Básicas (1–500)', A2: 'Frecuentes (501–1200)', B1: 'Intermedias (1201–2000)', B2: 'Avanzadas (2001–2801)' };
+export const BAND_NAME: Record<string, string> = { A1: 'Básicas (1–500)', A2: 'Frecuentes (501–1200)', B1: 'Intermedias (1201–2000)', B2: 'Avanzadas (2001–2801)', C1: 'Académicas C1' };
+
+/** NGSL por frecuencia y, después, el vocabulario académico (NAWL) que no esté ya en el NGSL. */
+const GENERAL = new Set(NGSL.map(([w]) => w));
+export const WORDS: [string, string][] = [...NGSL, ...NAWL.filter(([w]) => !GENERAL.has(w))];
 
 export const BANDS: { level: Level; from: number; to: number }[] = [
   { level: 'A1', from: 0, to: 500 },
   { level: 'A2', from: 500, to: 1200 },
   { level: 'B1', from: 1200, to: 2000 },
-  { level: 'B2', from: 2000, to: 2801 },
+  { level: 'B2', from: 2000, to: NGSL.length },
+  { level: 'C1', from: NGSL.length, to: WORDS.length },
 ];
 
 export const bandWords = (level: Level) => {
   const b = BANDS.find((x) => x.level === level);
-  return b ? NGSL.slice(b.from, b.to) : [];
+  return b ? WORDS.slice(b.from, b.to) : [];
 };
 
 export const wordKey = (w: string) => `w:${w}`;
-const ES = new Map(NGSL);
+const ES = new Map(WORDS);
 export const meaning = (w: string) => ES.get(w) ?? '';
 
 /** Unidad "virtual" para mostrar los ejercicios de vocabulario. */
@@ -75,7 +81,7 @@ export function introduceWord(word: string, known: boolean) {
 const accepted = (w: string) => {
   // Si otras palabras del NGSL tienen el mismo significado principal, también se aceptan.
   const first = meaning(w).split(/[;,]/)[0].trim();
-  return [w, ...NGSL.filter(([x, es]) => x !== w && es.split(/[;,]/)[0].trim() === first).map(([x]) => x)];
+  return [w, ...WORDS.filter(([x, es]) => x !== w && es.split(/[;,]/)[0].trim() === first).map(([x]) => x)];
 };
 
 /** Ejercicio de producción: del español al inglés, con la primera letra como pista. */

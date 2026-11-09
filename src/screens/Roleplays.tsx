@@ -4,7 +4,7 @@ import { useBack } from '../lib/nav';
 import { canListen, listenManual, say, stopSpeaking, type ManualListen } from '../lib/speech';
 import { useAppState } from '../lib/store';
 import type { Level } from '../content/types';
-import { chosenAi, loadVoicePack, releaseCallAi, speakWith, tuneFor, type CallAi } from '../lib/ai';
+import { chosenAi, listenManualWith, loadEarOnly, loadVoicePack, releaseCallAi, speakWith, tuneFor, type CallAi } from '../lib/ai';
 import { RP_CATEGORIES, ROLEPLAYS } from '../content/roleplays/catalog';
 import type { RFix, RoleplayEntry, RoleplayScript } from '../content/roleplays/types';
 import { fixesFor, matchOption, pickLine, roleplayById, saveRoleplay, toCallScript } from '../lib/roleplay';
@@ -258,13 +258,14 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
     alive.current = true;
     canListen().then(setMicOk);
     (async () => {
-      // Solo la voz (no la IA de charla): se carga para este roleplay y se libera al salir.
+      // La voz y el oído elegidos (no la IA de charla para responder): se cargan para este roleplay y se liberan al salir.
+      // Si el oído es Gemma 4, se carga solo para escuchar: no se usa el reconocimiento del teléfono.
       try {
         const c = await chosenAi();
-        if (c.voice) {
-          await loadVoicePack(c.voice, c.speaker);
-          voice.current = { ...c, ear: null, brain: null };
-        }
+        if (c.voice) await loadVoicePack(c.voice, c.speaker);
+        const ear = await loadEarOnly(c);
+        voice.current = { ...c, voice: c.voice, ear, brain: null };
+        if (ear) setMicOk(true);
       } catch {
         voice.current = null;
       }
@@ -276,7 +277,7 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
       alive.current = false;
       mic.current?.stop();
       stopSpeaking();
-      if (voice.current) releaseCallAi();
+      if (voice.current?.voice || voice.current?.ear) releaseCallAi();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -339,7 +340,12 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
     try {
       stopSpeaking();
       setTyped('');
-      mic.current = await listenManual('en-AU', (t) => setTyped(t));
+      const ear = voice.current?.ear;
+      if (ear) {
+        // Oído de la app (Parakeet, Moonshine, Qwen3-ASR o Gemma 4): el texto aparece al terminar.
+        const m = listenManualWith(ear, 'English');
+        mic.current = { stop: m.stop };
+      } else mic.current = await listenManual('en-AU', (t) => setTyped(t));
       setListening(true);
     } catch {
       setListening(false);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { setState, useAppState } from '../lib/store';
 import {
   aiAvailable,
@@ -27,7 +27,7 @@ import {
   type PackKind,
 } from '../lib/ai';
 
-type AiChoice = { voice: string; speaker: number; ear: string; brain: string };
+type AiChoice = { voice: string; speaker: number; ear: string; brain: string; gpu: boolean };
 const KEY: Record<PackKind, 'voice' | 'ear' | 'brain'> = { voice: 'voice', ear: 'ear', brain: 'brain' };
 
 const size = (mb: number) => (mb >= 1000 ? `${(mb / 1024).toFixed(1).replace('.', ',')} GB` : `${mb} MB`);
@@ -105,13 +105,13 @@ export function AiSettings() {
     const ok = await startDownload(p);
     if (ok) {
       await refresh();
-      set({ [KEY[p.kind]]: p.id } as Partial<AiChoice>);
+      set({ [KEY[p.kind]]: p.id, ...(p.audio ? { ear: 'brain' } : {}) } as Partial<AiChoice>);
     }
   };
 
   const remove = async (p: Pack) => {
     await removePack(p.id);
-    if (ai[KEY[p.kind]] === p.id) set({ [KEY[p.kind]]: p.kind === 'brain' ? 'off' : 'system' } as Partial<AiChoice>);
+    if (ai[KEY[p.kind]] === p.id) set({ [KEY[p.kind]]: p.kind === 'brain' ? 'off' : 'system', ...(p.audio && ai.ear === 'brain' ? { ear: 'system' } : {}) } as Partial<AiChoice>);
     refresh();
   };
 
@@ -137,7 +137,10 @@ export function AiSettings() {
             {chosen ? '✓ ' : ''}
             {p.title}
           </b>
-          <span className="small">{size(p.mb)}</span>
+          <span className="small">
+            {size(p.mb)}
+            {p.ram ? ` · ${p.ram} GB de RAM` : ''}
+          </span>
         </div>
         <p className="small">{p.desc}</p>
         {d && !d.error && (
@@ -169,7 +172,7 @@ export function AiSettings() {
               </button>
             )}
             {has && !chosen && (
-              <button className="primary" onClick={() => set({ [KEY[p.kind]]: p.id } as Partial<AiChoice>)}>
+              <button className="primary" onClick={() => set({ [KEY[p.kind]]: p.id, ...(p.audio ? { ear: 'brain' } : {}) } as Partial<AiChoice>)}>
                 Usar
               </button>
             )}
@@ -229,9 +232,9 @@ export function AiSettings() {
   };
 
   const systemOption = (kind: PackKind, label: string) => {
-    const value = kind === 'brain' ? 'off' : 'system';
+    const value = kind === 'brain' ? 'off' : kind === 'ear' ? 'phone' : 'system';
     const cur = PACKS.find((p) => p.id === ai[KEY[kind]]);
-    const on = ai[KEY[kind]] === value || !cur || !packReady(cur, st);
+    const on = kind === 'ear' ? !earIsBrain && !earPack : ai[KEY[kind]] === value || !cur || !packReady(cur, st);
     return (
       <button className={`option ${on ? 'right' : ''}`} onClick={() => set({ [KEY[kind]]: value } as Partial<AiChoice>)}>
         {label}
@@ -239,42 +242,93 @@ export function AiSettings() {
     );
   };
 
+  // La IA de charla elegida y si puede escuchar (Gemma 4).
+  const brainPack = PACKS.find((p) => p.kind === 'brain' && p.id === ai.brain && packReady(p, st));
+  const earPack = PACKS.find((p) => p.kind === 'ear' && p.id === ai.ear && packReady(p, st));
+  const earIsBrain = !!brainPack?.audio && (ai.ear === 'brain' || (ai.ear !== 'phone' && !earPack));
+  const chosenTitle = (kind: PackKind, none: string) => {
+    if (kind === 'ear' && earIsBrain) return `🧠 ${brainPack!.title.replace(' · también escucha', '')} (escucha ella misma)`;
+    const p = PACKS.find((x) => x.kind === kind && x.id === ai[KEY[kind]] && packReady(x, st));
+    if (!p) return none;
+    if (kind === 'voice') {
+      const v = speakers.find((x) => x.id === ai.speaker);
+      return v ? `${p.title} · ${v.name}` : p.title;
+    }
+    return p.title;
+  };
+  const counts = (kind: PackKind) => {
+    const list = PACKS.filter((p) => p.kind === kind);
+    const have = list.filter((p) => packReady(p, st)).length;
+    return `${have} bajada${have === 1 ? '' : 's'} · ${list.length - have} para bajar`;
+  };
+  const anyDl = (kind: PackKind) => PACKS.some((p) => p.kind === kind && dl[p.id] && !dl[p.id].error);
+
   return (
     <div className="card" id="voces-ia">
       <p className="card-title">Voces e IA para la llamada (sin internet)</p>
       <p className="small">
-        Se bajan una sola vez (mejor con wifi) y después funcionan sin conexión y gratis. Solo usan memoria y batería mientras dura la llamada: al cortar se
+        Se bajan una sola vez (mejor con wifi) y después funcionan sin conexión y gratis. Solo usan memoria y batería mientras las usás: al terminar se
         liberan. Lo que decís se procesa en el teléfono y no se manda a ningún lado.
       </p>
       {st.crashed && (
         <p className="small">
-          ⚠️ La última vez la app se cerró al {st.crashed}. Si vuelve a pasar, elegí otra opción (o la del teléfono) y contame en qué paso fue.
+          ⚠️ La última vez la app se cerró al {st.crashed}. Si vuelve a pasar, elegí otra opción (o la del teléfono){st.crashed.includes('GPU') ? ' o apagá la GPU' : ''} y contame en
+          qué paso fue.
         </p>
       )}
       {free > 0 && <p className="small">Espacio libre en el teléfono: {size(Math.round(free / 1024 / 1024))}</p>}
 
-      <div className="ai-section">
-        <h3>🗣️ Voz de Oliver</h3>
+      <Menu icon="🗣️" label="Voz utilizada" value={chosenTitle('voice', '📱 Voz del teléfono')} detail={counts('voice')} busy={anyDl('voice')}>
         {systemOption('voice', '📱 Voz del teléfono (Samsung en inglés de Australia)')}
         {PACKS.filter((p) => p.kind === 'voice').map(packCard)}
-      </div>
+      </Menu>
 
-      <div className="ai-section">
-        <h3>👂 Entender lo que decís</h3>
+      <Menu icon="💬" label="IA utilizada" value={chosenTitle('brain', '📜 Sin IA: se sigue el guion')} detail={counts('brain')} busy={anyDl('brain')}>
+        <p className="small">
+          Con IA, Oliver responde a lo que digas (dentro del roleplay) y al final te da consejos. También habilita la «Llamada libre». Sin IA, se sigue el guion.
+          Las que dicen «también escucha» entienden tu voz por sí mismas.
+        </p>
+        {systemOption('brain', '📜 Sin IA: se sigue el guion')}
+        {PACKS.filter((p) => p.kind === 'brain').map(packCard)}
+        <label className="ai-row small" style={{ gap: 8 }}>
+          <input type="checkbox" checked={!!ai.gpu} onChange={(e) => set({ gpu: e.target.checked })} />
+          <span>⚡ Acelerar con la GPU: contesta más rápido en muchos celulares, pero la primera carga tarda más. Si la app se cierra, apagalo.</span>
+        </label>
+      </Menu>
+
+      <Menu icon="👂" label="Reconocimiento de voz" value={chosenTitle('ear', '📱 El del teléfono')} detail={counts('ear')} busy={anyDl('ear')}>
+        {brainPack?.audio && (
+          <button className={`option ${earIsBrain ? 'right' : ''}`} onClick={() => set({ ear: 'brain' })}>
+            🧠 Que escuche {brainPack.title.replace(' · también escucha', '')} (sin el reconocimiento del teléfono)
+          </button>
+        )}
+        {!brainPack?.audio && <p className="small">Si elegís Gemma 4 como IA, también puede escucharte ella misma.</p>}
         {systemOption('ear', '📱 Reconocimiento de voz del teléfono')}
         {PACKS.filter((p) => p.kind === 'ear').map(packCard)}
-      </div>
-
-      <div className="ai-section">
-        <h3>💬 Charla con IA</h3>
-        <p className="small">
-          Con IA, Oliver responde a lo que digas (siempre dentro del roleplay de la unidad) y al final te da consejos. También habilita la «Llamada libre» para
-          charlar de cualquier tema. Sin IA, Oliver sigue el guion.
-        </p>
-        {systemOption('brain', '📜 Sin IA: Oliver sigue el guion')}
-        {PACKS.filter((p) => p.kind === 'brain').map(packCard)}
-      </div>
+      </Menu>
       {msg && <p className="small">{msg}</p>}
+    </div>
+  );
+}
+
+/** Menú desplegable: muestra solo lo elegido; al tocarlo aparecen todas las opciones. */
+function Menu({ icon, label, value, detail, busy, children }: { icon: string; label: string; value: string; detail: string; busy: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`ai-section ai-menu ${open ? 'open' : ''}`}>
+      <button className="ai-menu-head" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="ai-menu-icon">{icon}</span>
+        <span className="ai-menu-text">
+          <span className="small">{label}</span>
+          <b>{value}</b>
+          <span className="small">
+            {detail}
+            {busy ? ' · bajando…' : ''}
+          </span>
+        </span>
+        <span className="ai-menu-chev">{open ? '▴' : '▾'}</span>
+      </button>
+      {open && <div className="ai-menu-body">{children}</div>}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { BackButton } from '../components/BackButton';
 import { useBack } from '../lib/nav';
 import { canListen, intelligibility, listen, say } from '../lib/speech';
 import { useAppState, type Phrase } from '../lib/store';
-import { aiAvailable, chosenAi, OliverAi, releaseCallAi, type CallAi } from '../lib/ai';
+import { aiAvailable, chosenAi, listenWith, loadBrain, OliverAi, releaseCallAi, type CallAi } from '../lib/ai';
 import {
   bankMatch,
   BANK,
@@ -51,7 +51,7 @@ export function Phrases({ onExit }: { onExit: () => void }) {
     if (!c.brain) return false;
     try {
       if (!ai.current.brain) {
-        await OliverAi.loadBrain({ id: c.brain.id, file: c.brain.file ?? 'model.litertlm', system: TRANSLATOR, temperature: 0.5 });
+        await loadBrain(c.brain, TRANSLATOR, 0.5, c.ear?.asr === 'brain');
         ai.current.brain = true;
       } else await OliverAi.resetChat({ system: TRANSLATOR, temperature: 0.5 });
       return true;
@@ -64,14 +64,20 @@ export function Phrases({ onExit }: { onExit: () => void }) {
   const hear = async (lang: 'es' | 'en'): Promise<string[]> => {
     const c = ai.current.chosen ?? (await chosenAi());
     ai.current.chosen = c;
-    const ear = c.ear && (lang === 'en' || c.ear.asr === 'qwen3') ? c.ear : null;
+    // Qwen3-ASR y Gemma 4 entienden español e inglés; los otros oídos, solo inglés.
+    const ear = c.ear && (lang === 'en' || c.ear.asr === 'qwen3' || c.ear.asr === 'brain') ? c.ear : null;
     if (ear && aiAvailable()) {
       try {
-        if (!ai.current.ear) {
+        if (ear.asr === 'brain') {
+          if (!ai.current.brain && c.brain) {
+            await loadBrain(c.brain, TRANSLATOR, 0.5, true);
+            ai.current.brain = true;
+          }
+        } else if (!ai.current.ear) {
           await OliverAi.loadEar({ id: ear.id, kind: ear.asr ?? 'moonshine' });
           ai.current.ear = true;
         }
-        const r = await OliverAi.listen({ language: lang === 'es' ? 'Spanish' : 'English' });
+        const r = await listenWith(ear, { language: lang === 'es' ? 'Spanish' : 'English' });
         return r.text ? [r.text] : [];
       } catch {
         /* sigue con el del teléfono */

@@ -24,9 +24,9 @@ interface OliverAiPlugin {
   recordReference(o: { id: string; seconds: number }): Promise<{ seconds: number }>;
   stopSpeaking(): Promise<void>;
   loadEar(o: { id: string; kind?: string }): Promise<void>;
-  listen(o: { maxMs?: number; silenceMs?: number; waitMs?: number; language?: string }): Promise<{ text: string }>;
+  listen(o: { maxMs?: number; silenceMs?: number; waitMs?: number; language?: string; brain?: boolean; manual?: boolean }): Promise<{ text: string }>;
   stopListening(): Promise<void>;
-  loadBrain(o: { id: string; file: string; system: string; temperature?: number }): Promise<void>;
+  loadBrain(o: { id: string; file: string; system: string; temperature?: number; audio?: boolean; gpu?: boolean }): Promise<void>;
   resetChat(o: { system: string; temperature?: number }): Promise<void>;
   chat(o: { text: string }): Promise<{ text: string }>;
   cancelChat(): Promise<void>;
@@ -100,15 +100,19 @@ export interface Pack {
   /** Tamaño aproximado en MB. */
   mb: number;
   files: { url: string; name: string; size: number }[];
-  engine?: 'piper' | 'kokoro' | 'supertonic' | 'pocket';
+  engine?: 'piper' | 'kokoro' | 'supertonic' | 'pocket' | 'kitten';
   /** Reconocimiento de voz: motor y si entiende español. */
-  asr?: 'moonshine' | 'parakeet' | 'qwen3';
+  asr?: 'moonshine' | 'parakeet' | 'qwen3' | 'brain';
   spanish?: boolean;
   espeak?: string;
   /** Voces fijas (Kokoro). Piper las lee de speakers.json. */
   speakers?: { id: number; name: string }[];
   /** Archivo del modelo de charla. */
   file?: string;
+  /** La IA de charla entiende audio (Gemma 4): puede hacer también de oído. */
+  audio?: boolean;
+  /** RAM recomendada del teléfono, en GB. */
+  ram?: number;
   license: string;
 }
 
@@ -133,6 +137,7 @@ export const POCKET_VOICES: { file: string; name: string }[] = [
   { file: 'ref-timothy-ferguson-1.wav', name: 'Timothy Ferguson 1 · el más claro' },
 ];
 const HF = 'https://huggingface.co/litert-community/';
+const KITTEN = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-kitten/';
 const MB = 1024 * 1024;
 
 export const PACKS: Pack[] = [
@@ -189,6 +194,31 @@ export const PACKS: Pack[] = [
       { url: REL + 'supertonic-tts.json', name: 'tts.json', size: 1 },
       { url: REL + 'supertonic-unicode_indexer.bin', name: 'unicode_indexer.bin', size: 1 * MB },
       { url: REL + 'supertonic-voice.bin', name: 'voice.bin', size: 1 * MB },
+    ],
+  },
+  {
+    id: 'kitten',
+    kind: 'voice',
+    engine: 'kitten',
+    espeak: 'en-us',
+    title: 'KittenTTS nano 0.8',
+    desc: 'La más liviana y rápida: empieza a hablar casi al instante. 8 voces expresivas (4 de hombre y 4 de mujer), con acento estadounidense.',
+    mb: 27,
+    license: 'Apache-2.0.',
+    speakers: [
+      { id: 0, name: 'Hombre 1' },
+      { id: 2, name: 'Hombre 2' },
+      { id: 4, name: 'Hombre 3' },
+      { id: 6, name: 'Hombre 4' },
+      { id: 1, name: 'Mujer 1' },
+      { id: 3, name: 'Mujer 2' },
+      { id: 5, name: 'Mujer 3' },
+      { id: 7, name: 'Mujer 4' },
+    ],
+    files: [
+      { url: KITTEN + 'kitten-model.onnx', name: 'model.onnx', size: 24 * MB },
+      { url: KITTEN + 'kitten-voices.bin', name: 'voices.bin', size: 3 * MB },
+      { url: KITTEN + 'kitten-tokens.txt', name: 'tokens.txt', size: 1 },
     ],
   },
   {
@@ -266,6 +296,63 @@ export const PACKS: Pack[] = [
     files: [{ url: HF + 'LFM2.5-1.2B-Instruct/resolve/main/LFM2.5-1.2B-Instruct_int8.litertlm', name: 'model.litertlm', size: 1250 * MB }],
   },
   {
+    id: 'gemma4-e2b',
+    kind: 'brain',
+    audio: true,
+    ram: 8,
+    title: 'Gemma 4 E2B (Google) · también escucha',
+    desc: 'Conversa bien, entiende más de 140 idiomas y escucha tu voz con su propio oído (no necesita el reconocimiento del teléfono). Necesita un celular con 8 GB de RAM.',
+    mb: 2470,
+    file: 'model.litertlm',
+    license: 'Apache-2.0.',
+    files: [{ url: HF + 'gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm', name: 'model.litertlm', size: 2468 * MB }],
+  },
+  {
+    id: 'gemma4-e4b',
+    kind: 'brain',
+    audio: true,
+    ram: 12,
+    title: 'Gemma 4 E4B (Google) · también escucha',
+    desc: 'Más inteligente que la E2B y también escucha tu voz con su propio oído. Más pesada y lenta: necesita un celular con 12 GB de RAM.',
+    mb: 3490,
+    file: 'model.litertlm',
+    license: 'Apache-2.0.',
+    files: [{ url: HF + 'gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm', name: 'model.litertlm', size: 3490 * MB }],
+  },
+  {
+    id: 'lfm25-26b',
+    kind: 'brain',
+    ram: 8,
+    title: 'LFM2.5 2.6B (Liquid AI)',
+    desc: 'La que mejor sigue instrucciones y la que menos inventa de su tamaño. Piensa antes de contestar, así que tarda un poco más en empezar. Necesita 8 GB de RAM.',
+    mb: 1600,
+    file: 'model.litertlm',
+    license: 'Licencia abierta LFM 1.0: gratis para uso personal.',
+    files: [{ url: HF + 'LFM2.5-2.6B/resolve/main/LFM2.5-2.6B_int4.litertlm', name: 'model.litertlm', size: 1600 * MB }],
+  },
+  {
+    id: 'qwen35-2b',
+    kind: 'brain',
+    ram: 8,
+    title: 'Qwen3.5 2B (Alibaba)',
+    desc: 'Rápida y algo más inteligente que Qwen3 1.7B. A veces inventa datos. Necesita 8 GB de RAM.',
+    mb: 2020,
+    file: 'model.litertlm',
+    license: 'Apache-2.0.',
+    files: [{ url: HF + 'Qwen3.5-2B/resolve/main/Qwen3.5-2B_int8.litertlm', name: 'model.litertlm', size: 2020 * MB }],
+  },
+  {
+    id: 'qwen35-4b',
+    kind: 'brain',
+    ram: 12,
+    title: 'Qwen3.5 4B (Alibaba)',
+    desc: 'Bastante más inteligente, pero pesada: necesita un celular con 12 GB de RAM. A veces inventa datos.',
+    mb: 3910,
+    file: 'model.litertlm',
+    license: 'Apache-2.0.',
+    files: [{ url: HF + 'Qwen3.5-4B/resolve/main/Qwen3.5-4B_int8.litertlm', name: 'model.litertlm', size: 3910 * MB }],
+  },
+  {
     id: 'qwen3',
     kind: 'brain',
     title: 'Qwen3 1.7B (Alibaba)',
@@ -276,6 +363,18 @@ export const PACKS: Pack[] = [
     files: [{ url: HF + 'Qwen3-1.7B/resolve/main/Qwen3_1.7B.litertlm', name: 'model.litertlm', size: 2100 * MB }],
   },
 ];
+
+/** «Oído» que en realidad es la IA de charla (Gemma 4 escucha el audio): no se baja aparte. */
+export const BRAIN_EAR: Pack = {
+  id: 'brain',
+  kind: 'ear',
+  asr: 'brain',
+  title: 'La IA de charla escucha (Gemma 4)',
+  desc: 'Gemma 4 entiende tu voz directamente, sin el reconocimiento del teléfono ni otro modelo.',
+  mb: 0,
+  license: 'La de la IA de charla.',
+  files: [],
+};
 
 export const packById = (id: string) => PACKS.find((p) => p.id === id);
 
@@ -419,7 +518,11 @@ export async function chosenAi(): Promise<CallAi> {
       const p = packById(id);
       return p && packReady(p, st) ? p : null;
     };
-    return { voice: ok(a.voice), ear: ok(a.ear), brain: ok(a.brain), speaker: a.speaker };
+    const brain = ok(a.brain);
+    // Con Gemma 4 elegida, escucha ella misma (salvo que hayas elegido otro oído descargado).
+    // («phone» = elegiste a propósito el reconocimiento del teléfono.)
+    const ear = a.ear === 'brain' || (brain?.audio && a.ear !== 'phone' && !ok(a.ear)) ? (brain?.audio ? BRAIN_EAR : null) : ok(a.ear);
+    return { voice: ok(a.voice), ear, brain, speaker: a.speaker };
   } catch {
     return none;
   }
@@ -436,7 +539,7 @@ export async function loadCallAi(ai: CallAi, system: string, temperature = 0.8):
       out.voice = null;
     }
   }
-  if (ai.ear) {
+  if (ai.ear && ai.ear.asr !== 'brain') {
     try {
       await OliverAi.loadEar({ id: ai.ear.id, kind: ai.ear.asr ?? 'moonshine' });
     } catch (e) {
@@ -446,13 +549,64 @@ export async function loadCallAi(ai: CallAi, system: string, temperature = 0.8):
   }
   if (ai.brain) {
     try {
-      await OliverAi.loadBrain({ id: ai.brain.id, file: ai.brain.file ?? 'model.litertlm', system, temperature });
+      await loadBrain(ai.brain, system, temperature, ai.ear?.asr === 'brain');
     } catch (e) {
       out.errors.push(String((e as Error).message ?? e));
       out.brain = null;
+      if (out.ear?.asr === 'brain') out.ear = null;
     }
-  }
+  } else if (ai.ear?.asr === 'brain') out.ear = null;
   return out;
+}
+
+/** Carga la IA de charla (con su oído si es Gemma 4 y escucha). Usa la GPU si está activada en Ajustes. */
+export function loadBrain(brain: Pack, system: string, temperature = 0.8, audio = false) {
+  return OliverAi.loadBrain({
+    id: brain.id,
+    file: brain.file ?? 'model.litertlm',
+    system,
+    temperature,
+    audio: audio && !!brain.audio,
+    gpu: !!getState().settings.ai.gpu,
+  });
+}
+
+/**
+ * Para pantallas que solo necesitan entender lo que decís (roleplays con guion, frases): carga el oído
+ * elegido. Si el oído es Gemma 4, carga la IA de charla solo para escuchar.
+ */
+export async function loadEarOnly(ai: CallAi): Promise<Pack | null> {
+  if (!ai.ear) return null;
+  try {
+    if (ai.ear.asr === 'brain') {
+      if (!ai.brain) return null;
+      await loadBrain(ai.brain, '', 0.8, true);
+    } else await OliverAi.loadEar({ id: ai.ear.id, kind: ai.ear.asr ?? 'moonshine' });
+    return ai.ear;
+  } catch {
+    return null;
+  }
+}
+
+/** Escucha con el oído cargado (Moonshine, Parakeet, Qwen3-ASR o Gemma 4), nunca con el del teléfono. */
+export function listenWith(ear: Pack, o: { language?: string; manual?: boolean } = {}) {
+  return OliverAi.listen({ language: o.language ?? 'English', brain: ear.asr === 'brain', manual: o.manual });
+}
+
+/** Micrófono manual con el oído de la app: empieza ya y termina cuando llamás a stop(). */
+export function listenManualWith(ear: Pack, language = 'English') {
+  const run = listenWith(ear, { language, manual: true });
+  return {
+    stop: async () => {
+      await OliverAi.stopListening().catch(() => {});
+      try {
+        return (await run).text;
+      } catch {
+        return '';
+      }
+    },
+    done: run.then((r) => r.text).catch(() => ''),
+  };
 }
 
 /** Libera todo al cortar (memoria, procesador y micrófono). */

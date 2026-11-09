@@ -125,6 +125,20 @@ jobs:
           gh release download voces-pocket-prueba --pattern 'ref-*.wav' --dir voces-pocket
           python3 scripts/preparar-modelos.py
 
+      # KittenTTS (voz muy liviana): va en su propio Release para no rehacer los demás modelos.
+      - name: Preparar KittenTTS (solo la primera vez)
+        run: |
+          if gh release view modelos-kitten >/dev/null 2>&1; then exit 0; fi
+          curl -fsSL --retry 5 -o kitten.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kitten-nano-en-v0_8-int8.tar.bz2
+          tar xjf kitten.tar.bz2
+          mkdir -p kitten
+          cp kitten-nano-en-v0_8-int8/model.int8.onnx kitten/kitten-model.onnx
+          cp kitten-nano-en-v0_8-int8/voices.bin kitten/kitten-voices.bin
+          cp kitten-nano-en-v0_8-int8/tokens.txt kitten/kitten-tokens.txt
+          gh release create modelos-kitten kitten/* --prerelease --latest=false \
+            --title "Voz KittenTTS para la app" \
+            --notes "Archivos que la app baja una sola vez (Ajustes › Voces e IA). No es una versión de la app."
+
       - name: Subirlos al Release «modelos-6»
         if: steps.check.outputs.listo != 'true'
         run: |

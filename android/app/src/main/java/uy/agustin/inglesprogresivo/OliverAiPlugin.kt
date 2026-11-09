@@ -22,6 +22,7 @@ import com.getcapacitor.annotation.PermissionCallback
 import com.github.csukuangfj.piper.phonemize.piperPhonemizeInitialize
 import com.github.csukuangfj.piper.phonemize.piperPhonemizeText
 import com.google.ai.edge.litertlm.Backend
+import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
@@ -40,6 +41,7 @@ import com.k2fsa.sherpa.onnx.OfflineRecognizer
 import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsKittenModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsKokoroModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsPocketModelConfig
@@ -75,6 +77,7 @@ import kotlin.math.sqrt
 class OliverAiPlugin : Plugin() {
     private val work = Executors.newSingleThreadExecutor() // carga de modelos y generación de voz
     private val brainWork = Executors.newSingleThreadExecutor() // IA de charla
+    private val genWork = Executors.newSingleThreadExecutor() // genera la frase siguiente mientras suena la actual
     private val ioWork = Executors.newCachedThreadPool() // descargas y micrófono
 
     private val cancelled = ConcurrentHashMap<String, Boolean>()
@@ -92,6 +95,9 @@ class OliverAiPlugin : Plugin() {
     @Volatile private var engine: Engine? = null
     @Volatile private var engineId: String? = null
     @Volatile private var conversation: Conversation? = null
+    @Volatile private var engineKey: String? = null
+    /** La IA de charla cargada entiende audio (Gemma 4): puede hacer de oído. */
+    @Volatile private var brainAudio = false
 
     @Volatile private var phonemizerReady = false
 
@@ -332,7 +338,7 @@ class OliverAiPlugin : Plugin() {
                         call.reject("Hay que actualizar esta voz (Ajustes › Voces e IA)")
                         return@execute
                     }
-                    if ((kind == "piper" || kind == "kokoro") && !phonemizerReady) {
+                    if ((kind == "piper" || kind == "kokoro" || kind == "kitten") && !phonemizerReady) {
                         step("preparar el fonemizador")
                         piperPhonemizeInitialize(context)
                         phonemizerReady = true
@@ -347,6 +353,13 @@ class OliverAiPlugin : Plugin() {
                             k.voices = File(d, "voices.bin").absolutePath
                             k.tokens = File(d, "tokens.txt").absolutePath
                             model.kokoro = k
+                        }
+                        "kitten" -> {
+                            val k = OfflineTtsKittenModelConfig()
+                            k.model = File(d, "model.onnx").absolutePath
+                            k.voices = File(d, "voices.bin").absolutePath
+                            k.tokens = File(d, "tokens.txt").absolutePath
+                            model.kitten = k
                         }
                         "supertonic" -> {
                             val t = OfflineTtsSupertonicModelConfig()
@@ -526,7 +539,6 @@ class OliverAiPlugin : Plugin() {
                 var clipped = 0
                 var bad = 0
                 val rawAll = if (save) ArrayList<FloatArray>() else null
-                val pause = FloatArray(rate * 18 / 100) // pausa natural entre frases
                 val write: (FloatArray) -> Unit = { data ->
                     var off = 0
                     if (pcm16) {
@@ -556,48 +568,71 @@ class OliverAiPlugin : Plugin() {
                     frames += data.size
                 }
                 step("hablar con la voz $ttsId")
-                val sentences = splitSentences(forSpeech(text))
-                for ((n, sentence) in sentences.withIndex()) {
-                    if (stopSpeech) break
-                    val gen = GenerationConfig()
-                    gen.sid = sid
-                    gen.speed = speed
-                    if (ttsKind == "piper" || ttsKind == "kokoro") {
-                        val res = piperPhonemizeText(sentence, espeakVoice) ?: continue
-                        val phonemes: Array<IntArray>
-                        try {
-                            phonemes = Array(res.numSentences) { res.getPhonemes(it) }
-                        } finally {
-                            res.close()
+                // Mientras suena una parte, la siguiente ya se está generando: así no quedan pausas largas
+                // entre frases y la primera arranca enseguida (si es larga, se corta en la primera coma).
+                val parts = speechParts(forSpeech(text))
+                val queue = java.util.concurrent.LinkedBlockingQueue<Any>()
+                val end = Any()
+                genWork.execute {
+                    try {
+                        for (part in parts) {
+                            if (stopSpeech) break
+                            val gen = GenerationConfig()
+                            gen.sid = sid
+                            gen.speed = speed
+                            if (ttsKind == "piper" || ttsKind == "kokoro" || ttsKind == "kitten") {
+                                val res = piperPhonemizeText(part.text, espeakVoice) ?: continue
+                                val phonemes: Array<IntArray>
+                                try {
+                                    phonemes = Array(res.numSentences) { res.getPhonemes(it) }
+                                } finally {
+                                    res.close()
+                                }
+                                if (phonemes.isEmpty()) continue
+                                gen.phonemeCodepoints = phonemes
+                            }
+                            if (ttsKind == "supertonic") {
+                                gen.numSteps = 8
+                                gen.extra = mapOf("lang" to "en")
+                            }
+                            if (ttsKind == "pocket") {
+                                gen.sid = 0
+                                gen.numSteps = 5
+                                gen.referenceAudio = reference
+                                gen.referenceSampleRate = referenceRate
+                            }
+                            val t0 = SystemClock.elapsedRealtime()
+                            val audio = voice.generateWithConfig(if (gen.phonemeCodepoints != null) "" else part.text, gen)
+                            genMs += SystemClock.elapsedRealtime() - t0
+                            val samples = audio.samples
+                            if (audio.sampleRate != rate) log.append("El motor devolvió ${audio.sampleRate} Hz y se reproduce a $rate Hz. ")
+                            for (v in samples) {
+                                if (v.isNaN() || v.isInfinite()) bad++
+                                val av = abs(v)
+                                if (av > peak) peak = av
+                                if (av > 1f) clipped++
+                            }
+                            rawAll?.add(samples.copyOf())
+                            if (!raw) shape(samples, rate, volume)
+                            queue.put(Pair(part.pauseMs, samples))
                         }
-                        if (phonemes.isEmpty()) continue
-                        gen.phonemeCodepoints = phonemes
+                    } catch (t: Throwable) {
+                        queue.put(t)
+                    } finally {
+                        queue.put(end)
                     }
-                    if (ttsKind == "supertonic") {
-                        gen.numSteps = 8
-                        gen.extra = mapOf("lang" to "en")
-                    }
-                    if (ttsKind == "pocket") {
-                        gen.sid = 0
-                        gen.numSteps = 5
-                        gen.referenceAudio = reference
-                        gen.referenceSampleRate = referenceRate
-                    }
-                    val t0 = SystemClock.elapsedRealtime()
-                    val audio = voice.generateWithConfig(if (gen.phonemeCodepoints != null) "" else sentence, gen)
-                    genMs += SystemClock.elapsedRealtime() - t0
-                    val samples = audio.samples
-                    if (audio.sampleRate != rate) log.append("El motor devolvió ${audio.sampleRate} Hz y se reproduce a $rate Hz. ")
-                    for (v in samples) {
-                        if (v.isNaN() || v.isInfinite()) bad++
-                        val av = abs(v)
-                        if (av > peak) peak = av
-                        if (av > 1f) clipped++
-                    }
-                    rawAll?.add(samples.copyOf())
-                    if (stopSpeech) break
-                    if (!raw) shape(samples, rate, volume)
-                    if (n > 0) write(pause)
+                }
+                var first = true
+                while (true) {
+                    val item = queue.poll(60, TimeUnit.SECONDS) ?: break
+                    if (item === end) break
+                    if (item is Throwable) throw item
+                    val pair = item as Pair<*, *>
+                    val pauseMs = pair.first as Int
+                    val samples = pair.second as FloatArray
+                    if (stopSpeech) continue
+                    if (!first && pauseMs > 0) write(FloatArray(rate * pauseMs / 1000))
+                    first = false
                     write(samples)
                 }
                 stepDone()
@@ -789,6 +824,32 @@ class OliverAiPlugin : Plugin() {
         text.replace(Regex("\\bG'?day\\b", RegexOption.IGNORE_CASE), "gidday")
             .replace(Regex("\\bHooroo\\b", RegexOption.IGNORE_CASE), "hoo-roo")
 
+    private data class Part(val text: String, val pauseMs: Int)
+
+    /**
+     * Partes para hablar, con la pausa natural antes de cada una: un poco más larga después de una
+     * pregunta o exclamación, y corta si se partió en una coma (solo la primera frase, si es larga,
+     * para que la voz arranque antes).
+     */
+    private fun speechParts(text: String): List<Part> {
+        val out = ArrayList<Part>()
+        var prevEnd = '.'
+        for ((i, sentence) in splitSentences(text).withIndex()) {
+            val pause = when (prevEnd) {
+                '?', '!' -> 300
+                else -> 230
+            }
+            val words = sentence.split(Regex("\\s+")).size
+            val comma = sentence.indexOf(", ")
+            if (i == 0 && words > 9 && comma > 0 && sentence.substring(0, comma).split(' ').size >= 3) {
+                out.add(Part(sentence.substring(0, comma + 1), 0))
+                out.add(Part(sentence.substring(comma + 2), 110))
+            } else out.add(Part(sentence, if (i == 0) 0 else pause))
+            prevEnd = sentence.trimEnd().lastOrNull() ?: '.'
+        }
+        return out
+    }
+
     private fun splitSentences(text: String): List<String> {
         val parts = text.trim().split(Regex("(?<=[.!?])\\s+")).map { it.trim() }.filter { it.isNotEmpty() }
         return parts.ifEmpty { listOf(text) }
@@ -875,10 +936,17 @@ class OliverAiPlugin : Plugin() {
         val silenceMs = (call.getInt("silenceMs") ?: 1100).toLong()
         val waitMs = (call.getInt("waitMs") ?: 8000).toLong()
         val language = call.getString("language") ?: "English"
+        val useBrain = call.getBoolean("brain", false) ?: false
+        // Modo manual: no corta por silencio; termina cuando tocás el micrófono (stopListening).
+        val manual = call.getBoolean("manual", false) ?: false
         stopListen = false
         ioWork.execute {
             val recognizer = ear
-            if (recognizer == null) {
+            if (useBrain && (engine == null || !brainAudio)) {
+                call.reject("La IA de charla que escucha no está cargada")
+                return@execute
+            }
+            if (!useBrain && recognizer == null) {
                 call.reject("El reconocimiento de voz no está cargado")
                 return@execute
             }
@@ -930,9 +998,10 @@ class OliverAiPlugin : Plugin() {
                     val lv = JSObject()
                     lv.put("level", min(1.0, rms * 12))
                     notifyListeners("level", lv)
-                    if (started && now - lastVoice > silenceMs) break
-                    if (!started && now - start > waitMs) break
-                    if (now - start > maxMs) break
+                    if (!manual && started && now - lastVoice > silenceMs) break
+                    if (!manual && !started && now - start > waitMs) break
+                    // Gemma 4 escucha hasta 30 segundos por vez.
+                    if (now - start > (if (useBrain) min(maxMs, 29000L) else if (manual) max(maxMs, 60000L) else maxMs)) break
                 }
                 rec.stop()
                 val ret = JSObject()
@@ -942,13 +1011,19 @@ class OliverAiPlugin : Plugin() {
                     return@execute
                 }
                 val samples = FloatArray(audio.size - speechStart) { audio[speechStart + it] }
+                if (useBrain) {
+                    ret.put("text", transcribeWithBrain(samples, rate, language))
+                    call.resolve(ret)
+                    return@execute
+                }
+                val rz = recognizer ?: throw IllegalStateException("El reconocimiento de voz no está cargado")
                 step("entender lo que dijiste")
-                val stream = recognizer.createStream()
+                val stream = rz.createStream()
                 try {
                     if (earKind == "qwen3") stream.setOption("language", language)
                     stream.acceptWaveform(samples, rate)
-                    recognizer.decode(stream)
-                    ret.put("text", recognizer.getResult(stream).text.trim())
+                    rz.decode(stream)
+                    ret.put("text", rz.getResult(stream).text.trim())
                 } finally {
                     stream.release()
                     stepDone()
@@ -960,6 +1035,74 @@ class OliverAiPlugin : Plugin() {
                 rec?.release()
             }
         }
+    }
+
+    /**
+     * Gemma 4 hace de oído: recibe la grabación (WAV 16 kHz mono, 16 bits) en una charla aparte, solo
+     * para transcribir, así no se mezcla con la charla del roleplay. No usa el reconocimiento del teléfono.
+     */
+    private fun transcribeWithBrain(samples: FloatArray, rate: Int, language: String): String {
+        val pcm = ShortArray(samples.size) { (max(-1f, min(1f, samples[it])) * 32767f).toInt().toShort() }
+        val bb = java.nio.ByteBuffer.allocate(44 + pcm.size * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        bb.put("RIFF".toByteArray()).putInt(36 + pcm.size * 2).put("WAVE".toByteArray())
+        bb.put("fmt ".toByteArray()).putInt(16).putShort(1).putShort(1).putInt(rate).putInt(rate * 2).putShort(2).putShort(16)
+        bb.put("data".toByteArray()).putInt(pcm.size * 2)
+        for (v in pcm) bb.putShort(v)
+        val wav = bb.array()
+        val result = AtomicReference("")
+        val failure = AtomicReference<Throwable?>(null)
+        val done = CountDownLatch(1)
+        brainWork.execute {
+            var conv: Conversation? = null
+            var reopen = false
+            try {
+                val e = engine ?: throw IllegalStateException("La IA no está cargada")
+                step("entender lo que dijiste con la IA de charla")
+                val config =
+                    ConversationConfig(
+                        systemInstruction = Contents.of(
+                            "You are a speech-to-text engine. Write exactly the words the speaker says, in the language they speak ($language or Spanish). " +
+                                "Keep their grammar mistakes, do not correct or translate anything, and do not answer them. Output only the transcription.",
+                        ),
+                        samplerConfig = SamplerConfig(topK = 1, topP = 1.0, temperature = 0.0),
+                        thinkingConfig = ThinkingConfig(enableThinking = false),
+                    )
+                conv = try {
+                    e.createConversation(config)
+                } catch (t: Throwable) {
+                    // Si el motor no admite dos charlas a la vez, se cierra la principal y se vuelve a abrir después.
+                    try {
+                        conversation?.close()
+                    } catch (_: Throwable) {
+                    }
+                    conversation = null
+                    reopen = true
+                    e.createConversation(config)
+                }
+                val reply = conv.sendMessage(
+                    Message.of(Content.AudioBytes(wav), Content.Text("Transcribe this recording word for word.")),
+                )
+                result.set(reply.toString().replace(Regex("^\\s*(Transcription|Transcript)\\s*:\\s*", RegexOption.IGNORE_CASE), "").trim().trim('"'))
+            } catch (t: Throwable) {
+                failure.set(t)
+            } finally {
+                try {
+                    conv?.close()
+                } catch (_: Throwable) {
+                }
+                if (reopen) {
+                    try {
+                        newConversation(lastSystem)
+                    } catch (_: Throwable) {
+                    }
+                }
+                stepDone()
+                done.countDown()
+            }
+        }
+        done.await(90, TimeUnit.SECONDS)
+        failure.get()?.let { throw it }
+        return result.get()
     }
 
     @PluginMethod
@@ -975,23 +1118,30 @@ class OliverAiPlugin : Plugin() {
         val id = call.getString("id") ?: return call.reject("Falta id")
         val file = call.getString("file") ?: return call.reject("Falta archivo")
         val system = call.getString("system") ?: ""
+        val audio = call.getBoolean("audio", false) ?: false
+        val gpu = call.getBoolean("gpu", false) ?: false
         temperature = (call.getDouble("temperature") ?: 0.8)
+        val key = "$id|$audio|$gpu"
         brainWork.execute {
             try {
-                if (engineId != id) {
+                if (engineKey != key) {
                     releaseBrain()
                     val config = EngineConfig(
                         modelPath = File(dir(id), file).absolutePath,
-                        backend = Backend.CPU(),
+                        backend = if (gpu) Backend.GPU() else Backend.CPU(),
+                        // Gemma 4 escucha con su propio oído: el codificador de audio va en el procesador.
+                        audioBackend = if (audio) Backend.CPU() else null,
                         maxNumTokens = 4096,
                         cacheDir = context.cacheDir.absolutePath,
                     )
-                    step("cargar la IA de charla $id")
+                    step(if (gpu) "cargar la IA de charla $id con la GPU" else "cargar la IA de charla $id")
                     val e = Engine(config)
                     e.initialize()
                     stepDone()
                     engine = e
                     engineId = id
+                    engineKey = key
+                    brainAudio = audio
                 }
                 newConversation(system)
                 call.resolve()
@@ -1009,6 +1159,7 @@ class OliverAiPlugin : Plugin() {
         } catch (_: Throwable) {
         }
         conversation = null
+        lastSystem = system
         val e = engine ?: throw IllegalStateException("La IA no está cargada")
         conversation = e.createConversation(
             ConversationConfig(
@@ -1020,6 +1171,7 @@ class OliverAiPlugin : Plugin() {
     }
 
     @Volatile private var temperature = 0.8
+    @Volatile private var lastSystem = ""
 
     @PluginMethod
     fun resetChat(call: PluginCall) {
@@ -1150,6 +1302,8 @@ class OliverAiPlugin : Plugin() {
         }
         engine = null
         engineId = null
+        engineKey = null
+        brainAudio = false
     }
 
     override fun handleOnDestroy() {
@@ -1160,6 +1314,7 @@ class OliverAiPlugin : Plugin() {
         releaseEar()
         work.shutdown()
         brainWork.shutdown()
+        genWork.shutdown()
         ioWork.shutdown()
         super.handleOnDestroy()
     }

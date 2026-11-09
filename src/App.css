@@ -704,3 +704,12 @@ table.forms th { background: var(--brand-soft); }
 .turn-note.fix { background: var(--warn-soft); }
 .turn-note.tip { background: var(--brand-soft); }
 .mic-big.listening { background: var(--bad); color: #fff; }
+
+/* Menús desplegables de Voces e IA: se ve lo elegido y al tocar aparecen todas las opciones. */
+.ai-menu { border: 1.5px solid var(--line); border-radius: 14px; padding: 0; gap: 0; overflow: hidden; }
+.ai-menu-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px; background: none; border: 0; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.ai-menu-icon { font-size: 22px; }
+.ai-menu-text { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px; }
+.ai-menu-text b { overflow: hidden; text-overflow: ellipsis; }
+.ai-menu-chev { font-size: 18px; opacity: 0.7; }
+.ai-menu-body { display: flex; flex-direction: column; gap: 10px; padding: 0 12px 12px; }

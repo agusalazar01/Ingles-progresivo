@@ -31,6 +31,7 @@ App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en e
 ## Novedades de la versión 0.8
 
 - **Llamada tipo selfie**: Oliver más grande, con más outback y menos cielo, y el brazo bajando hacia la cámara (como una videollamada). El micrófono grande queda siempre a mano y se sigue abriendo solo cuando Oliver termina de hablar; lo demás (repetir, pista, escribir) sigue detrás de la flechita.
+- **Novedades de la 1.2**: en Ajustes › Voces e IA cada parte es un menú desplegable (se ve lo elegido y al tocar aparece todo lo que se puede bajar, usar o borrar). IAs nuevas para bajar: Gemma 4 E2B y E4B, LFM2.5 2.6B y Qwen3.5 2B y 4B, con opción de acelerar con la GPU. Gemma 4 escucha tu voz con su propio oído: con ella elegida no se usa el reconocimiento del teléfono (llamadas, roleplays y «Decilo en inglés»). Voz nueva KittenTTS (27 MB, muy rápida). La voz genera la frase siguiente mientras suena la actual y, con IA, Oliver empieza a hablar apenas está lista la primera frase.
 - **IA sin internet y gratis** (Ajustes › Voces e IA, solo en Android). Cada parte se baja una sola vez y se elige cuál usar:
   - Voz de Oliver: **Piper australiano** (10 narradores australianos de LibriVox) o **Kokoro** (británico), además de la voz del teléfono.
   - Oído: **Moonshine Tiny**, además del reconocimiento del teléfono.
@@ -59,7 +60,7 @@ Se centra en una sola cosa: **armar oraciones correctas, rápido y sin traducir 
 - **Ejercicios que no se repiten**: un generador de oraciones (inglés y español) y bancos por unidad crean oraciones nuevas cada vez, así se aprende la regla y no la frase.
 - **Modo fluidez**: en el último escalón y en los repasos, una respuesta correcta pero lenta vuelve antes.
 - **Práctica mezclada**: reglas parecidas juntas (todos los pasados, todos los futuros…), para elegir la correcta sin la pista de la unidad.
-- **Vocabulario**: las 2801 palabras más usadas (NGSL) en bandas A1–B2, con traducción, audio y repaso espaciado.
+- **Vocabulario**: las 2801 palabras más usadas (NGSL) en bandas A1–B2 y una banda C1 con unas 950 palabras académicas (NAWL), con traducción, audio y repaso espaciado.
 - **Avance automático**: al aprobar un escalón sigue el próximo, y al dominar una unidad pasa sola a la siguiente. «Volver» lleva al menú.
 - **Taller de verbos**: 63 verbos ordenados del más usado al menos, cada uno en 4 etapas: formas (opción múltiple) → conjugar → completar oraciones en todos los tiempos → crear tus propias oraciones.
 - **Prueba de práctica por nivel**: debajo de cada nivel terminado, todo lo del nivel mezclado (3 preguntas por tema + vocabulario). Explica cada error y permite practicar los temas fallados. No bloquea nada; se repite cuando quieras.
@@ -74,7 +75,7 @@ Todo se guarda en el teléfono. No necesita internet ni cuenta.
 
 ### Créditos
 
-Vocabulario: New General Service List (Browne, Culligan & Phillips, 2013), licencia Creative Commons Attribution-ShareAlike 4.0 — https://www.newgeneralservicelist.com
+Vocabulario: New General Service List y New Academic Word List (Browne, Culligan & Phillips, 2013), licencia Creative Commons Attribution-ShareAlike 4.0 — https://www.newgeneralservicelist.com
 
 ## Obtener la APK
 
