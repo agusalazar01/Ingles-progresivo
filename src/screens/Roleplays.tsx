@@ -201,7 +201,9 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
     if (!text) return;
     setLog((l) => [...l, { who: 'them', text }]);
     current.current = text;
-    await say(text, { slow: SLOW.includes(e.level) }).catch(() => {});
+    // Se espera a que termine de hablar, pero nunca más de lo razonable (si la voz falla, la charla sigue).
+    const slow = SLOW.includes(e.level);
+    await Promise.race([say(text, { slow }).catch(() => {}), new Promise((r) => setTimeout(r, 2500 + text.length * (slow ? 110 : 80)))]);
   };
 
   useEffect(() => {
@@ -217,7 +219,9 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [log, lastFix]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [log, lastFix]);
 
   const goTo = async (next: string, reply?: string) => {
     setTries(0);

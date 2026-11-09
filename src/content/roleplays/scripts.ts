@@ -35,7 +35,7 @@ export const SCRIPTS: Record<string, RoleplayScript> = {
         options: [{ match: ['flat white|latte|cappuccino|long black|coffee|espresso|tea|hot chocolate|mocha|chai'], reply: ['Sure thing.', 'No worries.'], next: 'size', praise: 'Bien: pediste lo que querías.' }],
         fallback: { reply: "Sorry? We've got flat whites, lattes, cappuccinos… I'll make you a flat white.", next: 'size' },
         fixes: [
-          { wrong: '\\bi want\\b', right: 'Can I have a flat white, please?', why: '«I want…» suena brusco al pedir. En un café se dice «Can I have…, please?» o «I’d like…».' },
+          { wrong: '\\bi want\\b', right: 'Can I have a …, please?', why: '«I want…» suena brusco al pedir. En un café se dice «Can I have…, please?» o «I’d like…».' },
           { wrong: '\\bgive me\\b', right: 'Can I have…, please?', why: '«Give me» es una orden: con alguien que no conocés suena mal.' },
           { wrong: '\\bone coffee\\b', right: 'a coffee', why: 'Para «un» se usa a / an. One solo si estás contando (one coffee and two teas).' },
         ],

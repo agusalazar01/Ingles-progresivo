@@ -4,6 +4,15 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.0
+
+- **🎭 Roleplays**: biblioteca de situaciones reales para vivir y trabajar en Australia (192 en 13 categorías: llegada, vivienda, banco, cafés, compras, vida social, entrevistas, trabajo, rubros, transporte, salud, trámites e imprevistos). Cada roleplay tiene ficha (lugar, con quién, situación, objetivo, nivel), vocabulario con pronunciación y expresiones australianas. La charla es un guion con ramas: respondés libre (voz o teclado), la otra persona reacciona a lo que decís y, si aparece un error típico, se muestra tu frase, la corregida y el porqué. La IA queda como «charla libre» opcional. Por ahora hay 3 guiones de ejemplo (pedir un café, abrir una cuenta en el banco, entrevista de barista); el resto se va sumando.
+- **🧱 Frases por estructura**: módulo aparte con 20 estructuras (to be, there is, like, presente simple, can, going to, will, pasado, present perfect, if, would, should, used to…) y 400 frases. Cada palabra explicada, ejercicios que siempre producen inglés (completar, ordenar, dictado, traducir del español, escribir a partir de una situación, recordar sin ayuda), repaso espaciado propio, conectores y un ejercicio final para combinar estructuras en oraciones largas, párrafos y charlas.
+- **Banco más grande**: 96 verbos y 410 complementos en el generador, 826 oraciones de banco y 223 ejercicios de «corregí el error» con errores típicos de hispanohablantes.
+- **Sin repetir**: la app recuerda las oraciones que viste en cada unidad y busca otras.
+- **Contenido general**: ejercicios, llamadas y Oliver hablan de la vida cotidiana (con términos australianos), sin centrarse en viñedos. Oliver vive en Adelaide y trabaja en una bicicletería.
+- Las llamadas de las unidades usan su guion (más confiable); la IA de charla queda para la llamada libre.
+
 ## Novedades de la versión 0.9.1
 
 - **Escalones más justos**: lo que sale bien después de la pista cuenta igual, y se pasa con **70 %**.
