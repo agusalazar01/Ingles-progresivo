@@ -697,3 +697,10 @@ table.forms th { background: var(--brand-soft); }
 .rp-controls form input { flex: 1; min-width: 0; }
 .mic-big { width: 100%; }
 .roleplays .vocab-card p { margin: 0; }
+.rp-turn { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.turn-note { align-self: stretch; margin-left: 12%; padding: 8px 12px; border-radius: 12px; font-size: 15px; }
+.turn-note p { margin: 0; }
+.turn-note.good { background: var(--good-soft); }
+.turn-note.fix { background: var(--warn-soft); }
+.turn-note.tip { background: var(--brand-soft); }
+.mic-big.listening { background: var(--bad); color: #fff; }

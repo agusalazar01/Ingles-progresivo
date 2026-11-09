@@ -9,6 +9,8 @@ function forms(heard: string[]): string[] {
     if (!n) continue;
     out.add(n);
     for (const v of variants(n)) out.add(v);
+    // «thirty-dollar», «second-hand»: también separadas.
+    if (n.includes('-')) out.add(n.replace(/-/g, ' '));
   }
   return [...out];
 }

@@ -208,3 +208,68 @@ export function intelligibility(target: string, heard: string[]): { score: numbe
   }
   return best;
 }
+
+/**
+ * Micrófono manual: empieza al tocar y termina al volver a tocar (no se corta solo con un silencio).
+ * El reconocedor del teléfono termina cada frase sola, así que se vuelve a encender hasta que toques
+ * «terminar», y se va juntando el texto. `onText` recibe lo escuchado hasta el momento.
+ */
+export interface ManualListen {
+  stop: () => Promise<string>;
+}
+
+export async function listenManual(lang: string, onText: (text: string) => void): Promise<ManualListen> {
+  let stopped = false;
+  const parts: string[] = [];
+  let current: { stop: () => void } | null = null;
+  if (native) {
+    const perm = await SpeechRecognition.checkPermissions();
+    if (perm.speechRecognition !== 'granted') {
+      const r = await SpeechRecognition.requestPermissions();
+      if (r.speechRecognition !== 'granted') throw new Error('permiso');
+    }
+  } else if (!webRecognition()) throw new Error('no disponible');
+
+  const once = (): Promise<string> => {
+    if (native) {
+      current = { stop: () => void SpeechRecognition.stop().catch(() => {}) };
+      return SpeechRecognition.start({ language: lang, maxResults: 1, partialResults: false, popup: false })
+        .then((r) => r.matches?.[0] ?? '')
+        .catch(() => '');
+    }
+    const Rec = webRecognition()!;
+    return new Promise((resolve) => {
+      const r = new Rec() as WebRecognition & { stop?: () => void };
+      r.lang = lang;
+      r.maxAlternatives = 1;
+      r.interimResults = false;
+      let text = '';
+      r.onresult = (e) => (text = Array.from(e.results[0])[0]?.transcript ?? '');
+      r.onerror = () => resolve(text);
+      r.onend = () => resolve(text);
+      current = { stop: () => r.stop?.() };
+      r.start();
+    });
+  };
+
+  const loop = (async () => {
+    let empty = 0;
+    while (!stopped) {
+      const t = (await once()).trim();
+      if (t) {
+        parts.push(t);
+        empty = 0;
+        onText(parts.join(' '));
+      } else if (++empty > 20) break; // por las dudas: no quedar escuchando para siempre
+    }
+  })();
+
+  return {
+    stop: async () => {
+      stopped = true;
+      current?.stop();
+      await Promise.race([loop, new Promise((r) => setTimeout(r, 1500))]);
+      return parts.join(' ');
+    },
+  };
+}

@@ -293,13 +293,13 @@ export const SCRIPTS: Record<string, RoleplayScript> = {
         say: ['Could you come in for a trial shift on Thursday at seven?'],
         hint: "Yes, of course. I'll be there at seven.",
         options: [
-          { match: ["can't|cannot|can not|busy|another day|different day|friday"], reply: "No worries, let's do Friday then.", next: 'end', praise: 'Bien: propusiste otro día.' },
+          { match: ["can't|cannot|can not|busy|another day|different day|friday|not available"], reply: "No worries, let's do Friday at seven then.", next: 'end', praise: 'Bien: avisaste que no podías.' },
           { match: ['yes|sure|of course|definitely|be there|can|ok|okay'], reply: 'Excellent.', next: 'end', praise: 'Bien.' },
         ],
         fallback: { reply: "Let's say Thursday at seven.", next: 'end' },
         fixes: [{ wrong: '\\bin thursday\\b', right: "I'll be there on Thursday at seven.", why: 'El día va con on y la hora con at.' }],
       },
     },
-    closing: ['Great to meet you. See you on Thursday!', 'Thanks for coming in. See you soon!'],
+    closing: ['Great to meet you. See you then!', 'Thanks for coming in. See you soon!'],
   },
 };

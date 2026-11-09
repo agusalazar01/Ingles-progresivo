@@ -1,5 +1,6 @@
 import type { RoleplayEntry } from './types';
 import { SCRIPTS } from './scripts';
+import { SCRIPTS_BY_N } from './all';
 
 /** Categorías de la biblioteca (en el orden en que se viven al llegar a Australia). */
 export const RP_CATEGORIES: { id: string; title: string }[] = [
@@ -20,7 +21,7 @@ export const RP_CATEGORIES: { id: string; title: string }[] = [
 
 const e = (n: string, category: string, title: string, titleEs: string, level: RoleplayEntry['level']): RoleplayEntry => {
   const id = `${n.toLowerCase()}-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
-  return { id, n, category, title, titleEs, level, script: SCRIPTS[id] };
+  return { id, n, category, title, titleEs, level, script: SCRIPTS[id] ?? SCRIPTS_BY_N[n] };
 };
 
 /** Catálogo completo. Los que todavía no tienen guion aparecen como «en preparación». */

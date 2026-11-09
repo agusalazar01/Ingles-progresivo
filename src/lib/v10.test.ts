@@ -67,9 +67,14 @@ describe('v1.0 — Roleplays', () => {
     for (const id of Object.keys(SCRIPTS)) expect(ROLEPLAYS.find((r) => r.id === id)?.script, id).toBeDefined();
   });
   it('cada guion se puede recorrer y la pista de cada momento se reconoce', async () => {
-    const { SCRIPTS } = await import('../content/roleplays/scripts');
+    const { ROLEPLAYS } = await import('../content/roleplays/catalog');
     const { matchOption, fixesFor } = await import('./roleplay');
-    for (const s of Object.values(SCRIPTS)) {
+    const all = ROLEPLAYS.filter((r) => r.script).map((r) => r.script!);
+    expect(new Set(all.map((s) => s.id)).size).toBe(all.length);
+    for (const s of all) {
+      // El cierre sirve para cualquier camino: no puede nombrar un día ni una hora concreta.
+      for (const c of [s.closing].flat()) expect(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|o'clock|at (one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve))\b/i.test(c), `${s.id} cierre: ${c}`).toBe(false);
+      expect(s.vocab.length, s.id).toBeGreaterThanOrEqual(2);
       expect(s.nodes[s.start], s.id).toBeDefined();
       for (const [id, n] of Object.entries(s.nodes)) {
         for (const o of n.options) expect(o.next === 'end' || !!s.nodes[o.next], `${s.id}/${id} → ${o.next}`).toBe(true);
