@@ -12,6 +12,7 @@ export interface Cloze {
 }
 
 import { LOCAL_CLOZE } from './banks-local';
+import { EXTRA_CLOZE } from './banks-extra';
 
 const c = (s: string, alt: string[], es: string, extra: Partial<Cloze> = {}): Cloze => ({ s, alt, es, ...extra });
 const Q = 'Convertila en pregunta';
@@ -333,7 +334,7 @@ export const DICTATIONS: Record<string, string[]> = {
 };
 
 // Suma las frases con vida cotidiana de Uruguay y Australia (sin repetir).
-for (const [unit, items] of Object.entries(LOCAL_CLOZE)) {
+for (const [unit, items] of [...Object.entries(LOCAL_CLOZE), ...Object.entries(EXTRA_CLOZE)]) {
   const base = CLOZE[unit] ?? [];
   CLOZE[unit] = [...base, ...items.filter((x) => !base.some((b) => b.s === x.s))];
 }

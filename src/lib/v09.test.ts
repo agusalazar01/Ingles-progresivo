@@ -98,3 +98,62 @@ describe('v0.9.1 — escalones', () => {
     }
   });
 });
+
+describe('v1.0 — banco ampliado', () => {
+  it('cada oración nueva está bien armada', async () => {
+    const { EXTRA_CLOZE } = await import('../gen/banks-extra');
+    const { CLOZE } = await import('../gen/banks');
+    const { matches, normalize } = await import('./answer');
+    let n = 0;
+    for (const [unit, items] of Object.entries(EXTRA_CLOZE)) {
+      expect(CLOZE[unit], unit).toBeDefined();
+      const seen = new Set<string>();
+      for (const c of items) {
+        n++;
+        expect(c.s.match(/\{/g)?.length, c.s).toBe(1);
+        const t = c.s.match(/\{(.+?)\}/)![1];
+        expect(c.es.trim().length, c.s).toBeGreaterThan(2);
+        expect(new Set(c.alt.map(normalize)).size, c.s).toBe(c.alt.length);
+        for (const a of c.alt) expect(matches(a, [t]), `${c.s} / ${a}`).toBe(false);
+        const k = normalize(c.s.replace(/[{}]/g, ''));
+        expect(seen.has(k), c.s).toBe(false);
+        seen.add(k);
+        if (c.tr) expect(/[.?!]$/.test(c.tr[1]), c.s).toBe(true);
+      }
+    }
+    expect(n).toBeGreaterThan(400);
+  });
+  it('el léxico creció y conjuga bien en español', async () => {
+    const { VERBS, SUBJECTS } = await import('../gen/lexicon');
+    const { conjugateEs } = await import('../gen/spanish');
+    expect(VERBS.length).toBeGreaterThanOrEqual(95);
+    expect(VERBS.reduce((a, v) => a + v.comps.length, 0)).toBeGreaterThanOrEqual(300);
+    expect(SUBJECTS.length).toBe(12);
+    expect(conjugateEs('tocar', 'pret', 0)).toBe('toqué');
+    expect(conjugateEs('llegar', 'pret', 0)).toBe('llegué');
+    expect(conjugateEs('construir', 'pres', 2)).toBe('construye');
+    expect(conjugateEs('elegir', 'pres', 0)).toBe('elijo');
+    expect(conjugateEs('leer', 'perf', 3)).toBe('hemos leído');
+    expect(conjugateEs('andar', 'pret', 2)).toBe('anduvo');
+  });
+});
+
+describe('v1.0 — corregí el error', () => {
+  it('cada error tiene corrección distinta y aceptada', async () => {
+    const { EXTRA_FIX } = await import('../content/fix-bank');
+    const { UNITS } = await import('../content/curriculum');
+    const { matches } = await import('./answer');
+    let n = 0;
+    for (const [id, list] of Object.entries(EXTRA_FIX)) {
+      expect(UNITS.some((u) => u.id === id), id).toBe(true);
+      for (const e of list) {
+        n++;
+        if (e.kind !== 'fix') throw new Error('tipo');
+        expect(matches(e.prompt, e.answers), e.prompt).toBe(false);
+        for (const a of e.answers) expect(/[.?!]$/.test(a), a).toBe(true);
+      }
+    }
+    expect(n).toBeGreaterThan(170);
+    expect(UNITS.find((u) => u.id === 'past-simple')!.exercises.filter((e) => e.kind === 'fix').length).toBeGreaterThan(6);
+  });
+});

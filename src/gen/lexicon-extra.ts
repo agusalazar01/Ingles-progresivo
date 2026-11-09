@@ -1,0 +1,126 @@
+/**
+ * Ampliación del léxico del generador (v1.0): más complementos para los verbos que ya estaban y verbos
+ * nuevos del día a día, del trabajo en el campo y la bodega, y de viajar y vivir en Australia.
+ * Se suma a VERBS en lexicon.ts; agregar más acá no cambia nada del funcionamiento.
+ *
+ * Reglas para que todo combine bien en cualquier tiempo y con cualquier sujeto:
+ *  - el complemento no lleva expresión de tiempo (la pone el generador);
+ *  - el español no lleva adjetivos con género que dependan del sujeto («solo», «cansada»…);
+ *  - punctual = acción instantánea (no va con «for two hours»), rare = hecho único (no va con «every day»),
+ *    stative = verbo de estado (no va en continuo).
+ */
+import type { Verb } from './lexicon';
+
+type C = [string, string, string?];
+
+/** Complementos nuevos para verbos existentes (por id). */
+export const EXTRA_COMPS: Record<string, C[]> = {
+  work: [['on a farm', 'en un campo'], ['in the vineyard', 'en el viñedo'], ['at night', 'de noche'], ['with my dad', 'con mi padre']],
+  live: [['in a small town', 'en un pueblo chico'], ['in Adelaide', 'en Adelaida'], ['in a shared house', 'en una casa compartida']],
+  study: [['history', 'historia'], ['at the library', 'en la biblioteca'], ['winemaking', 'enología'], ['at night', 'de noche']],
+  'play-sport': [['basketball', 'al básquetbol'], ['rugby', 'al rugby'], ['cricket', 'al críquet'], ['golf', 'al golf']],
+  'play-music': [['the drums', 'la batería'], ['the violin', 'el violín']],
+  watch: [['the cricket', 'el críquet'], ['a series', 'una serie'], ['the sunset', 'el atardecer']],
+  cook: [['lunch', 'el almuerzo'], ['eggs for brekkie', 'huevos para el desayuno'], ['a barbie', 'un asado', 'hacer']],
+  travel: [['to Chile', 'a Chile'], ['by train', 'en tren'], ['to New Zealand', 'a Nueva Zelanda'], ['for work', 'por trabajo']],
+  call: [['my sister', 'a mi hermana'], ['the boss', 'al jefe'], ['a taxi', 'un taxi'], ['the plumber', 'al plomero']],
+  clean: [['the bathroom', 'el baño'], ['the car', 'el auto'], ['the tanks at the winery', 'los tanques de la bodega'], ['my room', 'mi cuarto']],
+  help: [['my neighbour', 'a mi vecino'], ['the new workers', 'a los trabajadores nuevos'], ['my mum in the garden', 'a mi madre en el jardín']],
+  wait: [['for the doctor', 'al médico'], ['for a call', 'una llamada'], ['in the queue', 'en la fila']],
+  walk: [['the dog', 'al perro', 'pasear'], ['home', 'a casa'], ['on the beach', 'por la playa']],
+  learn: [['to drive', 'a manejar'], ['new words', 'palabras nuevas'], ['about wine', 'sobre vino']],
+  drink: [['a beer', 'una cerveza'], ['tea', 'té'], ['a glass of wine', 'una copa de vino'], ['orange juice', 'jugo de naranja']],
+  eat: [['meat', 'carne'], ['a meat pie', 'un pastel de carne'], ['fruit', 'fruta'], ['pizza', 'pizza']],
+  read: [['the news', 'las noticias'], ['the instructions', 'las instrucciones'], ['a magazine', 'una revista']],
+  write: [['a message', 'un mensaje'], ['my CV', 'mi currículum'], ['a song', 'una canción']],
+  buy: [['a ticket', 'un pasaje'], ['some fruit', 'fruta'], ['a second-hand ute', 'una camioneta usada']],
+  sell: [['my bike', 'mi bici'], ['fruit at the market', 'fruta en la feria'], ['the old car', 'el auto viejo']],
+  see: [['a kangaroo', 'un canguro'], ['the fireworks', 'los fuegos artificiales']],
+  go: [['to the supermarket', 'al súper'], ['to the pub', 'al pub'], ['to the doctor', 'al médico'], ['to the vineyard', 'al viñedo']],
+  make: [['coffee', 'café'], ['a mistake', 'un error', 'cometer'], ['friends', 'amigos'], ['pizza', 'pizza']],
+  do: [['the dishes', 'los platos', 'lavar'], ['the washing', 'la ropa', 'lavar'], ['yoga', 'yoga'], ['a course', 'un curso']],
+  'take-bus': [['the train', 'el tren'], ['the ferry', 'el ferry']],
+  'take-photo': [['photos of the vineyard', 'fotos del viñedo']],
+  speak: [['Spanish', 'español'], ['with the boss', 'con el jefe'], ['on the phone', 'por teléfono']],
+  drive: [['to Adelaide', 'a Adelaida'], ['a tractor', 'un tractor'], ['to the beach', 'a la playa']],
+  swim: [['in the river', 'en el río'], ['at the beach', 'en la playa']],
+  run: [['on the beach', 'en la playa'], ['along the rambla', 'por la rambla']],
+  sleep: [['in a tent', 'en una carpa'], ['on the sofa', 'en el sofá']],
+  lose: [['my phone', 'mi celular'], ['the match', 'el partido']],
+  find: [['a flat', 'un apartamento'], ['my wallet', 'mi billetera'], ['a cheap room', 'un cuarto barato']],
+  send: [['an email to the boss', 'un correo al jefe'], ['photos to my mum', 'fotos a mi madre'], ['a parcel', 'un paquete']],
+  open: [['the gate', 'el portón'], ['a bottle of wine', 'una botella de vino']],
+  close: [['the window', 'la ventana'], ['the gate', 'el portón']],
+  break: [['a bottle', 'una botella'], ['my glasses', 'mis lentes']],
+  win: [['a prize', 'un premio']],
+  pay: [['for the coffee', 'el café'], ['the electricity bill', 'la cuenta de la luz'], ['in cash', 'en efectivo']],
+  listen: [['to a podcast', 'un podcast'], ['to the teacher', 'a la profesora'], ['to my parents', 'a mis padres']],
+  visit: [['Melbourne', 'Melbourne'], ['my friends in Salto', 'a mis amigos en Salto'], ['a winery', 'una bodega']],
+  forget: [['my password', 'mi contraseña'], ['the name', 'el nombre']],
+  finish: [['the book', 'el libro'], ['the harvest', 'la cosecha']],
+  start: [['a new job', 'un trabajo nuevo'], ['the car', 'el auto', 'arrancar']],
+  understand: [['the instructions', 'las instrucciones'], ['Australian English', 'el inglés australiano']],
+  know: [['his name', 'su nombre'], ['the way', 'el camino']],
+  say: [['hello', 'hola'], ['thank you', 'gracias']],
+  think: [['about the trip', 'en el viaje'], ['about the future', 'en el futuro']],
+  come: [['to my house', 'a mi casa']],
+  want: [['a holiday', 'unas vacaciones'], ['a bigger flat', 'un apartamento más grande']],
+  give: [['a hand to my neighbour', 'una mano a mi vecino']],
+  tell: [['a joke', 'un chiste', 'contar'], ['the kids a story', 'un cuento a los niños', 'contar']],
+  get: [['a visa', 'una visa'], ['a good price', 'un buen precio']],
+  use: [['my phone', 'mi celular'], ['Google Maps', 'Google Maps']],
+  put: [['the boxes in the ute', 'las cajas en la camioneta']],
+  bring: [['the mate', 'el mate'], ['a bottle of wine', 'una botella de vino']],
+  leave: [['the party early', 'de la fiesta temprano'], ['the house', 'de la casa']],
+  teach: [['Spanish', 'español'], ['the kids to swim', 'a nadar a los niños']],
+  spend: [['a lot on food', 'mucho en comida']],
+  ask: [['the way', 'el camino'], ['my boss for a day off', 'a mi jefe un día libre', 'pedir']],
+  look: [['at the map', 'el mapa'], ['at the stars', 'las estrellas']],
+  pass: [['the driving test', 'el examen de manejo'], ['the English exam', 'el examen de inglés']],
+  pick: [['my mum at the airport', 'a mi madre al aeropuerto'], ['the boss', 'al jefe']],
+};
+
+const v = (id: string, base: string, past: string, pp: string, es: string, comps: C[], extra: Partial<Verb> = {}): Verb => ({
+  id,
+  base,
+  past,
+  pp,
+  es,
+  comps: comps.map(([en, es2, esVerb]) => ({ en, es: es2, esVerb })),
+  ...extra,
+});
+
+/** Verbos nuevos. */
+export const EXTRA_VERBS: Verb[] = [
+  v('fix', 'fix', 'fixed', 'fixed', 'arreglar', [['the bike', 'la bici'], ['the tap', 'la canilla'], ['the fence', 'el alambrado'], ['my phone', 'mi celular']]),
+  v('wash', 'wash', 'washed', 'washed', 'lavar', [['the dishes', 'los platos'], ['the car', 'el auto'], ['my clothes', 'mi ropa']]),
+  v('prune', 'prune', 'pruned', 'pruned', 'podar', [['the vines', 'las parras'], ['the trees', 'los árboles']]),
+  v('harvest', 'pick', 'picked', 'picked', 'cosechar', [['grapes', 'uvas'], ['apples', 'manzanas'], ['oranges', 'naranjas']]),
+  v('carry', 'carry', 'carried', 'carried', 'cargar', [['the boxes', 'las cajas'], ['the buckets', 'los baldes'], ['my backpack', 'mi mochila']]),
+  v('rent', 'rent', 'rented', 'rented', 'alquilar', [['a room', 'un cuarto'], ['a car', 'un auto'], ['a flat near the beach', 'un apartamento cerca de la playa']]),
+  v('book', 'book', 'booked', 'booked', 'reservar', [['a table', 'una mesa'], ['the flights', 'los pasajes'], ['a hostel', 'un hostel']], { punctual: true }),
+  v('order', 'order', 'ordered', 'ordered', 'pedir', [['a pizza', 'una pizza'], ['a flat white', 'un café con leche'], ['a meat pie', 'un pastel de carne']], { punctual: true }),
+  v('try', 'try', 'tried', 'tried', 'probar', [['Vegemite', 'Vegemite'], ['the new wine', 'el vino nuevo'], ['a kangaroo burger', 'una hamburguesa de canguro']], { punctual: true }),
+  v('paint', 'paint', 'painted', 'painted', 'pintar', [['the fence', 'la cerca'], ['the kitchen', 'la cocina'], ['my room', 'mi cuarto']]),
+  v('plant', 'plant', 'planted', 'planted', 'plantar', [['trees', 'árboles'], ['tomatoes', 'tomates'], ['new vines', 'parras nuevas']]),
+  v('check', 'check', 'checked', 'checked', 'revisar', [['my emails', 'mis correos'], ['the tyres', 'las cubiertas'], ['the wine in the tanks', 'el vino de los tanques']]),
+  v('save', 'save', 'saved', 'saved', 'ahorrar', [['money', 'plata'], ['for a trip', 'para un viaje'], ['for a car', 'para un auto']]),
+  v('change', 'change', 'changed', 'changed', 'cambiar', [['the tyre', 'la cubierta'], ['the sheets', 'las sábanas'], ['money at the bank', 'plata en el banco']], { punctual: true }),
+  v('share', 'share', 'shared', 'shared', 'compartir', [['a pizza', 'una pizza'], ['the mate', 'el mate'], ['photos online', 'fotos en internet']]),
+  v('pack', 'pack', 'packed', 'packed', 'armar', [['my bag', 'mi bolso'], ['the suitcase', 'la valija']]),
+  v('arrive', 'arrive', 'arrived', 'arrived', 'llegar', [['late', 'tarde'], ['at the airport', 'al aeropuerto'], ['home', 'a casa']], { punctual: true }),
+  v('fly', 'fly', 'flew', 'flown', 'volar', [['to Sydney', 'a Sídney'], ['to Melbourne', 'a Melbourne'], ['with Qantas', 'con Qantas']]),
+  v('catch', 'catch', 'caught', 'caught', 'agarrar', [['the train', 'el tren'], ['the bus to work', 'el ómnibus al laburo'], ['a wave', 'una ola']], { punctual: true }),
+  v('ride', 'ride', 'rode', 'ridden', 'andar', [['a bike', 'en bici'], ['a horse', 'a caballo'], ['a bike to work', 'en bici al laburo']]),
+  v('build', 'build', 'built', 'built', 'construir', [['a house', 'una casa'], ['a deck', 'un deck'], ['a new shed', 'un galpón nuevo']]),
+  v('grow', 'grow', 'grew', 'grown', 'cultivar', [['vegetables', 'verduras'], ['grapes', 'uvas'], ['tomatoes', 'tomates']]),
+  v('feed', 'feed', 'fed', 'fed', 'dar de comer', [['the dog', 'al perro'], ['the chooks', 'a las gallinas'], ['the cat', 'al gato']]),
+  v('choose', 'choose', 'chose', 'chosen', 'elegir', [['a wine', 'un vino'], ['the music', 'la música'], ['a new phone', 'un celular nuevo']], { punctual: true }),
+  v('sing', 'sing', 'sang', 'sung', 'cantar', [['a song', 'una canción'], ['in the shower', 'en la ducha'], ['in a band', 'en una banda']]),
+  v('dance', 'dance', 'danced', 'danced', 'bailar', [['tango', 'tango'], ['at the party', 'en la fiesta'], ['salsa', 'salsa']]),
+  v('borrow', 'borrow', 'borrowed', 'borrowed', 'pedir prestado', [["my brother's car", 'el auto de mi hermano'], ['some money', 'plata'], ['a book from the library', 'un libro de la biblioteca']], { punctual: true }),
+  v('lend', 'lend', 'lent', 'lent', 'prestar', [['my car to a mate', 'mi auto a un amigo'], ['money to my brother', 'plata a mi hermano']], { punctual: true }),
+  v('wear', 'wear', 'wore', 'worn', 'usar', [['a hat', 'sombrero'], ['boots at work', 'botas en el laburo'], ['sunscreen', 'protector solar']]),
+  v('earn', 'earn', 'earned', 'earned', 'ganar', [['good money', 'buena plata']]),
+  v('climb', 'climb', 'climbed', 'climbed', 'subir', [['the hill', 'el cerro'], ['the stairs', 'la escalera']]),
+];

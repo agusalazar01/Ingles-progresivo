@@ -2,6 +2,7 @@ import type { Unit } from './types';
 import { VERB_UNITS } from './units';
 import { FOUNDATION_UNITS } from './units-foundation';
 import { ADVANCED_UNITS } from './units-advanced';
+import { EXTRA_FIX } from './fix-bank';
 
 /**
  * Orden del programa: qué conviene saber primero y qué viene después.
@@ -29,6 +30,12 @@ export const UNITS: Unit[] = ORDER.map((id) => {
   if (!u) throw new Error(`Unidad desconocida: ${id}`);
   return u;
 });
+
+// Banco ampliado de «Corregí el error»: se agrega al final para no cambiar las claves de los que ya había.
+for (const u of UNITS) {
+  const extra = EXTRA_FIX[u.id];
+  if (extra) u.exercises.push(...extra.filter((e) => !u.exercises.some((x) => x.prompt === e.prompt)));
+}
 
 if (UNITS.length !== ALL.length) throw new Error('Hay unidades fuera del orden del programa');
 

@@ -1,3 +1,4 @@
+import { EXTRA_COMPS, EXTRA_VERBS } from './lexicon-extra';
 /**
  * Léxico del generador de oraciones: verbos con sus formas en inglés y español, complementos con sentido,
  * sujetos y expresiones de tiempo. Todo combina en oraciones correctas y naturales.
@@ -106,6 +107,13 @@ export const VERBS: Verb[] = [
   v('pick', 'pick up', 'picked up', 'picked up', 'pasar a buscar', [['the kids', 'a los niños'], ['my sister', 'a mi hermana']], { punctual: true, ing: 'picking up' }),
 ];
 
+// Ampliación v1.0: más complementos y verbos (ver lexicon-extra.ts).
+for (const verb of VERBS) {
+  const more = EXTRA_COMPS[verb.id];
+  if (more) verb.comps.push(...more.filter(([en]) => !verb.comps.some((c) => c.en === en)).map(([en, es2, esVerb]) => ({ en, es: es2, esVerb })));
+}
+VERBS.push(...EXTRA_VERBS.filter((x) => !VERBS.some((y) => y.id === x.id)));
+
 export interface Subject {
   en: string;
   /** Persona española: 0 yo · 1 vos · 2 él/ella/usted · 3 nosotros · 4 ellos */
@@ -129,4 +137,6 @@ export const SUBJECTS: Subject[] = [
   { en: 'my parents', p: 4, es: 'mis padres', third: false, were: true },
   { en: 'my brother', p: 2, es: 'mi hermano', third: true, were: false },
   { en: 'my mate', p: 2, es: 'mi amigo', third: true, were: false },
+  { en: 'my sister', p: 2, es: 'mi hermana', third: true, were: false },
+  { en: 'my friends', p: 4, es: 'mis amigos', third: false, were: true },
 ];

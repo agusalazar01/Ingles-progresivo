@@ -71,14 +71,14 @@ export function stepItems(unit: Unit, step: Step['id']): RunnerItem[] {
     case 'explain':
       return [];
     case 'recognize':
-      return take([...curated(unit, ['choice', 'sound']).slice(0, 3), ...gen(unit, 'recognize', PER_STEP)]);
+      return take([...shuffle(curated(unit, ['choice', 'sound'])).slice(0, 3), ...gen(unit, 'recognize', PER_STEP)]);
     case 'complete':
-      return take([...curated(unit, ['type', 'listen']).slice(0, 3), ...gen(unit, 'complete', PER_STEP)]);
+      return take([...shuffle(curated(unit, ['type', 'listen'])).slice(0, 3), ...gen(unit, 'complete', PER_STEP)]);
     case 'transform':
-      return take([...curated(unit, ['fix']).slice(0, 3), ...gen(unit, 'transform', PER_STEP)]);
+      return take([...shuffle(curated(unit, ['fix'])).slice(0, 3), ...gen(unit, 'transform', PER_STEP)]);
     case 'build':
       return take([
-        ...curated(unit, ['translate', 'speak']).slice(0, 3),
+        ...shuffle(curated(unit, ['translate', 'speak'])).slice(0, 3),
         ...gen(unit, 'order', 4),
         ...gen(unit, 'translate', 4),
         ...orders(unit, 2),
@@ -86,7 +86,7 @@ export function stepItems(unit: Unit, step: Step['id']): RunnerItem[] {
     case 'fluency':
       return take(
         [
-          ...curated(unit, ['choice', 'type', 'fix', 'translate', 'sound', 'listen']).slice(0, 3),
+          ...shuffle(curated(unit, ['choice', 'type', 'fix', 'translate', 'sound', 'listen'])).slice(0, 3),
           ...gen(unit, 'recognize', 2),
           ...gen(unit, 'complete', 3),
           ...gen(unit, 'transform', 2),

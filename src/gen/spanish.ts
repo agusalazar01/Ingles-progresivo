@@ -83,7 +83,7 @@ const IRREGULAR: Record<string, Partial<Record<'pres' | 'pret' | 'imp' | 'fut' |
   pedir: { pres: ['pido', 'pedís', 'pide', 'pedimos', 'piden'], pret: ['pedí', 'pediste', 'pidió', 'pedimos', 'pidieron'], ger: 'pidiendo' },
   contar: { pres: ['cuento', 'contás', 'cuenta', 'contamos', 'cuentan'] },
   aprobar: { pres: ['apruebo', 'aprobás', 'aprueba', 'aprobamos', 'aprueban'] },
-  leer: { pret: ['leí', 'leíste', 'leyó', 'leímos', 'leyeron'], ger: 'leyendo' },
+  leer: { pret: ['leí', 'leíste', 'leyó', 'leímos', 'leyeron'], ger: 'leyendo', pp: 'leído' },
   dormir: { pres: ['duermo', 'dormís', 'duerme', 'dormimos', 'duermen'], pret: ['dormí', 'dormiste', 'durmió', 'dormimos', 'durmieron'], ger: 'durmiendo' },
   jugar: { pres: ['juego', 'jugás', 'juega', 'jugamos', 'juegan'], pret: ['jugué', 'jugaste', 'jugó', 'jugamos', 'jugaron'] },
   empezar: { pres: ['empiezo', 'empezás', 'empieza', 'empezamos', 'empiezan'], pret: ['empecé', 'empezaste', 'empezó', 'empezamos', 'empezaron'] },
@@ -96,6 +96,19 @@ const IRREGULAR: Record<string, Partial<Record<'pres' | 'pret' | 'imp' | 'fut' |
   abrir: { pp: 'abierto' },
   romper: { pp: 'roto' },
   sacar: { pret: ['saqué', 'sacaste', 'sacó', 'sacamos', 'sacaron'] },
+  tocar: { pret: ['toqué', 'tocaste', 'tocó', 'tocamos', 'tocaron'] },
+  arrancar: { pret: ['arranqué', 'arrancaste', 'arrancó', 'arrancamos', 'arrancaron'] },
+  cargar: { pret: ['cargué', 'cargaste', 'cargó', 'cargamos', 'cargaron'] },
+  llegar: { pret: ['llegué', 'llegaste', 'llegó', 'llegamos', 'llegaron'] },
+  probar: { pres: ['pruebo', 'probás', 'prueba', 'probamos', 'prueban'] },
+  volar: { pres: ['vuelo', 'volás', 'vuela', 'volamos', 'vuelan'] },
+  andar: { pret: ['anduve', 'anduviste', 'anduvo', 'anduvimos', 'anduvieron'] },
+  construir: {
+    pres: ['construyo', 'construís', 'construye', 'construimos', 'construyen'],
+    pret: ['construí', 'construiste', 'construyó', 'construimos', 'construyeron'],
+    ger: 'construyendo',
+  },
+  elegir: { pres: ['elijo', 'elegís', 'elige', 'elegimos', 'eligen'], pret: ['elegí', 'elegiste', 'eligió', 'elegimos', 'eligieron'], ger: 'eligiendo' },
 };
 
 const ENDINGS = {
