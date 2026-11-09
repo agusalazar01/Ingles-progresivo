@@ -47,9 +47,25 @@ const FREE_RESET_EVERY = 6;
  * Si en Ajustes hay IA descargada, Oliver usa esa voz, ese oído y/o esa charla; si no, la del teléfono.
  * La IA se carga mientras suena y se libera al cortar.
  */
-export function Call({ callId, free = false, onExit, onSettings }: { callId?: string; free?: boolean; onExit: () => void; onSettings?: () => void }) {
-  const script: CallScript | undefined = callId ? callById(callId) : undefined;
-  const unit = script ? unitById(script.unitId) : undefined;
+export function Call({
+  callId,
+  free = false,
+  script: given,
+  withAi = false,
+  onExit,
+  onSettings,
+}: {
+  callId?: string;
+  free?: boolean;
+  /** Guion armado afuera (roleplay en modo libre con IA). */
+  script?: CallScript;
+  /** Con guion, usar la IA de charla en vez de los patrones (opcional). */
+  withAi?: boolean;
+  onExit: () => void;
+  onSettings?: () => void;
+}) {
+  const script: CallScript | undefined = given ?? (callId ? callById(callId) : undefined);
+  const unit = script?.unitId ? unitById(script.unitId) : undefined;
   const [phase, setPhase] = useState<'ringing' | 'talk' | 'review' | 'needs-ai'>('ringing');
   const [ai, setAi] = useState<CallAi>({ voice: null, ear: null, brain: null, speaker: 0 });
   const [idx, setIdx] = useState(0);
@@ -89,6 +105,13 @@ export function Call({ callId, free = false, onExit, onSettings }: { callId?: st
     const t0 = Date.now();
     (async () => {
       let chosen = await chosenAi();
+      // Las llamadas con guion funcionan con los patrones del guion (más confiable); la IA de charla solo si se pide.
+      if (script && !withAi) chosen = { ...chosen, brain: null };
+      if (script && withAi && !chosen.brain) {
+        stop();
+        setPhase('needs-ai');
+        return;
+      }
       if (free && !chosen.brain) {
         stop();
         setPhase('needs-ai');

@@ -11,6 +11,7 @@ import { Vocab } from './screens/Vocab';
 import { Call } from './screens/Call';
 import { Phrases } from './screens/Phrases';
 import { Structures } from './screens/Structures';
+import { Roleplays } from './screens/Roleplays';
 import { Settings, type SettingsSection } from './screens/Settings';
 import { VerbLesson, VerbWorkshop } from './screens/Verbs';
 import type { Level } from './content/types';
@@ -38,7 +39,8 @@ export type Route =
   | { name: 'remedial'; unitIds: string[]; level: Level }
   | { name: 'placement'; retest: boolean }
   | { name: 'lesson'; unitId: string; banner?: string; resume?: boolean }
-  | { name: 'call'; callId?: string; unitId?: string; free?: boolean }
+  | { name: 'call'; callId?: string; unitId?: string; free?: boolean; script?: import('./content/calls').CallScript }
+  | { name: 'roleplays' }
   | { name: 'review'; keys: string[]; title: string };
 
 const TABS: { name: 'home' | 'path' | 'vocab' | 'call' | 'errors' | 'progress'; label: string }[] = [
@@ -144,9 +146,11 @@ export default function App() {
     case 'call':
       body = (
         <Call
-          key={route.callId ?? 'libre'}
+          key={route.script?.id ?? route.callId ?? 'libre'}
           callId={route.callId}
           free={route.free}
+          script={route.script}
+          withAi={!!route.script}
           onExit={back}
           onSettings={() => replace({ name: 'settings', section: 'ai' })}
         />
@@ -196,6 +200,9 @@ export default function App() {
       break;
     case 'progress':
       body = <Progress go={go} />;
+      break;
+    case 'roleplays':
+      body = <Roleplays onExit={back} onAiCall={(script) => go({ name: 'call', script })} />;
       break;
     case 'structures':
       body = <Structures onExit={back} />;

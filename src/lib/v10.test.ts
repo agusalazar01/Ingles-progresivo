@@ -56,3 +56,45 @@ describe('v1.0 — Frases por estructura', () => {
     expect(later > new Date()).toBe(true);
   });
 });
+
+describe('v1.0 — Roleplays', () => {
+  it('catálogo completo, ids únicos y guiones enganchados', async () => {
+    const { ROLEPLAYS, RP_CATEGORIES } = await import('../content/roleplays/catalog');
+    const { SCRIPTS } = await import('../content/roleplays/scripts');
+    expect(ROLEPLAYS.length).toBeGreaterThanOrEqual(190);
+    expect(RP_CATEGORIES.length).toBe(13);
+    expect(new Set(ROLEPLAYS.map((r) => r.id)).size).toBe(ROLEPLAYS.length);
+    for (const id of Object.keys(SCRIPTS)) expect(ROLEPLAYS.find((r) => r.id === id)?.script, id).toBeDefined();
+  });
+  it('cada guion se puede recorrer y la pista de cada momento se reconoce', async () => {
+    const { SCRIPTS } = await import('../content/roleplays/scripts');
+    const { matchOption, fixesFor } = await import('./roleplay');
+    for (const s of Object.values(SCRIPTS)) {
+      expect(s.nodes[s.start], s.id).toBeDefined();
+      for (const [id, n] of Object.entries(s.nodes)) {
+        for (const o of n.options) expect(o.next === 'end' || !!s.nodes[o.next], `${s.id}/${id} → ${o.next}`).toBe(true);
+        expect(n.fallback.next === 'end' || !!s.nodes[n.fallback.next], `${s.id}/${id} fallback`).toBe(true);
+        expect(matchOption(n, [n.hint]), `${s.id}/${id}: «${n.hint}»`).not.toBeNull();
+        expect(fixesFor(n, n.hint), `${s.id}/${id}: la pista no debe tener errores`).toEqual([]);
+        for (const f of n.fixes ?? []) expect(() => new RegExp(f.wrong)).not.toThrow();
+      }
+      // Se llega al final siguiendo la primera opción.
+      let cur = s.start;
+      for (let i = 0; i < 30 && cur !== 'end'; i++) cur = s.nodes[cur].options[0]?.next ?? s.nodes[cur].fallback.next;
+      expect(cur, s.id).toBe('end');
+    }
+  });
+  it('reconoce respuestas libres y errores típicos', async () => {
+    const { SCRIPTS } = await import('../content/roleplays/scripts');
+    const { matchOption, fixesFor } = await import('./roleplay');
+    const cafe = SCRIPTS['33-ordering-coffee'];
+    expect(matchOption(cafe.nodes.order, ['I want a latte'])?.next).toBe('size');
+    expect(fixesFor(cafe.nodes.order, 'I want a latte').length).toBe(1);
+    expect(matchOption(cafe.nodes.extra, ["No thanks, that's all"])?.next).toBe('end');
+    const bank = SCRIPTS['23-opening-a-bank-account'];
+    expect(matchOption(bank.nodes.address, ["I don't have an address yet"])?.reply).toContain('hostel');
+    const job = SCRIPTS['70-barista-job-interview'];
+    expect(matchOption(job.nodes.exp, ["No, I haven't"])?.next).toBe('hosp');
+    expect(fixesFor(job.nodes.avail, 'I am available in monday').length).toBe(1);
+  });
+});

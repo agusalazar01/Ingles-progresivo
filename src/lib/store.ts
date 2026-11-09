@@ -91,6 +91,8 @@ export interface AppState {
   structs?: Record<string, StoredCard>;
   /** «Frases por estructura»: consignas de combinar hechas (lo último que escribiste). */
   combos?: Record<string, { date: string; text: string }>;
+  /** Roleplays hechos: cuándo y cuántas correcciones hubo. */
+  roleplays?: Record<string, { date: string; fixes: number; turns: number }>;
 }
 
 export interface MissedItem {

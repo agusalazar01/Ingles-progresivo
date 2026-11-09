@@ -119,6 +119,13 @@ export function Home({ go }: { go: (r: Route) => void }) {
         })()}
       </div>
       <div className="card">
+        <p className="card-title">🎭 Roleplays</p>
+        <p className="small">Situaciones reales para vivir y trabajar en Australia: el café, el banco, una entrevista de trabajo…</p>
+        <button className="secondary" onClick={() => go({ name: 'roleplays' })}>
+          Entrar
+        </button>
+      </div>
+      <div className="card">
         <p className="card-title">🧱 Frases por estructura</p>
         <p className="small">Patrones con frases reales, la explicación de cada palabra y, al final, oraciones largas combinando todo.</p>
         <button className="secondary" onClick={() => go({ name: 'structures' })}>
