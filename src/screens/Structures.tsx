@@ -7,8 +7,14 @@ import { say } from '../lib/speech';
 import { useAppState, type Outcome } from '../lib/store';
 import type { ComboPrompt, Structure } from '../content/structures';
 import {
+  analyzeFree,
   breakdown,
+  canConjugate,
   checkCombo,
+  conjugateRound,
+  EXPRESSIONS,
+  expressionProgress,
+  expressionRound,
   COMBOS,
   comboAvailable,
   comboUnlocked,
@@ -40,7 +46,10 @@ type View =
   | { v: 'run'; title: string; items: RunnerItem[]; back: View; learning?: boolean }
   | { v: 'connectors' }
   | { v: 'combos' }
-  | { v: 'combo'; id: string };
+  | { v: 'combo'; id: string }
+  | { v: 'expressions' }
+  | { v: 'expression'; id: string }
+  | { v: 'free' };
 
 const STATUS_LABEL = { new: 'nueva', learning: 'aprendiendo', known: 'la sabés', due: 'para repasar' } as const;
 const KIND_LABEL: Record<ComboPrompt['kind'], string> = { explicar: 'Explicá', contar: 'Contá', preguntar: 'Preguntá', desarrollar: 'Desarrollá' };
@@ -53,7 +62,16 @@ export function Structures({ onExit }: { onExit: () => void }) {
   useAppState();
   const [view, setView] = useState<View>({ v: 'home' });
   const [notice, setNotice] = useState<string>();
-  const up = (): View => (view.v === 'structure' || view.v === 'connectors' || view.v === 'combos' ? { v: 'home' } : view.v === 'cards' ? { v: 'structure', id: view.id } : view.v === 'combo' ? { v: 'combos' } : view.v === 'run' ? view.back : { v: 'home' });
+  const up = (): View =>
+    view.v === 'cards'
+      ? { v: 'structure', id: view.id }
+      : view.v === 'combo' || view.v === 'free'
+        ? { v: 'combos' }
+        : view.v === 'expression'
+          ? { v: 'expressions' }
+          : view.v === 'run'
+            ? view.back
+            : { v: 'home' };
   const back = () => (view.v === 'home' ? onExit() : (setNotice(undefined), setView(up())));
   useBack(true, back, 2);
 
@@ -82,6 +100,39 @@ export function Structures({ onExit }: { onExit: () => void }) {
   if (view.v === 'connectors') return <ConnectorsView onBack={back} />;
   if (view.v === 'combos') return <CombosView onBack={back} go={setView} />;
   if (view.v === 'combo') return <ComboView c={COMBOS.find((c) => c.id === view.id)!} onBack={back} />;
+  if (view.v === 'free') return <FreeView onBack={back} />;
+  if (view.v === 'expressions') return <ExpressionsView onBack={back} go={setView} />;
+  if (view.v === 'expression') {
+    const g = EXPRESSIONS.find((x) => x.id === view.id)!;
+    return (
+      <div className="screen structures">
+        <div className="top-bar">
+          <BackButton onClick={back} />
+        </div>
+        <p className="eyebrow">Formas de decir · {g.level}</p>
+        <h1>{g.idea}</h1>
+        {notice && <p className="notice">{notice}</p>}
+        <p className="small">Varias maneras de decir lo mismo, y cuándo conviene cada una.</p>
+        {g.ways.map((w) => (
+          <div key={w.en} className="card">
+            <div className="row between">
+              <p className="card-title">{w.en}</p>
+              <button className="link" aria-label="Escuchar" onClick={() => say(w.en)}>
+                ▶
+              </button>
+            </div>
+            <p className="small">{w.es}</p>
+            <p>
+              <i>{w.when}</i>
+            </p>
+          </div>
+        ))}
+        <button className="primary" onClick={() => setView({ v: 'run', title: g.idea, items: expressionRound(g), back: { v: 'expression', id: g.id } })}>
+          Practicar: elegí la mejor para cada situación
+        </button>
+      </div>
+    );
+  }
 
   const due = reviewItems(50).length;
   return (
@@ -121,6 +172,14 @@ export function Structures({ onExit }: { onExit: () => void }) {
           );
         })}
       </div>
+      <h2>Más natural</h2>
+      <button className="rung" onClick={() => setView({ v: 'expressions' })}>
+        <span className="rung-num">💬</span>
+        <span>
+          <span className="unit-title">Formas de decir</span>
+          <span className="unit-status">Expresiones naturales y varias maneras de decir lo mismo (I'm getting the hang of it, fair enough…)</span>
+        </span>
+      </button>
       <h2>Combinar todo</h2>
       <button className="rung" onClick={() => setView({ v: 'connectors' })}>
         <span className="rung-num">🔗</span>
@@ -233,6 +292,11 @@ function StructureView({ s, notice, onBack, go }: { s: Structure; notice?: strin
           Practicar las que ya empecé
         </button>
       )}
+      {started.length > 0 && canConjugate(s) && conjugateRound(s).length > 0 && (
+        <button className="secondary" onClick={() => go({ v: 'run', title: `${s.title} · conjugar`, items: conjugateRound(s), back: { v: 'structure', id: s.id } })}>
+          Conjugar: las mismas frases con she / they
+        </button>
+      )}
       <h2>Las frases</h2>
       <p className="small">Tocá una frase para ver por qué va cada palabra.</p>
       {phrasesOf(s).map((p) => (
@@ -319,6 +383,13 @@ function CombosView({ onBack, go }: { onBack: () => void; go: (v: View) => void 
       <p className="eyebrow">Ejercicio final</p>
       <h1>✍️ Armá oraciones largas</h1>
       <p className="small">Usá las estructuras que aprendiste y los conectores. La app revisa que estén y te muestra una respuesta modelo.</p>
+      <button className="rung" onClick={() => go({ v: 'free' })}>
+        <span className="rung-num">📝</span>
+        <span>
+          <span className="unit-title">Escribí lo que quieras decir</span>
+          <span className="unit-status">Armá tu propio texto y mirá qué estructuras, conectores y expresiones usaste</span>
+        </span>
+      </button>
       {stages.map(([stage, title, desc]) => (
         <div key={stage}>
           <h2>{title}</h2>
@@ -423,6 +494,75 @@ function ComboView({ c, onBack }: { c: ComboPrompt; onBack: () => void }) {
               </button>
             </p>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExpressionsView({ onBack, go }: { onBack: () => void; go: (v: View) => void }) {
+  useAppState();
+  return (
+    <div className="screen structures">
+      <div className="top-bar">
+        <BackButton onClick={onBack} />
+      </div>
+      <p className="eyebrow">Más natural</p>
+      <h1>💬 Formas de decir</h1>
+      <p className="small">Frases hechas del inglés de todos los días, agrupadas por lo que querés decir. En cada grupo: varias maneras y cuándo conviene cada una.</p>
+      <div className="ladder">
+        {EXPRESSIONS.map((g) => {
+          const pr = expressionProgress(g);
+          return (
+            <button key={g.id} className={`rung ${pr.started >= pr.total ? 'done' : pr.started ? 'current' : ''}`} onClick={() => go({ v: 'expression', id: g.id })}>
+              <span className="rung-num">{pr.started >= pr.total ? '✓' : g.level}</span>
+              <span>
+                <span className="unit-title">{g.idea}</span>
+                <span className="unit-status">
+                  {g.ways
+                    .slice(0, 2)
+                    .map((w) => w.en)
+                    .join(' · ')}
+                  {pr.due ? ` · ${pr.due} para repasar` : ''}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FreeView({ onBack }: { onBack: () => void }) {
+  const [text, setText] = useState('');
+  const r = text.trim() ? analyzeFree(text) : null;
+  return (
+    <div className="screen structures">
+      <div className="top-bar">
+        <BackButton onClick={onBack} />
+      </div>
+      <p className="eyebrow">Combinar todo</p>
+      <h1>📝 Escribí lo que quieras decir</h1>
+      <p className="small">Pensá algo que quieras contar, explicar o preguntar y armalo con las estructuras, los conectores y las expresiones que ya sabés. Abajo ves qué usaste.</p>
+      <textarea className="answer combo-text" rows={8} value={text} onChange={(e) => setText(e.target.value)} placeholder="Escribí en inglés…" autoCapitalize="sentences" />
+      {r && (
+        <div className="feedback neutral">
+          <p className="small">
+            {r.words} palabras · {r.sentences} {r.sentences === 1 ? 'oración' : 'oraciones'}
+          </p>
+          <p>
+            <b>Estructuras:</b> {r.structures.length ? r.structures.join(' · ') : 'ninguna todavía'}
+          </p>
+          <p>
+            <b>Conectores:</b> {r.connectors.length ? r.connectors.join(', ') : 'ninguno: probá unir ideas con and, but, because, so…'}
+          </p>
+          {r.expressions.length > 0 && (
+            <p>
+              <b>Expresiones:</b> {r.expressions.join(' · ')}
+            </p>
+          )}
+          <p className="small">La app reconoce qué usaste, pero no corrige cada palabra. Si te queda una duda, guardala en «Decilo en inglés» o marcala para la profe.</p>
         </div>
       )}
     </div>

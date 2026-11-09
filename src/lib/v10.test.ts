@@ -98,3 +98,51 @@ describe('v1.0 — Roleplays', () => {
     expect(fixesFor(job.nodes.avail, 'I am available in monday').length).toBe(1);
   });
 });
+
+describe('v1.0 — conjugar, formas de decir y escribir libre', () => {
+  it('conjuga las frases con she / they', async () => {
+    const { conjugate, phrasesOf: ps } = await import('./structures');
+    const { STRUCTURES: S } = await import('../content/structures');
+    const by = (sid: string, en: string) => ps(S.find((s) => s.id === sid)!).find((p) => p.en === en)!;
+    expect(conjugate(by('pres-simple', 'I usually cook dinner.'), 'she')).toBe('She usually cooks dinner.');
+    expect(conjugate(by('pres-simple', 'I have breakfast at home.'), 'she')).toBe('She has breakfast at home.');
+    expect(conjugate(by('pres-simple', "I don't eat meat."), 'she')).toBe("She doesn't eat meat.");
+    expect(conjugate(by('be-aff', "I'm not sure."), 'they')).toBe("They aren't sure.");
+    expect(conjugate(by('pres-perfect', "I've lost my keys."), 'she')).toBe("She's lost her keys.");
+    expect(conjugate(by('want-need', 'I want to learn English.'), 'she')).toBe('She wants to learn English.');
+    expect(conjugate(by('past-irregular', 'I was tired.'), 'they')).toBe('They were tired.');
+    expect(conjugate(by('used-to', "I didn't use to like coffee."), 'she')).toBe("She didn't use to like coffee.");
+    expect(conjugate(by('past-regular', 'I worked all day.'), 'she')).toBe('She worked all day.');
+    expect(conjugate(by('if-will', "I'll call you if I'm late."), 'she')).toBeNull();
+    let n = 0;
+    for (const s of S)
+      for (const p of ps(s))
+        for (const to of ['she', 'they'] as const) {
+          const c = conjugate(p, to);
+          if (!c) continue;
+          n++;
+          expect(/^(She|They)\b/.test(c), c).toBe(true);
+          expect(/\b(I|my|me|am)\b/.test(c), `${p.en} → ${c}`).toBe(false);
+        }
+    expect(n).toBeGreaterThan(150);
+  });
+  it('formas de decir bien armadas', async () => {
+    const { EXPRESSIONS } = await import('../content/expressions');
+    const { expressionRound } = await import('./structures');
+    expect(EXPRESSIONS.length).toBeGreaterThanOrEqual(20);
+    for (const g of EXPRESSIONS) {
+      expect(g.ways.length, g.id).toBeGreaterThanOrEqual(4);
+      expect(new Set(g.ways.map((w) => w.en)).size, g.id).toBe(g.ways.length);
+      for (const [, best] of g.situations) expect(g.ways[best], g.id).toBeDefined();
+      const items = expressionRound(g);
+      for (const it of items) if (it.exercise.kind === 'choice') expect(it.exercise.options[it.exercise.answer]).toBeDefined();
+    }
+  });
+  it('reconoce lo que usaste al escribir libre', async () => {
+    const { analyzeFree } = await import('./structures');
+    const r = analyzeFree("I'm getting the hang of it, but I'm tired because I worked all day. Fair enough.");
+    expect(r.connectors).toEqual(expect.arrayContaining(['but', 'because']));
+    expect(r.expressions).toEqual(expect.arrayContaining(["I'm getting the hang of it", 'Fair enough']));
+    expect(r.structures.length).toBeGreaterThan(1);
+  });
+});
