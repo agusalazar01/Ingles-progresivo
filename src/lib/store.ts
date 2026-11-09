@@ -85,6 +85,8 @@ export interface AppState {
   phrases?: Phrase[];
   /** Ejercicios que salieron mal en los escalones, por unidad: vuelven con otra oración del mismo formato. */
   missed?: Record<string, MissedItem[]>;
+  /** Últimas oraciones vistas por unidad (normalizadas), para no repetirlas al armar los escalones. */
+  seen?: Record<string, string[]>;
 }
 
 export interface MissedItem {
@@ -294,4 +296,23 @@ export function lastRun(s: AppState): { unitId: string; run: SavedRun } | null {
 
 export function saveCall(id: string, score: number) {
   setState((s) => ({ ...s, calls: { ...s.calls, [id]: { date: new Date().toISOString(), score: Math.max(score, s.calls[id]?.score ?? 0) } } }));
+}
+
+const SEEN_MAX = 80;
+const seenKey = (prompt: string) => prompt.toLowerCase().replace(/[^a-z0-9áéíóúñ]+/g, ' ').trim();
+
+/** Anota que viste esta oración en la unidad. */
+export function markSeen(unitId: string, prompt: string) {
+  const k = seenKey(prompt);
+  if (!k) return;
+  setState((s) => {
+    const list = (s.seen?.[unitId] ?? []).filter((x) => x !== k);
+    return { ...s, seen: { ...(s.seen ?? {}), [unitId]: [...list, k].slice(-SEEN_MAX) } };
+  });
+}
+
+/** ¿La viste hace poco? */
+export function recentlySeen(unitId: string): (prompt: string) => boolean {
+  const set = new Set(getState().seen?.[unitId] ?? []);
+  return (prompt: string) => set.has(seenKey(prompt));
 }

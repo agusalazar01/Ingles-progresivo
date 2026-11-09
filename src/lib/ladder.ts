@@ -2,6 +2,7 @@ import type { Exercise, Unit } from '../content/types';
 import { UNITS } from '../content/curriculum';
 import { generate, supports, type Pattern } from '../gen/generate';
 import type { RunnerItem } from '../components/ExerciseRunner';
+import { recentlySeen } from './store';
 
 /**
  * Escalera de cada unidad: de muy fácil a difícil. Cada escalón se desbloquea al dominar el anterior.
@@ -46,15 +47,34 @@ export function orderExercise(s: { en: string; es?: string }): Exercise {
   return { kind: 'order', prompt: s.es ?? '', words: w, answers: [s.en] };
 }
 
-const curated = (unit: Unit, kinds: Exercise['kind'][]): RunnerItem[] =>
-  unit.exercises.map((exercise, i) => ({ key: `${unit.id}#${i}`, unit, exercise })).filter((x) => kinds.includes(x.exercise.kind));
+/** Ejercicios fijos de la unidad: primero los que no viste hace poco, en orden al azar. */
+const curated = (unit: Unit, kinds: Exercise['kind'][]): RunnerItem[] => {
+  const seen = recentlySeen(unit.id);
+  const all = unit.exercises.map((exercise, i) => ({ key: `${unit.id}#${i}`, unit, exercise })).filter((x) => kinds.includes(x.exercise.kind));
+  const fresh = shuffle(all.filter((x) => !seen(x.exercise.prompt)));
+  return [...fresh, ...shuffle(all.filter((x) => seen(x.exercise.prompt)))];
+};
 
+/** Ejercicios generados: oraciones distintas entre sí y, si se puede, que no hayas visto hace poco. */
 const gen = (unit: Unit, pattern: Pattern, n: number): RunnerItem[] => {
   if (!supports(unit.id, pattern)) return [];
+  const seen = recentlySeen(unit.id);
+  const used = new Set<string>();
   const out: RunnerItem[] = [];
   for (let i = 0; i < n; i++) {
-    const exercise = generate(unit.id, pattern);
-    if (exercise) out.push({ key: `${unit.id}@${pattern}`, unit, exercise });
+    let pick: Exercise | null = null;
+    for (let t = 0; t < 15; t++) {
+      const ex = generate(unit.id, pattern);
+      if (!ex) continue;
+      const k = ex.prompt.toLowerCase();
+      if (used.has(k)) continue;
+      pick = ex;
+      if (!seen(ex.prompt)) break;
+    }
+    if (pick) {
+      used.add(pick.prompt.toLowerCase());
+      out.push({ key: `${unit.id}@${pattern}`, unit, exercise: pick });
+    }
   }
   return out;
 };
@@ -71,14 +91,14 @@ export function stepItems(unit: Unit, step: Step['id']): RunnerItem[] {
     case 'explain':
       return [];
     case 'recognize':
-      return take([...shuffle(curated(unit, ['choice', 'sound'])).slice(0, 3), ...gen(unit, 'recognize', PER_STEP)]);
+      return take([...(curated(unit, ['choice', 'sound'])).slice(0, 3), ...gen(unit, 'recognize', PER_STEP)]);
     case 'complete':
-      return take([...shuffle(curated(unit, ['type', 'listen'])).slice(0, 3), ...gen(unit, 'complete', PER_STEP)]);
+      return take([...(curated(unit, ['type', 'listen'])).slice(0, 3), ...gen(unit, 'complete', PER_STEP)]);
     case 'transform':
-      return take([...shuffle(curated(unit, ['fix'])).slice(0, 3), ...gen(unit, 'transform', PER_STEP)]);
+      return take([...(curated(unit, ['fix'])).slice(0, 3), ...gen(unit, 'transform', PER_STEP)]);
     case 'build':
       return take([
-        ...shuffle(curated(unit, ['translate', 'speak'])).slice(0, 3),
+        ...(curated(unit, ['translate', 'speak'])).slice(0, 3),
         ...gen(unit, 'order', 4),
         ...gen(unit, 'translate', 4),
         ...orders(unit, 2),
@@ -86,7 +106,7 @@ export function stepItems(unit: Unit, step: Step['id']): RunnerItem[] {
     case 'fluency':
       return take(
         [
-          ...shuffle(curated(unit, ['choice', 'type', 'fix', 'translate', 'sound', 'listen'])).slice(0, 3),
+          ...(curated(unit, ['choice', 'type', 'fix', 'translate', 'sound', 'listen'])).slice(0, 3),
           ...gen(unit, 'recognize', 2),
           ...gen(unit, 'complete', 3),
           ...gen(unit, 'transform', 2),

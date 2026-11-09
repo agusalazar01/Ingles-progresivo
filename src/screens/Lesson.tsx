@@ -11,7 +11,7 @@ import { unitById } from '../content/curriculum';
 import { completeStep, readExplanation, recordReview, STEP_PASS, stepScore, type ItemResult } from '../lib/actions';
 import { addMissed, missedItems, removeMissed } from '../lib/missed';
 import { activeSteps, stepItems, type Step } from '../lib/ladder';
-import { clearRun, getState, saveRun, useAppState, type SavedRun } from '../lib/store';
+import { clearRun, getState, markSeen, saveRun, useAppState, type SavedRun } from '../lib/store';
 import { levelUnitsDone, nextUnit, unitPercent } from '../lib/progress';
 
 /** Una unidad: la escalera de muy fácil a difícil. */
@@ -211,6 +211,7 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
           timed={!review && steps[running.index].id === 'fluency'}
           onItem={(r, first) => {
             if (!first) return;
+            if (r.prompt) markSeen(unit.id, r.prompt);
             const i = running.items.findIndex((x) => x.key === r.key && x.exercise.prompt === r.prompt);
             if (review) {
               // Repaso: si ahora sale (con o sin pista), se saca de la lista; si no, queda para la próxima.

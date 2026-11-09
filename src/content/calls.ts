@@ -87,13 +87,13 @@ call('pronouns', 'La familia', 'Charla después del laburo', 'Hablá de tu famil
   u("Yes, I'd like to meet her.", [b(['her|yes|sure|love to'], "Too easy, I'll bring her to the barbie.", 'Bien: después del verbo va «her» (meet her).')], 'Después del verbo va el pronombre objeto: «meet her», «meet him».'),
 ]);
 
-call('pronouns', '¿De quién es?', 'En el galpón de la bodega', "Decí de quién es cada cosa: mine, yours, his, Ana's.", [
+call('pronouns', '¿De quién es?', 'Ordenando la casa compartida después de un asado', "Decí de quién es cada cosa: mine, yours, his, Ana's.", [
   o("Whose hat is this? Is it yours?"),
   u("Yes, it's mine.", [b(['mine|my|yours|his|her|not'], 'Here you go.', 'Bien: usaste un posesivo.')], 'Para decir que es tuyo: «It is mine» o «It is my hat».'),
   o('And this water bottle? Is it Jake\'s?'),
   u("No, it's not his. It's Ana's.", [b(['his|her|s|not|ana|jake'], 'Righto.', 'Bien: usaste his / \'s.')], "Para «de Ana»: «It is Ana's». Para «de él»: «It is his»."),
-  o('Can you give me those gloves, please?'),
-  u('Sure, here are your gloves.', [b(['your|them|here|sure|yes'], 'Cheers.', 'Bien: «your gloves», «give them to you».')], 'Podés decir: «Sure, here are your gloves».'),
+  o('Can you give me those sunnies, please?'),
+  u('Sure, here are your sunnies.', [b(['your|them|here|sure|yes'], 'Cheers.', 'Bien: «your sunnies», «give them to you».')], 'Podés decir: «Sure, here are your sunnies».'),
 ]);
 
 call('articles-plurals', 'En la feria', 'Puesto de frutas en un mercado de Melbourne', 'Pedí cosas con a / an / some y plurales.', [
@@ -105,7 +105,7 @@ call('articles-plurals', 'En la feria', 'Puesto de frutas en un mercado de Melbo
   u("Yes, a bag, please.", [b(['bag|yes|no|thanks'], "Here you go. That's twelve dollars.", 'Bien: «a bag».')], 'Podés decir: «Yes, a bag, please» o «No, thanks».'),
 ]);
 
-call('articles-plurals', 'Los compañeros del vintage', 'Primer día en la bodega', 'Hablá de las personas del equipo con plurales irregulares.', [
+call('articles-plurals', 'Los compañeros de trabajo', 'Primer día en un trabajo nuevo', 'Hablá de las personas del equipo con plurales irregulares.', [
   o('How many people work in your team?'),
   u('There are ten people in my team.', [b(['people|men|women|workers'], 'Big team!', 'Bien: el plural de person es people.')], 'Plural de person: people. «There are ten people».'),
   o('Are there any women in the team?'),
@@ -123,8 +123,8 @@ call('there-is', 'Tu barrio', 'Charla en el ute', 'Describí tu barrio con there
   u('Yes, there are a lot of parrillas.', [b(['there are|there aren|yes|no|lot'], "I'd love to try one.", 'Bien: con plural va «there are».')], 'Con plural: «There are a lot of restaurants».'),
 ]);
 
-call('there-is', 'La casa en la bodega', 'Te muestran el alojamiento', 'Preguntá qué hay con Is there…? / Are there…?', [
-  o("This is your room for the vintage. Any questions?"),
+call('there-is', 'La habitación del hostel', 'Te muestran tu cuarto', 'Preguntá qué hay con Is there…? / Are there…?', [
+  o("This is your room. Any questions?"),
   u('Is there wifi in the room?', [b(['is there|are there'], "Yeah, there is, but it's a bit slow.", 'Bien: preguntaste con «Is there…?».')], 'Para preguntar si hay algo: «Is there wifi?», «Are there towels?».'),
   o('Anything else you need to know?'),
   u('Are there any shops near here?', [b(['is there|are there'], "There's a servo ten minutes down the road.", 'Bien: «Are there any…?».')], 'Con plural: «Are there any shops near here?».'),
@@ -132,13 +132,13 @@ call('there-is', 'La casa en la bodega', 'Te muestran el alojamiento', 'Pregunt�
   u("No worries. Is there a fridge?", [b(['is there|are there|no worries|ok|fine'], 'Yep, a big one.', 'Bien.')], 'Podés preguntar: «Is there a fridge?».'),
 ]);
 
-call('questions', 'Entrevista para el vintage', 'Llamada con el encargado de la bodega', 'Hacé preguntas con where, when, what, how much.', [
-  o("Hi, it's Oliver from the winery. Have you got any questions about the job?"),
-  u('Yes. When does the vintage start?', [b(['when|what time|what day'], 'It starts in February.', 'Bien: preguntaste con «When does…?».')], 'Para preguntar cuándo: «When does the vintage start?».'),
+call('questions', 'Preguntas sobre un trabajo', 'Llamada por un aviso de trabajo en un café', 'Hacé preguntas con where, when, what, how much.', [
+  o("Hi, it's Oliver from the café. Have you got any questions about the job?"),
+  u('Yes. When does the job start?', [b(['when|what time|what day'], 'It starts next Monday.', 'Bien: preguntaste con «When does…?».')], 'Para preguntar cuándo: «When does the job start?».'),
   o('Anything else?'),
   u('How much do you pay per hour?', [b(['how much|pay|money|salary|per hour'], 'About thirty bucks an hour.', 'Bien: «How much do you pay…?».')], 'Para preguntar cuánto pagan: «How much do you pay per hour?».'),
   o('Any other questions?'),
-  u('Where do the workers live?', [b(['where|accommodation|live|stay'], "There's a house on the property.", 'Bien: «Where do…?».')], 'Para preguntar dónde: «Where do the workers live?».'),
+  u('Where is the café?', [b(['where|address|location'], "It's on the main street, near the station.", 'Bien: «Where is…?».')], 'Para preguntar dónde: «Where is the café?».'),
   o('Good questions. What do you want to know about the hours?'),
   u('What time do we start?', [b(['what time|when|how many hours|how long'], 'Seven in the morning, mate.', 'Bien: «What time do we start?».')], 'Para la hora: «What time do we start?».'),
 ]);
@@ -147,7 +147,7 @@ call('questions', 'Conociendo a alguien', 'En un asado (barbie) en la playa', 'H
   o("G'day! I'm Oliver. Ask me anything, mate."),
   u('Where do you live?', [b(['where|what|do you|are you|how'], 'I live in Adelaide, near the beach.', 'Bien: hiciste una pregunta con do/does o to be.')], 'Por ejemplo: «Where do you live?».'),
   o("Ask me something else."),
-  u('What do you do?', [b(['what do you|do you|what is your|are you'], 'I work at a winery. I love it.', 'Bien: «What do you do?» = ¿a qué te dedicás?')], 'Para el trabajo: «What do you do?».'),
+  u('What do you do?', [b(['what do you|do you|what is your|are you'], 'I fix bikes at a shop. I love it.', 'Bien: «What do you do?» = ¿a qué te dedicás?')], 'Para el trabajo: «What do you do?».'),
   o('Go on, one more.'),
   u('Do you like football?', [b(['do you|are you|have you|can you'], 'I prefer footy, mate. Aussie rules.', 'Bien: pregunta con «Do you…?».')], 'Pregunta de sí o no: «Do you like football?».'),
 ]);
@@ -163,11 +163,11 @@ call('prep-time-place', 'Armando un plan', 'Combinando para salir', 'Usá in / o
   u("It's in December, on the 26th.", [b(['in|on'], "A Christmas baby! We'll have a barbie.", 'Bien: in con meses, on con fechas.')], 'Mes con in: «in December»; fecha con on: «on the 26th».'),
 ]);
 
-call('prep-time-place', '¿Dónde está?', 'Buscando cosas en la bodega', 'Decí dónde están las cosas: in, on, under, next to.', [
+call('prep-time-place', '¿Dónde está?', 'Buscando cosas en casa', 'Decí dónde están las cosas: in, on, under, next to.', [
   o("Mate, I can't find my keys. Have you seen them?"),
   u("They're on the table.", [b(['on|in|under|next to|near|behind'], 'Got them, cheers.', 'Bien: usaste una preposición de lugar.')], 'Sobre algo: «on the table»; adentro: «in the bag».'),
-  o('And where are the boxes for the grapes?'),
-  u('They are in the shed.', [b(['in|on|next to|behind|near'], 'Good.', 'Bien: «in the shed».')], 'Adentro de un lugar: «in the shed».'),
+  o('And where is my phone charger?'),
+  u('It is in the drawer.', [b(['in|on|next to|behind|near|under'], 'Good.', 'Bien: «in the drawer».')], 'Adentro de algo: «in the drawer».'),
   o('Where do you usually have lunch?'),
   u('I have lunch at work.', [b(['at|in|on'], 'Me too.', 'Bien: «at work», «at home».')], 'Con work y home va at: «at work», «at home».'),
 ]);
@@ -178,7 +178,7 @@ call('pres-simple', 'Tu rutina', 'Charla en el descanso (smoko)', 'Contá tu rut
   o("So, what's a normal day like for you?"),
   u('I get up at six and I have breakfast.', [b(['i get up|i wake up|i have|i go|i work|i start'], 'Early bird!', 'Bien: presente simple para la rutina.')], 'Rutina: «I get up at six», «I have breakfast».'),
   o('What does your boss do in the morning?'),
-  u('He checks the tanks.', [b(['he|she', '-s'], 'Sounds about right.', 'Bien: con he/she el verbo lleva -s.')], 'Con he/she el verbo lleva -s: «He checks», «She works».'),
+  u('He checks his emails.', [b(['he|she', '-s'], 'Sounds about right.', 'Bien: con he/she el verbo lleva -s.')], 'Con he/she el verbo lleva -s: «He checks», «She works».'),
   o('Do you drink coffee or mate?'),
   u('I drink mate every day.', [b(['i drink|i have|i love|i like|i prefer|i don'], 'Ha, typical Uruguayan!', 'Bien: «I drink mate every day».')], 'Algo que hacés siempre: «I drink mate every day».'),
   o("What don't you like about your job?"),
@@ -202,7 +202,7 @@ call('pres-cont', '¿Qué estás haciendo?', 'Oliver te llama al celular', 'Cont
   o('Are your friends watching the game?'),
   u("Yes, they're watching it on TV.", [b(['are|they re|aren t|not', '-ing'], 'Who is winning?', 'Bien: «They are watching».')], 'Con they: «They are watching».'),
   o('What are you studying these days?'),
-  u("I'm studying English for the vintage.", [b(['am|i m', '-ing'], 'Good on ya.', 'Bien: presente continuo para algo de estos días.')], 'Algo de estos días: «I am studying English».'),
+  u("I'm studying English for my trip.", [b(['am|i m', '-ing'], 'Good on ya.', 'Bien: presente continuo para algo de estos días.')], 'Algo de estos días: «I am studying English».'),
 ]);
 
 call('pres-cont', 'Mirando por la ventana', 'Llamada mientras esperás el ómnibus', 'Describí lo que ves que está pasando.', [
@@ -214,8 +214,8 @@ call('pres-cont', 'Mirando por la ventana', 'Llamada mientras esperás el ómnib
   u("Yes, it's getting cold.", [b(['is|it s|isn t|not', '-ing'], 'Grab a jumper.', 'Bien.')], 'Para algo que cambia: «It is getting cold».'),
 ]);
 
-call('can', '¿Qué sabés hacer?', 'Entrevista para el vintage', 'Hablá de tus habilidades con can / can\'t.', [
-  o('Can you drive a tractor?'),
+call('can', '¿Qué sabés hacer?', 'Entrevista para un trabajo de verano', 'Hablá de tus habilidades con can / can\'t.', [
+  o('Can you drive a manual car?'),
   u("No, I can't, but I can learn.", [b(['can|can t|can not'], "No worries, we'll teach you.", 'Bien: can / can\'t + verbo sin to.')], 'Con can el verbo va sin to: «I can drive», «I can not drive».'),
   o('Can you speak Spanish?'),
   u('Yes, I can. It is my first language.', [b(['can|yes|of course'], "Ripper, we've got Spanish backpackers.", 'Bien: «Yes, I can».')], 'Respuesta corta: «Yes, I can» / «No, I can not».'),
@@ -245,9 +245,9 @@ call('vocab-daily', 'Un día en tu vida', 'Charla tranquila', 'Contá tu día co
   u('I have dinner and go to bed early.', [b(['dinner|go to bed|watch|read|relax|cook|shower'], 'Sounds relaxing.', 'Bien: vocabulario de rutina.')], 'De noche: «I have dinner», «I go to bed».'),
 ]);
 
-call('vocab-daily', 'La rutina de la bodega', 'Te explican el día de trabajo', 'Preguntá y contá con always, usually, never.', [
+call('vocab-daily', 'La rutina del trabajo nuevo', 'Te explican el día de trabajo', 'Preguntá y contá con always, usually, never.', [
   o('We always start at seven. Do you usually wake up early?'),
-  u('Yes, I always wake up early.', [b(['always|usually|often|sometimes|never|rarely'], 'Perfect for vintage.', 'Bien: adverbio de frecuencia antes del verbo.')], 'El adverbio va antes del verbo: «I always wake up early».'),
+  u('Yes, I always wake up early.', [b(['always|usually|often|sometimes|never|rarely'], 'Perfect for this job.', 'Bien: adverbio de frecuencia antes del verbo.')], 'El adverbio va antes del verbo: «I always wake up early».'),
   o('Do you ever take a nap after lunch?'),
   u('No, I never take a nap.', [b(['never|sometimes|always|usually|rarely|no|yes'], 'Ha, me neither.', 'Bien.')], '«never» ya es negativo: «I never take a nap».'),
   o("We have smoko at ten. Do you drink tea or coffee?"),
@@ -256,7 +256,7 @@ call('vocab-daily', 'La rutina de la bodega', 'Te explican el día de trabajo', 
 
 // ───────────── Pasado ─────────────
 
-call('past-simple', 'El fin de semana pasado', 'Lunes en la bodega', 'Contá qué hiciste con el pasado simple.', [
+call('past-simple', 'El fin de semana pasado', 'Lunes en el trabajo', 'Contá qué hiciste con el pasado simple.', [
   o('How was your weekend? What did you do?'),
   u('I went to the beach and played football.', [b(['went|played|visited|watched|had|saw|did|stayed|cooked|met|was'], 'Nice one.', 'Bien: verbos en pasado.')], 'En pasado: «I went to the beach», «I played football».'),
   o('Did you go out on Saturday night?'),
@@ -289,11 +289,11 @@ call('past-cont', '¿Qué estabas haciendo?', 'Te llamó y no atendiste', 'Cont�
 
 call('past-cont', 'Un susto', 'Contando una anécdota', 'Usá pasado continuo + pasado simple (when / while).', [
   o("Did anything funny happen at work today?"),
-  u('Yes. I was working in the vineyard when I saw a kangaroo.', [b(['was|were', '-ing', 'when|while|saw|came|jumped'], 'Ha! They love the vines.', 'Bien: acción larga (was working) cortada por una corta (saw).')], 'Una acción en curso y otra que la corta: «I was working when I saw…».'),
+  u('Yes. I was walking in the park when I saw a kangaroo.', [b(['was|were', '-ing', 'when|while|saw|came|jumped'], 'Ha! They love that park.', 'Bien: acción larga (was working) cortada por una corta (saw).')], 'Una acción en curso y otra que la corta: «I was walking when I saw…».'),
   o('What were you doing when it jumped?'),
-  u('I was picking grapes.', [b(['was|were', '-ing'], 'Classic.', 'Bien.')], '«I was picking grapes».'),
-  o('Where was your boss while that was happening?'),
-  u('He was talking on the phone.', [b(['was|were', '-ing'], 'Of course he was!', 'Bien.')], 'Con he: «He was talking».'),
+  u('I was taking photos.', [b(['was|were', '-ing'], 'Classic.', 'Bien.')], '«I was taking photos».'),
+  o('Where was your friend while that was happening?'),
+  u('She was talking on the phone.', [b(['was|were', '-ing'], 'Of course she was!', 'Bien.')], 'Con she: «She was talking».'),
 ]);
 
 call('past-perfect', 'Antes de llegar', 'Hablando de tu llegada', 'Usá had + participio para algo anterior a otro pasado.', [
@@ -318,25 +318,25 @@ call('past-perfect', 'Un mal día', 'Contando un día que salió mal', 'Explicá
 
 call('future', 'Planes del finde', 'Viernes de tarde', 'Contá tus planes con going to y will.', [
   o("What are you going to do this weekend?"),
-  u("I'm going to visit the Barossa Valley.", [b(['going to|gonna'], 'Great choice.', 'Bien: going to para un plan.')], 'Plan decidido: «I am going to visit…».'),
+  u("I'm going to visit the Great Ocean Road.", [b(['going to|gonna'], 'Great choice.', 'Bien: going to para un plan.')], 'Plan decidido: «I am going to visit…».'),
   o('Will you stay there overnight?'),
   u('Yes, I will stay in a small hotel.', [b(['will|won t|going to|yes|no'], 'Sounds lovely.', 'Bien.')], 'Con will: «I will stay…».'),
   o("Oh, it's going to rain on Sunday."),
   u("Then I'll take an umbrella.", [b(['will|i ll|going to'], 'Good idea.', 'Bien: will para una decisión del momento.')], 'Decisión en el momento: «I will take an umbrella».'),
 ]);
 
-call('future', 'Predicciones', 'Charla sobre el vintage', 'Hacé predicciones con will.', [
-  o("Do you think this vintage will be good?"),
-  u('Yes, I think it will be a great vintage.', [b(['will|won t'], "I reckon you're right.", 'Bien: will para predecir.')], 'Predicción: «I think it will be…».'),
-  o('Will you come back next year?'),
-  u('Maybe. I will decide later.', [b(['will|won t|maybe|probably|i think'], "We'd love to have you back.", 'Bien.')], '«I will come back» / «I will decide later».'),
+call('future', 'Predicciones', 'Charla sobre el año que viene', 'Hacé predicciones con will.', [
+  o("Do you think next year will be good for you?"),
+  u('Yes, I think it will be a great year.', [b(['will|won t'], "I reckon you're right.", 'Bien: will para predecir.')], 'Predicción: «I think it will be…».'),
+  o('Will you travel next year?'),
+  u('Maybe. I will decide later.', [b(['will|won t|maybe|probably|i think'], 'Let me know if you come here.', 'Bien.')], '«I will come back» / «I will decide later».'),
   o('What will you do with the money?'),
   u("I'll save it to build a house in Uruguay.", [b(['will|i ll|going to'], 'Good on ya, mate.', 'Bien.')], '«I will save it…».'),
 ]);
 
-call('future-perf', 'Al final del vintage', 'Charla de fin de temporada', 'Usá will have + participio y will be + -ing.', [
-  o('By the end of April, how many weeks will you have worked here?'),
-  u('I will have worked here for ten weeks.', [b(['will have|ll have'], 'Massive effort.', 'Bien: will have + participio.')], 'Terminado antes de un momento futuro: «I will have worked…».'),
+call('future-perf', 'Al final del año', 'Charla de fin de año', 'Usá will have + participio y will be + -ing.', [
+  o('By the end of the year, how many months will you have studied English?'),
+  u('I will have studied for ten months.', [b(['will have|ll have'], 'Massive effort.', 'Bien: will have + participio.')], 'Terminado antes de un momento futuro: «I will have studied…».'),
   o("And this time next month, what will you be doing?"),
   u("I'll be travelling around Australia.", [b(['will be|ll be', '-ing'], 'Lucky!', 'Bien: will be + -ing.')], 'En curso en el futuro: «I will be travelling».'),
   o('By then, will you have saved enough money?'),
@@ -383,11 +383,11 @@ call('pres-perf-cont', '¿Cuánto hace?', 'Charla sobre lo que venís haciendo',
   u("I've been waiting since six.", [b(['have been|ve been', 'since|for'], 'That bus is always late.', 'Bien: since + momento.')], 'Desde un momento: «since six».'),
 ]);
 
-call('pres-perf-cont', 'El trabajo en la bodega', 'Evaluación a mitad del vintage', 'Contá qué venís haciendo en el trabajo.', [
+call('pres-perf-cont', 'Cómo va todo', 'Charla de mitad de semana', 'Contá qué venís haciendo en el trabajo.', [
   o("How's it going? What have you been doing this week?"),
-  u("I've been cleaning the tanks.", [b(['have been|ve been', '-ing'], 'Messy job!', 'Bien.')], '«I have been cleaning the tanks».'),
+  u("I've been working a lot.", [b(['have been|ve been', '-ing'], 'Busy week!', 'Bien.')], '«I have been working a lot».'),
   o('Has it been raining over there?'),
-  u("Yes, it's been raining since Monday.", [b(['has been|s been|have been|hasn t been', '-ing|since|for'], 'Good for the vines.', 'Bien.')], '«It has been raining since Monday».'),
+  u("Yes, it's been raining since Monday.", [b(['has been|s been|have been|hasn t been', '-ing|since|for'], 'Good for the garden.', 'Bien.')], '«It has been raining since Monday».'),
   o('How long have you been living in the house?'),
   u("I've been living there for a month.", [b(['have been|ve been', 'for|since'], 'Settled in?', 'Bien.')], '«I have been living there for a month».'),
 ]);
@@ -430,10 +430,10 @@ call('cond-3', 'Mirando atrás', 'Charla sobre tu viaje', 'Imaginá cómo habrí
   u("True! If I hadn't come, I wouldn't have met you.", [b(['had|hadn t|wouldn t have|would not have|true|yes'], 'Cheers to that.', 'Bien.')], '«If I had not come, I would not have met you».'),
 ]);
 
-call('past-modals', 'Debería haber…', 'Algo salió mal en la bodega', 'Usá should have, could have, must have.', [
-  o("The tank overflowed last night. What should we have done?"),
-  u('We should have checked it before leaving.', [b(['should have|should ve|shouldn t have'], 'Yeah, lesson learnt.', 'Bien: should have + participio.')], 'Lo que convenía: «We should have checked it».'),
-  o('Who do you think left the valve open?'),
+call('past-modals', 'Debería haber…', 'Algo salió mal en casa', 'Usá should have, could have, must have.', [
+  o("The bath overflowed last night. What should we have done?"),
+  u('We should have turned off the tap.', [b(['should have|should ve|shouldn t have'], 'Yeah, lesson learnt.', 'Bien: should have + participio.')], 'Lo que convenía: «We should have turned off the tap».'),
+  o('Who do you think left the tap on?'),
   u('It must have been Jake.', [b(['must have|might have|could have|can t have|must ve'], 'Ha! Probably.', 'Bien: deducción sobre el pasado.')], 'Deducción: «It must have been Jake».'),
   o("Could you have stayed later to help?"),
   u('Yes, I could have stayed.', [b(['could have|could ve|couldn t have'], 'Next time, mate.', 'Bien.')], '«I could have stayed».'),
@@ -443,7 +443,7 @@ call('past-modals', 'El celular perdido', 'Buscando tu teléfono', 'Hacé suposi
   o("You can't find your phone? Where might you have left it?"),
   u('I might have left it in the ute.', [b(['might have|may have|could have|must have|might ve'], "Let's check.", 'Bien: might have + participio.')], 'Posibilidad: «I might have left it in the ute».'),
   o("It isn't there. Someone must have picked it up."),
-  u("Or I could have dropped it in the vineyard.", [b(['could have|might have|must have|may have'], 'Good thinking.', 'Bien.')], '«I could have dropped it…».'),
+  u("Or I could have dropped it in the park.", [b(['could have|might have|must have|may have'], 'Good thinking.', 'Bien.')], '«I could have dropped it…».'),
   o("Found it! It was in your jacket. You should have checked there first."),
   u("Yes, I should have checked my jacket.", [b(['should have|should ve'], 'Ha! No worries.', 'Bien.')], '«I should have checked my jacket».'),
 ]);
@@ -532,11 +532,11 @@ call('phrasal-1', 'No te rindas', 'Charla motivadora', 'Usá give up, get up, go
   u("Yes, let's go out for a drink.", [b(['go out|catch up|yes|sure'], 'Beauty.', 'Bien: go out = salir.')], 'Salir = «go out».'),
 ]);
 
-call('relatives', 'La gente del vintage', 'Describiendo compañeros', 'Usá who / which / where.', [
+call('relatives', 'La gente del trabajo', 'Describiendo compañeros', 'Usá who / which / where.', [
   o("Who's the guy who drives the forklift?"),
-  u("He's the guy who works in the cellar.", [b(['who|that'], 'Ah, that\'s Jake.', 'Bien: who para personas.')], 'Para personas: «the guy who…».'),
-  o("What's the tool which you use for picking?"),
-  u('It is the knife which cuts the grapes.', [b(['which|that'], 'Right, the snips.', 'Bien: which para cosas.')], 'Para cosas: «the knife which…».'),
+  u("He's the guy who works in the kitchen.", [b(['who|that'], 'Ah, that\'s Jake.', 'Bien: who para personas.')], 'Para personas: «the guy who…».'),
+  o("What's that thing which you use for opening tins?"),
+  u('It is the tool which opens tins.', [b(['which|that'], 'Right, a tin opener.', 'Bien: which para cosas.')], 'Para cosas: «the tool which…».'),
   o("Tell me about the town where you grew up."),
   u('It is a small town where everyone knows each other.', [b(['where'], 'Sounds like here.', 'Bien: where para lugares.')], 'Para lugares: «a town where…».'),
 ]);
@@ -546,12 +546,12 @@ call('relatives', 'Recomendaciones', 'Pidiendo dónde comer', 'Recomendá con wh
   u('There is a restaurant where they cook asado.', [b(['where|which|that'], 'I\'m there.', 'Bien.')], '«a restaurant where…».'),
   o('Do you know anyone who speaks Spanish here?'),
   u('Yes, I have a friend who speaks Spanish.', [b(['who|that'], 'Great, introduce me.', 'Bien.')], '«a friend who speaks Spanish».'),
-  o("I've got a mate whose dad has a winery."),
-  u('Can you introduce me to the guy whose dad has a winery?', [b(['whose|who|introduce|yes|sure'], 'Sure thing.', 'Bien.')], '«the guy whose dad…» = cuyo padre.'),
+  o("I've got a mate whose dad has a restaurant."),
+  u('Can you introduce me to the guy whose dad has a restaurant?', [b(['whose|who|introduce|yes|sure'], 'Sure thing.', 'Bien.')], '«the guy whose dad…» = cuyo padre.'),
 ]);
 
 call('connectors', 'Opiniones', 'Charla sobre el trabajo', 'Conectá ideas con because, but, so, although.', [
-  o("Do you like the vintage work?"),
+  o("Do you like your job?"),
   u("Yes, I like it because I learn a lot.", [b(['because|but|so|although|and'], 'True, you learn heaps.', 'Bien: usaste un conector.')], 'Para dar la razón: «because…».'),
   o("Isn't it tiring?"),
   u("It's tiring, but I enjoy it.", [b(['but|although|though|however'], 'Good attitude.', 'Bien: but para contrastar.')], 'Contraste: «It is tiring, but…».'),
@@ -570,13 +570,13 @@ call('connectors', 'Decidiendo', 'Pensando en comprar un auto', 'Usá unless, in
   u("I know. However, I only need it for a few months.", [b(['however|but|although|so|because'], 'Makes sense.', 'Bien.')], '«However, …».'),
 ]);
 
-call('passive', 'Cómo se hace el vino', 'Tour por la bodega', 'Explicá procesos con la pasiva.', [
-  o("Do you know how wine is made?"),
-  u('Yes, the grapes are picked and then they are crushed.', [b(['are|is|was|were', 'picked|crushed|made|pressed|harvested|fermented|stored'], 'Exactly.', 'Bien: pasiva (are picked).')], 'Pasiva: «The grapes are picked».'),
-  o('Where is the wine stored?'),
-  u('It is stored in barrels.', [b(['is|are', 'stored|kept|aged'], 'Right, French oak.', 'Bien: is stored.')], '«It is stored in barrels».'),
-  o('When was this winery built?'),
-  u('It was built in nineteen fifty.', [b(['was|were', 'built|made|opened|founded'], 'Close, 1948.', 'Bien: pasiva en pasado.')], 'Pasado: «It was built in…».'),
+call('passive', 'Cómo se hace el pan', 'Visita a una panadería', 'Explicá procesos con la pasiva.', [
+  o("Do you know how bread is made?"),
+  u('Yes, the flour is mixed with water and then it is baked.', [b(['are|is|was|were', 'mixed|baked|made|kneaded|cooked'], 'Exactly.', 'Bien: pasiva (is mixed).')], 'Pasiva: «The flour is mixed», «It is baked».'),
+  o('Where is the bread kept?'),
+  u('It is kept in a basket.', [b(['is|are', 'stored|kept|put'], 'Right, or in a paper bag.', 'Bien: is kept.')], '«It is kept in a basket».'),
+  o('When was this bakery opened?'),
+  u('It was opened in nineteen fifty.', [b(['was|were', 'built|made|opened|founded|started'], 'Close, 1948.', 'Bien: pasiva en pasado.')], 'Pasado: «It was opened in…».'),
 ]);
 
 call('passive', 'Uruguay es conocido por…', 'Charla sobre tu país', 'Contá qué se produce y se come en Uruguay.', [
@@ -642,8 +642,8 @@ call('gerund-inf', 'Dejar o seguir', 'Hablando de hábitos', 'Usá stop/keep/avo
   u('Yes, I stopped drinking them.', [b(['stopped|stop|quit|gave up', '-ing'], 'Good on ya.', 'Bien: stop + -ing = dejar de.')], 'Dejar de: «stop drinking».'),
   o('Do you keep practising English every day?'),
   u('Yes, I keep practising every day.', [b(['keep|kept|-ising|-icing', '-ing'], 'It shows.', 'Bien: keep + -ing.')], 'Seguir haciendo: «keep practising».'),
-  o("I'm looking forward to seeing you at vintage."),
-  u("Me too, I'm looking forward to working with you.", [b(['looking forward to', '-ing'], 'Ripper.', 'Bien: look forward to + -ing.')], '«look forward to + -ing».'),
+  o("I'm looking forward to seeing you at the barbie."),
+  u("Me too, I'm looking forward to seeing everyone.", [b(['looking forward to', '-ing'], 'Ripper.', 'Bien: look forward to + -ing.')], '«look forward to + -ing».'),
 ]);
 
 call('reported', '¿Qué te dijo?', 'Contando una charla con el jefe', 'Contá lo que te dijeron con estilo indirecto.', [
@@ -674,8 +674,8 @@ call('register', 'Sonar natural', 'Charla relajada', 'Respondé con frases natur
 ]);
 
 call('register', 'Formal o informal', 'Llamada con una oficina', 'Cambiá a un registro más formal.', [
-  o("Good morning, Barossa Wines. How can I help you?"),
-  u("Good morning. I'd like to ask about the vintage job.", [b(['would like|d like|i want|could|may|wondering'], 'Certainly.', 'Bien: «I would like to…» es formal y amable.')], 'Formal: «I would like to ask about…».'),
+  o("Good morning, Adelaide Bikes. How can I help you?"),
+  u("Good morning. I'd like to ask about the job.", [b(['would like|d like|i want|could|may|wondering'], 'Certainly.', 'Bien: «I would like to…» es formal y amable.')], 'Formal: «I would like to ask about…».'),
   o('Could you give me your full name, please?'),
   u('Of course. My name is Agustín Salazar.', [b(['name|of course|sure|certainly'], 'Thank you.', 'Bien.')], '«Of course. My name is…».'),
   o("We'll get back to you by Friday."),
