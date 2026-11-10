@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { sfxCombo, sfxCorrect, sfxWrong } from '../lib/sfx';
 import { TIME_LIMIT } from '../lib/ladder';
 import type { Exercise, Unit } from '../content/types';
-import { matches, nearMiss, normalize, samePersonVariants } from '../lib/answer';
+import { matches, nearMiss, normalize, samePersonVariants, futureAlternatives } from '../lib/answer';
 import type { ItemResult } from '../lib/actions';
 import { canListen, intelligibility, listen, say, stopSpeaking } from '../lib/speech';
 import { getState, type Outcome } from '../lib/store';
@@ -193,7 +193,8 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   const check = () => {
     if (ex.kind === 'create') return checkCreate();
     if (!('answers' in ex) || !given.trim()) return;
-    const accepted = ex.kind === 'transform' ? samePersonVariants(ex.prompt, ex.answers) : ex.answers;
+    const base = ex.kind === 'transform' ? samePersonVariants(ex.prompt, ex.answers) : ex.answers;
+    const accepted = ex.kind === 'fix' || ex.kind === 'translate' || ex.kind === 'order' ? [...base, ...futureAlternatives(base)] : base;
     if (matches(given, accepted)) return finish(phase === 'retry' ? 'hard' : 'good', given);
     if (ex.kind === 'translate' && phase === 'answer' && !tiles) return setPhase('selfcheck');
     if (phase === 'answer') {

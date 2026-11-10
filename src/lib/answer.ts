@@ -180,16 +180,30 @@ export function samePersonVariants(prompt: string, answers: string[]): string[] 
       );
     }
   }
-  // Futuro: «will» y «going to» valen los dos.
-  for (const a of [...out]) {
+  futureAlternatives([...out]).forEach((x) => out.add(x));
+  return [...out];
+}
+
+/**
+ * Futuro: «will» y «going to» valen los dos en una oración completa («I'll call you» = «I'm going to call you»).
+ * Se dejan afuera las promesas y ofrecimientos, donde «will» es lo natural.
+ */
+export function futureAlternatives(answers: string[]): string[] {
+  const out = new Set<string>();
+  for (const raw of answers) {
+    if (/promise|offer|swear/i.test(raw)) continue;
+    const a = normalize(raw);
     const g = a.match(/^(.*?)\b(am|is|are|'m|'s|'re) going to\b(.*)$/i);
     if (g) out.add(`${g[1]}will${g[3]}`);
     const w = a.match(/^(.*?)\bwill\b(.*)$/i);
     if (w && w[1].trim() && !/^\s*(be|have)\b/i.test(w[2])) {
       const subj = w[1].trim().toLowerCase();
       const be = subj === 'i' ? 'am' : /^(you|we|they)$/.test(subj) || / and /.test(subj) || /s$/.test(subj) ? 'are' : 'is';
-      out.add(`${w[1]}${be} going to${w[2]}`);
+      out.add(/^\s*not\b/.test(w[2]) ? `${w[1]}${be} not going to${w[2].replace(/^\s*not/, '')}` : `${w[1]}${be} going to${w[2]}`);
     }
+    // Negativa con going to → will not.
+    const gn = a.match(/^(.*?)\b(am|is|are) not going to\b(.*)$/i);
+    if (gn) out.add(`${gn[1]}will not${gn[3]}`);
   }
   return [...out];
 }

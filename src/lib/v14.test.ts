@@ -39,3 +39,20 @@ describe('respuestas correctas dichas de otra manera', () => {
     expect(intelligibility('I like coffee', ['he hates tea']).score).toBeLessThan(0.5);
   });
 });
+
+import { futureAlternatives } from './answer';
+describe('will / going to', () => {
+  const ok = (g: string, a: string[]) => matches(g, [...a, ...futureAlternatives(a)]);
+  it('valen los dos, con o sin contracción', () => {
+    expect(ok('I am going to call you tomorrow', ['I will call you tomorrow.'])).toBe(true);
+    expect(ok("I'm going to call you tomorrow", ['I will call you tomorrow.'])).toBe(true);
+    expect(ok('I will call you tomorrow', ["I'm going to call you tomorrow."])).toBe(true);
+    expect(ok("I'll call you tomorrow", ['I am going to call you tomorrow.'])).toBe(true);
+    expect(ok("She's going to buy a car", ['She will buy a car.'])).toBe(true);
+    expect(ok("They won't come", ['They are not going to come.'])).toBe(true);
+  });
+  it('sigue marcando mal otros tiempos', () => {
+    expect(ok('I call you tomorrow', ['I will call you tomorrow.'])).toBe(false);
+    expect(ok('I am calling you tomorrow', ['I will call you tomorrow.'])).toBe(false);
+  });
+});
