@@ -12,7 +12,8 @@ import { completeStep, readExplanation, recordReview, STEP_PASS, stepScore, type
 import { addMissed, missedItems, removeMissed } from '../lib/missed';
 import { activeSteps, stepItems, type Step } from '../lib/ladder';
 import { clearRun, getState, markSeen, saveRun, useAppState, type SavedRun } from '../lib/store';
-import { levelUnitsDone, nextUnit, unitPercent } from '../lib/progress';
+import { levelUnitsDone, nextUnit, unitPercent, userLevel } from '../lib/progress';
+import { LEVELS } from '../content/types';
 
 /** Una unidad: la escalera de muy fácil a difícil. */
 interface Props {
@@ -53,12 +54,18 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
   const [showExplain, setShowExplain] = useState(done === 0);
   const [sheet, setSheet] = useState(false);
   const startedAt = useRef(Date.now());
-  const [summary, setSummary] = useState<{ index: number; score: number; passed: boolean; good: number; total: number; secs: number; words: number; best: number } | null>(null);
+  const [summary, setSummary] = useState<{ index: number; score: number; passed: boolean; good: number; total: number; secs: number; words: number; best: number; early?: boolean } | null>(null);
   const firstTry = useRef<ItemResult[]>(resume ? (getState().resume[unitId]?.firstTry ?? []) : []);
+  // Si acertás las primeras 4 seguidas (bien y sin pista), el escalón termina antes: no hace falta hacer las 8.
+  const ended = useRef(false);
+  const EARLY = 4;
+  const myLevel = userLevel(s);
+  const belowLevel = !!myLevel && LEVELS.indexOf(unit.level) < LEVELS.indexOf(myLevel);
 
 
   const start = (index: number) => {
     firstTry.current = [];
+    ended.current = false;
     setResult(null);
     const items = stepItems(unit, steps[index].id);
     startedAt.current = Date.now();
@@ -70,13 +77,14 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
     const r = getState().resume[unitId];
     if (!r) return;
     firstTry.current = r.firstTry;
+    ended.current = false;
     setResult(null);
     if (r.pos >= r.queue.length) return finishStep(r.stepIndex);
     setRunning(fromSaved(r));
   };
 
   /** Fin de un escalón: se califica con lo que salió al primer intento. */
-  const finishStep = (index: number) => {
+  const finishStep = (index: number, early = false) => {
     clearRun(unit.id);
     const graded = firstTry.current.filter((r) => r.outcome !== 'skip');
     const score = stepScore(firstTry.current);
@@ -95,7 +103,7 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
     if (passed) sfxFinish();
     setNotice(undefined);
     setRunning(null);
-    setSummary({ index, score, passed, good: graded.filter(ok).length, total: graded.length, secs, words: words.size, best });
+    setSummary({ index, score, passed, good: graded.filter(ok).length, total: graded.length, secs, words: words.size, best, early });
   };
 
   /** Después de aprobar: siguiente escalón, siguiente unidad o examen de nivel, sin volver al menú. */
@@ -114,6 +122,34 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
     if (nxt && nxt.id !== unit.id) return onNextUnit(nxt.id, msg);
     setRunning(null);
     setResult({ index, score, passed: true });
+  };
+
+  /** «Ya lo sé»: 6 preguntas de los escalones difíciles; con 5 bien, la unidad queda dominada. */
+  const startTestOut = () => {
+    firstTry.current = [];
+    ended.current = false;
+    setResult(null);
+    setShowExplain(false);
+    const hard = [...stepItems(unit, 'transform').slice(0, 3), ...stepItems(unit, 'build').slice(0, 3)];
+    const items = hard.length >= 6 ? hard : [...hard, ...stepItems(unit, 'fluency')].slice(0, 6);
+    setRunning({ index: -2, items });
+  };
+  const finishTestOut = () => {
+    const graded = firstTry.current.filter((r) => r.outcome !== 'skip');
+    const good = graded.filter((r) => r.outcome === 'good' || r.outcome === 'hard').length;
+    const pass = graded.length > 0 && good >= Math.min(5, graded.length - 1);
+    setRunning(null);
+    if (pass) {
+      completeStep(unit.id, steps.length - 1, steps.length - 1, firstTry.current, true);
+      sfxFinish();
+      const nxt = nextUnit(getState());
+      const msg = `✓ ${good} de ${graded.length}: «${unit.title}» queda dominada sin hacer la escalera. Va a volver de vez en cuando en tus repasos.`;
+      if (nxt && nxt.id !== unit.id) return onNextUnit(nxt.id, msg);
+      setNotice(msg);
+    } else {
+      for (const r of firstTry.current) if (r.outcome === 'again') addMissed(unit.id, r.key, running?.items.find((x) => x.key === r.key && x.exercise.prompt === r.prompt)?.exercise ?? running!.items[0].exercise);
+      setNotice(`${good} de ${graded.length}: todavía no. Hacé la escalera (los escalones fáciles terminan antes si acertás las primeras ${EARLY} seguidas).`);
+    }
   };
 
   const missed = s.missed?.[unitId] ?? [];
@@ -168,6 +204,7 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
             <span className="stat-label">mejor racha</span>
           </div>
         </div>
+        {summary.early && <p className="notice">⚡ Acertaste las primeras {EARLY} seguidas: salteamos el resto del escalón.</p>}
         <p className="center">
           {summary.good} de {summary.total} bien (con la pista también cuenta).{' '}
           {summary.passed ? '' : `Necesitás ${Math.round(STEP_PASS * 100)}%; las oraciones van a ser otras.`}
@@ -188,14 +225,19 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
   }
 
   if (running) {
-    const review = running.index < 0;
-    const step = review ? { title: 'Lo que te costó' } : steps[running.index];
+    const testOut = running.index === -2;
+    const review = running.index === -1;
+    const step = testOut ? { title: 'Ya lo sé' } : review ? { title: 'Lo que te costó' } : steps[running.index];
     return (
       <div className="screen">
         <div className="top-bar">
           <BackButton onClick={leaveRun} label="Volver al menú de la unidad" />
           <p className="eyebrow">
-            {review ? `${unit.title} · repaso: lo que te costó, con oraciones nuevas` : `${unit.title} · escalón ${running.index + 1} de ${steps.length}: ${step.title}`}
+            {testOut
+              ? `${unit.title} · ¿ya lo sabés? 6 preguntas difíciles`
+              : review
+                ? `${unit.title} · repaso: lo que te costó, con oraciones nuevas`
+                : `${unit.title} · escalón ${running.index + 1} de ${steps.length}: ${step.title}`}
           </p>
           <button className="link" onClick={() => setSheet(true)}>
             📖
@@ -207,11 +249,15 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
           key={`${running.index}-${running.items.length}-${notice ?? ''}`}
           items={running.items}
           initial={running.initial}
-          requeue
-          timed={!review && steps[running.index].id === 'fluency'}
+          timed={!review && !testOut && steps[running.index].id === 'fluency'}
+          requeue={!testOut}
           onItem={(r, first) => {
             if (!first) return;
             if (r.prompt) markSeen(unit.id, r.prompt);
+            if (testOut) {
+              firstTry.current.push(r);
+              return;
+            }
             const i = running.items.findIndex((x) => x.key === r.key && x.exercise.prompt === r.prompt);
             if (review) {
               // Repaso: si ahora sale (con o sin pista), se saca de la lista; si no, queda para la próxima.
@@ -222,11 +268,20 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
             firstTry.current.push(r);
             // Lo que sigue mal después de la pista queda anotado para repasarlo con otra oración.
             if (r.outcome === 'again' && i >= 0) addMissed(unit.id, r.key, running.items[i].exercise);
+            const ft = firstTry.current;
+            const idx = running.index;
+            if (!ended.current && ft.length === EARLY && running.items.length > EARLY + 1 && ft.every((x) => x.outcome === 'good' && !x.slow)) {
+              ended.current = true;
+              setTimeout(() => finishStep(idx, true), 1100);
+            }
           }}
           onProgress={(queue, pos) => {
+            if (ended.current || testOut) return;
             if (!review) saveRun(unit.id, { stepIndex: running.index, queue: toSaved(queue), pos, firstTry: firstTry.current });
           }}
           onDone={() => {
+            if (testOut) return finishTestOut();
+            if (ended.current) return;
             if (!review) return finishStep(running.index);
             const left = (getState().missed?.[unit.id] ?? []).length;
             setRunning(null);
@@ -285,6 +340,19 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
           <p className="small">Los ejercicios que te salieron mal, con el mismo formato pero otra oración.</p>
           <button className="secondary" onClick={startMissed}>
             Repasarlos
+          </button>
+        </div>
+      )}
+
+      {done < steps.length && !running && (
+        <div className={`card ${belowLevel ? 'testout-strong' : ''}`}>
+          <p className="card-title">⚡ ¿Ya lo sabés?</p>
+          <p className="small">
+            {belowLevel ? `Esta unidad es de ${unit.level}, por debajo de tu nivel (${myLevel}). ` : ''}6 preguntas difíciles: con 5 bien, la unidad queda dominada y
+            pasás a la siguiente.
+          </p>
+          <button className={belowLevel ? 'primary' : 'secondary'} onClick={startTestOut}>
+            Probar «Ya lo sé»
           </button>
         </div>
       )}

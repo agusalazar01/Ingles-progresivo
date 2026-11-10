@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import { TENSE_UNIT_IDS } from './Tenses';
 import { LEVELS } from '../content/types';
 import { UNITS } from '../content/curriculum';
-import { daysSince, groupPercent, isDone, lastTest, nextUnit, pathLevel, previousLevelDone, unitPercent, unitStatus } from '../lib/progress';
+import { daysSince, groupPercent, isDone, lastTest, nextUnit, pathLevel, previousLevelDone, unitPercent, unitStatus, userLevel } from '../lib/progress';
 import { THEMES, themeOf, themeUnits } from '../content/themes';
 import { unitById } from '../content/curriculum';
 import { dueKeys, lastRun, streak, useAppState } from '../lib/store';
@@ -34,6 +34,10 @@ export function Home({ go }: { go: (r: Route) => void }) {
   const fresh = nextNewWords(s, band, s.settings.newWords).length;
   const bp = bandProgress(s, band);
   const nw = nextLesson(s);
+  // «Armá la frase» entra al plan desde B1 (por el test o porque ya pasaste A2).
+  const lvl = userLevel(s);
+  const buildOn = (!!lvl && ['B1', 'B2', 'C1'].includes(lvl)) || !!s.levels.A2;
+  const bMissed = s.build?.missed.length ?? 0;
   const nv = nextVerb(s.verbs);
   const rpDone = Object.keys(s.roleplays ?? {}).length;
   // Llamada sugerida: de la unidad que estás haciendo (o la última dominada), la que todavía no hiciste.
@@ -122,6 +126,16 @@ export function Home({ go }: { go: (r: Route) => void }) {
         ) : (
           <TaskRow icon="spark" tone="violet" title="Algo nuevo" done detail="No hay unidades nuevas por ahora: repasá para afianzar" />
         )}
+        {buildOn && (
+          <TaskRow
+            icon="blocks"
+            tone="sky"
+            title="Armá la frase"
+            detail={bMissed ? `${bMissed} para repasar · varios tiempos en una oración` : 'Palabras clave + tiempo verbal → la oración entera'}
+            cta="10 frases"
+            onClick={() => go({ name: 'build' })}
+          />
+        )}
         <TaskRow
           icon="words"
           tone="good"
@@ -149,6 +163,7 @@ export function Home({ go }: { go: (r: Route) => void }) {
             onClick={() => go({ name: 'call', callId: call.c.id, unitId: call.base.id })}
           />
         )}
+        <Tile icon="blocks" tone="sky" title="Armá la frase" detail="Como en clase: palabras clave y el tiempo" onClick={() => go({ name: 'build' })} />
         <Tile icon="blocks" tone="violet" title="Frases por estructura" detail="Patrones para armar oraciones largas" onClick={() => go({ name: 'structures' })} />
         <Tile
           icon="chat"

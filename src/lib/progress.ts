@@ -127,3 +127,11 @@ export function placementResult(run: PlacementRun, now = new Date()): TestResult
   }
   return { date: now.toISOString(), level, perLevel, perSkill };
 }
+
+/** Tu nivel: el del último test de ubicación o, si no hay, el más alto que ya aprobaste. */
+export function userLevel(s: AppState): Level | null {
+  const t = s.tests.at(-1)?.level;
+  if (t) return t;
+  const passed = LEVELS.filter((l) => s.levels[l]);
+  return passed.at(-1) ?? null;
+}

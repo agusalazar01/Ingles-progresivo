@@ -4,6 +4,15 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.6
+
+- **Armá la frase** (como en clase): te doy las palabras clave en orden y el tiempo verbal, y armás la oración entera. 84 frases de B1 a C1 en 10 temas: dos tiempos en pasado, presente perfecto, futuro, condicionales, pasiva, estilo indirecto, modales en pasado, deseos, costumbres y estructuras C1 (inversión, cleft…). Si tu versión no coincide, ves el modelo y decidís si la tuya también estaba bien. Lo que fallás vuelve primero. Está en el plan de hoy desde B1.
+- **Menos tiempo en lo fácil**:
+  - un escalón termina solo si acertás las primeras 4 seguidas (antes eran siempre 8);
+  - «Ya lo sé» en cada unidad: 6 preguntas difíciles y, con 5 bien, la unidad queda dominada (si es de un nivel menor al tuyo, aparece destacado);
+  - en «Corregí» y «Transformá» la oración ya viene escrita: cambiás solo lo que hace falta.
+- **🎤 Decirlo**: en todos los ejercicios de escribir podés decir la respuesta (en «Completá», la oración entera).
+
 ## Novedades de la versión 1.5
 
 - **Escribir en inglés** (reemplaza a «Decilo en inglés» en el inicio; tus frases siguen adentro): 27 lecciones de A1 a B2, de 30 a 200 palabras, con modelos propios. Hay más lecciones de opinión y de historias propias; también describir, emails y comparar.

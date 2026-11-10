@@ -868,7 +868,7 @@ main { padding-bottom: 86px; }
 /* Escribir en inglés (v1.5) */
 .writing .w-row { display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; padding: 12px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; margin-top: 8px; }
 .writing .w-row:disabled { opacity: 0.45; }
-.writing .w-mark { width: 28px; text-align: center; font-weight: 800; color: var(--brand); flex: none; }
+.writing .w-mark { min-width: 28px; text-align: center; font-weight: 800; color: var(--brand); flex: none; }
 .writing .w-text { display: flex; flex-direction: column; gap: 2px; }
 .w-model { display: flex; flex-direction: column; gap: 10px; }
 .w-part { border-left: 4px solid var(--rc, var(--brand)); background: var(--surface); border-radius: 10px; padding: 8px 12px; }
@@ -898,3 +898,8 @@ main { padding-bottom: 86px; }
 .w-marked mark { background: rgba(239,68,68,.25); color: inherit; border-radius: 4px; padding: 0 2px; }
 .w-marked mark.w-ins { background: rgba(245,158,11,.35); }
 .w-to { color: #10b981; }
+.cues { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.cue { padding: 7px 12px; border-radius: 999px; background: var(--brand-soft); font-weight: 700; font-size: 16px; }
+.answer-actions { display: flex; gap: 8px; }
+.answer-actions .primary { flex: 2; }
+.answer-actions .mic-small { flex: 1; min-width: 0; }

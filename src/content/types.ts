@@ -32,6 +32,8 @@ export type Exercise = WhyInfo & (
   | { kind: 'order'; prompt: string; words: string[]; answers: string[]; explain?: string }
   /** Transformar una oración: `prompt` = oración de partida, `task` = qué cambiar. */
   | { kind: 'transform'; prompt: string; task: string; answers: string[]; hint?: string; explain?: string }
+  /** Armá la frase: con las palabras clave `cues` (en orden y forma base) y el tiempo `task`, escribís la oración entera. */
+  | { kind: 'build'; prompt: string; cues: string[]; task: string; es?: string; answers: string[]; hint?: string; explain?: string }
   /** Crear una oración propia: tiene que incluir alguna de las formas `accept`. `example` = oración modelo. */
   | { kind: 'create'; prompt: string; accept: string[]; example: string; hint?: string; explain?: string });
 

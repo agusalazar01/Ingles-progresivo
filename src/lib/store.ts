@@ -91,6 +91,8 @@ export interface AppState {
   structs?: Record<string, StoredCard>;
   /** «Frases por estructura»: consignas de combinar hechas (lo último que escribiste). */
   combos?: Record<string, { date: string; text: string }>;
+  /** «Armá la frase»: frases que te costaron (vuelven primero) y cuántas hiciste bien por tema. */
+  build?: { missed: string[]; done: Record<string, number> };
   /** «Escribir en inglés»: pasos y textos por lección. */
   writing?: Record<string, import('./writing').WritingProgress>;
   /** Roleplays hechos: cuándo y cuántas correcciones hubo. */

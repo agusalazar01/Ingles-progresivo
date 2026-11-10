@@ -29,7 +29,15 @@ const KIND_LABEL: Record<Exercise['kind'], string> = {
   order: 'Ordená las palabras',
   create: 'Creá tu propia oración',
   transform: 'Transformá la oración',
+  build: 'Armá la frase',
 };
+
+/** Respuestas aceptadas: las del ejercicio y las equivalentes (otra persona en transformar, will ↔ going to…). */
+function acceptedFor(ex: Exercise): string[] {
+  if (!('answers' in ex)) return [];
+  const base = ex.kind === 'transform' ? samePersonVariants(ex.prompt, ex.answers) : ex.answers;
+  return ex.kind === 'fix' || ex.kind === 'translate' || ex.kind === 'order' ? [...base, ...futureAlternatives(base)] : base;
+}
 
 export const correctText = (e: Exercise) =>
   e.kind === 'choice' || e.kind === 'sound' ? e.options[e.answer] : e.kind === 'speak' ? e.prompt : e.kind === 'create' ? e.example : e.answers[0];
@@ -99,10 +107,20 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   const [givenText, setGiven] = useState('');
   const [combo, setCombo] = useState(0);
   const [tiles, setTiles] = useState(false);
+  const [micAvail, setMicAvail] = useState(false);
+  const [showEs, setShowEs] = useState(false);
   const started = useRef(Date.now());
+  useEffect(() => {
+    canListen().then(setMicAvail).catch(() => setMicAvail(false));
+  }, []);
 
   const current = queue[pos];
   const ex = current?.item.exercise;
+
+  // Corregir y transformar: la oración ya viene escrita para cambiar solo lo necesario (no tipear todo de nuevo).
+  useEffect(() => {
+    if (ex && (ex.kind === 'fix' || ex.kind === 'transform')) setInput(ex.prompt);
+  }, [pos, ex]);
 
   // Los ejercicios de audio suenan solos al aparecer.
   useEffect(() => {
@@ -167,6 +185,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
     setPicked([]);
     setSlow(false);
     setTiles(false);
+    setShowEs(false);
   };
 
   const choose = (i: number) => {
@@ -193,10 +212,16 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   const check = () => {
     if (ex.kind === 'create') return checkCreate();
     if (!('answers' in ex) || !given.trim()) return;
-    const base = ex.kind === 'transform' ? samePersonVariants(ex.prompt, ex.answers) : ex.answers;
-    const accepted = ex.kind === 'fix' || ex.kind === 'translate' || ex.kind === 'order' ? [...base, ...futureAlternatives(base)] : base;
-    if (matches(given, accepted)) return finish(phase === 'retry' ? 'hard' : 'good', given);
+    if (matches(given, acceptedFor(ex))) return finish(phase === 'retry' ? 'hard' : 'good', given);
     if (ex.kind === 'translate' && phase === 'answer' && !tiles) return setPhase('selfcheck');
+    // Armá la frase: hay muchas maneras de decirlo. Primero una pista; si sigue sin coincidir, ves el modelo y decidís vos.
+    if (ex.kind === 'build') {
+      if (phase === 'answer') {
+        setMessage(nearMiss(given, ex.answers) ? 'Casi: revisá la ortografía e intentá de nuevo.' : `No coincide. Revisá el tiempo pedido (${ex.task}) y que estén todas las palabras clave.`);
+        return setPhase('retry');
+      }
+      return setPhase('selfcheck');
+    }
     if (phase === 'answer') {
       // Corrección que hace pensar: en vez de dar la respuesta, se pide un segundo intento con una pista.
       setMessage(
@@ -212,6 +237,30 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
       return setPhase('retry');
     }
     finish('again', given);
+  };
+
+  /** Decir la respuesta en vez de escribirla (en completar, podés decir la oración entera). */
+  const micAnswer = async () => {
+    if (!('answers' in ex)) return;
+    setListening(true);
+    setMessage(null);
+    try {
+      const heard = await listen('en-US');
+      if (!heard.length) return setMessage('No te escuché. Probá de nuevo, más cerca del micrófono.');
+      const acc = acceptedFor(ex);
+      const full = ex.kind === 'type' ? ex.answers.map((a) => ex.prompt.replace(/\s*\([^)]*\)/g, '').replace('___', a)) : [];
+      const hit = heard.find((h) => matches(h, acc) || (full.length > 0 && matches(h, full)));
+      if (hit) {
+        setInput(hit);
+        return finish(phase === 'retry' ? 'hard' : 'good', hit);
+      }
+      if (ex.kind !== 'type' || heard[0].split(' ').length <= 3) setInput(heard[0]);
+      setMessage(`Entendí: «${heard[0]}». Si te entendió mal, corregilo con el teclado o probá de nuevo.`);
+    } catch {
+      setMessage('No pude usar el micrófono. Revisá el permiso o escribilo.');
+    } finally {
+      setListening(false);
+    }
   };
 
   const speakNow = async () => {
@@ -235,7 +284,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   };
 
   const isAudio = ex.kind === 'listen' || ex.kind === 'sound';
-  const showPromptText = !isAudio && ex.kind !== 'translate' && ex.kind !== 'order';
+  const showPromptText = !isAudio && ex.kind !== 'translate' && ex.kind !== 'order' && ex.kind !== 'build';
 
   return (
     <div className="runner">
@@ -268,6 +317,23 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
       {showPromptText && ex.kind !== 'speak' && <Words text={ex.prompt} className="prompt" />}
       {(ex.kind === 'type' || ex.kind === 'choice') && ex.context && <p className="context">🇺🇾 {ex.context}</p>}
       {ex.kind === 'transform' && <p className="task">→ {ex.task}</p>}
+      {ex.kind === 'build' && (
+        <>
+          <div className="cues">
+            {ex.cues.map((c, i) => (
+              <span key={i} className="cue">
+                {c}
+              </span>
+            ))}
+          </div>
+          <p className="task">→ {ex.task}</p>
+          {ex.es && (
+            <button className="link" onClick={() => setShowEs(!showEs)}>
+              {showEs ? ex.es : '🇪🇸 Ver qué significa'}
+            </button>
+          )}
+        </>
+      )}
       {ex.kind === 'order' && ex.prompt && <p className="prompt-es">{ex.prompt}</p>}
       {ex.kind === 'translate' && <p className="prompt">{ex.prompt}</p>}
       {ex.kind === 'speak' && ex.es && <p className="small">{ex.es}</p>}
@@ -402,9 +468,16 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
             placeholder="Escribí tu respuesta"
           />
           {(phase === 'answer' || phase === 'retry') && (
-            <button className="primary" type="submit" disabled={!input.trim()}>
-              Comprobar
-            </button>
+            <div className="answer-actions">
+              {micAvail && ex.kind !== 'listen' && ex.kind !== 'create' && (
+                <button type="button" className="secondary mic-small" onClick={micAnswer} disabled={listening} aria-label="Decirlo con el micrófono">
+                  {listening ? '👂…' : '🎤 Decirlo'}
+                </button>
+              )}
+              <button className="primary" type="submit" disabled={!input.trim()}>
+                Comprobar
+              </button>
+            </div>
           )}
         </form>
       )}
@@ -437,12 +510,12 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
         <div className="feedback neutral">
           <p>No coincide exacto con la respuesta modelo:</p>
           <Words text={ex.answers[0]} className="model" />
-          <p>¿Tu traducción dice lo mismo y es gramaticalmente correcta?</p>
+          <p>{ex.kind === 'build' ? '¿La tuya usa el tiempo pedido, dice lo mismo y está bien escrita?' : '¿Tu traducción dice lo mismo y es gramaticalmente correcta?'}</p>
           <div className="row">
             <button className="secondary" onClick={() => finish('again', input)}>
               No
             </button>
-            <button className="primary" onClick={() => finish('good', input)}>
+            <button className="primary" onClick={() => finish(ex.kind === 'build' ? 'hard' : 'good', input)}>
               Sí, estaba bien
             </button>
           </div>
@@ -466,7 +539,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
                     : '✓ ¡Bien!'}
           </p>
           {ex.kind === 'create' && verdict !== 'skip' && <p className="small">Ejemplo:</p>}
-          {(verdict === 'again' || isAudio || ex.kind === 'translate' || ex.kind === 'transform' || ex.kind === 'create') && <Words text={correctText(ex)} className="model" />}
+          {(verdict === 'again' || isAudio || ex.kind === 'translate' || ex.kind === 'transform' || ex.kind === 'build' || ex.kind === 'create') && <Words text={correctText(ex)} className="model" />}
           {ex.explain && verdict !== 'again' && <p>{ex.explain}</p>}
           {(verdict === 'again' || verdict === 'hard') &&
             (() => {
