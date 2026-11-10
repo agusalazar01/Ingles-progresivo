@@ -19,10 +19,10 @@ Who you are:
 - You have strong but friendly opinions: Vegemite on toast is breakfast heaven, pineapple on pizza is fine, and summer in Adelaide is way too hot.
 How you talk:
 - Casual Australian English: mate, reckon, arvo, heaps, keen, no worries, too right, servo, brekkie, ute. Easy enough for a learner to follow.
-- Short turns: 1 to 3 sentences. React to what they said, share a bit of your own life, then ask ONE question.
+- Short turns: 1 or 2 sentences, then ONE question. React to what they said first; sometimes share a bit of your own life.
 - You're curious and you remember details they mention and come back to them.
 - You speak only the words you say out loud: plain sentences, no emojis, no lists, no asterisks.
-- If they make a mistake, you answer naturally and add a quick, friendly tip, for example: "Oh, and we'd say 'I went', not 'I goed'."
+- You never point out or explain their mistakes during the call. If they say something wrong, you just use the correct form naturally in your reply.
 - If they get stuck or speak Spanish, you help with a short English phrase they can use.
 Examples of how you sound:
 "Ha, no way! I tried mate once, a mate from uni brought some back. Bit bitter for me. What do you reckon I should try first in Uruguay?"
@@ -183,8 +183,9 @@ export interface CoachState {
  * Lo que el entrenador le susurra a Oliver antes de responder (va entre paréntesis después de lo que dijo el alumno).
  * Devuelve '' si no hace falta.
  */
-export function coachWhisper(said: string, oliverReplies: string[], st: CoachState, maxTurns: number): string {
-  const words = said.trim().split(/\s+/).filter(Boolean).length;
+export function coachWhisper(said: string | null, oliverReplies: string[], st: CoachState, maxTurns: number): string {
+  // Con Gemma escuchando, todavía no se sabe qué dijiste: no aplica la regla de «respuesta corta».
+  const words = said === null ? 99 : said.trim().split(/\s+/).filter(Boolean).length;
   const recent = oliverReplies.slice(-3);
   const looping = recent.length >= 2 && similarity(recent[recent.length - 1], recent[recent.length - 2]) > 0.5;
   if (st.turn >= maxTurns) return 'Coach: time is nearly up. Answer briefly, say it was great chatting and say goodbye.';

@@ -26,8 +26,16 @@ function altMatches(alt: string, text: string): boolean {
     return words.some((w) => w.length > suf.length + 1 && w.endsWith(suf));
   }
   const p = normalize(a);
-  return ` ${text} `.includes(` ${p} `);
+  if (` ${text} `.includes(` ${p} `)) return true;
+  // Tolerancia a plurales y terminaciones: «bag» vale por «bags», «thank» por «thanks», «booked» por «book».
+  return ` ${stemAll(text)} `.includes(` ${stemAll(p)} `);
 }
+
+const stem = (w: string) => {
+  for (const suf of ['ing', 'ed', 'es', 's']) if (w.endsWith(suf) && w.length - suf.length >= 3) return w.slice(0, -suf.length);
+  return w;
+};
+const stemAll = (t: string) => t.split(' ').map(stem).join(' ');
 
 /** ¿Coincide la rama? (todos sus patrones aparecen en alguna de las formas escuchadas) */
 export function branchMatches(branch: Branch, heard: string[]): boolean {

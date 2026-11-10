@@ -30,13 +30,15 @@ const TIMES: Record<Tense, [string, string][]> = {
   presPerfCont: [['for two hours', 'durante dos horas'], ['since this morning', 'desde esta mañana'], ['all day', 'todo el día']],
   pastPerf: [['before the party', 'antes de la fiesta'], ['before 2020', 'antes de 2020']],
   futPerf: [['by Friday', 'para el viernes'], ['by next year', 'para el año que viene']],
-  futCont: [['at this time tomorrow', 'mañana a esta hora'], ['all next week', 'toda la semana que viene']],
+  futCont: [['at this time tomorrow', 'mañana a esta hora'], ['at eight tonight', 'esta noche a las ocho'], ['tomorrow morning', 'mañana de mañana']],
+  pastPerfCont: [['for two hours before the meeting', 'durante dos horas antes de la reunión'], ['for a while when you called', 'durante un rato cuando llamaste'], ['all morning before lunch', 'toda la mañana antes del almuerzo']],
+  futPerfCont: [['for two hours by then', 'durante dos horas para entonces'], ['for three hours by midday', 'durante tres horas para el mediodía']],
   can: [['', '']],
   shouldHave: [['', ''], ['earlier', 'antes']],
   couldHave: [['', '']],
 };
 
-const CONTINUOUS: Tense[] = ['presCont', 'pastCont', 'presPerfCont', 'futCont'];
+const CONTINUOUS: Tense[] = ['presCont', 'pastCont', 'presPerfCont', 'futCont', 'pastPerfCont', 'futPerfCont'];
 
 const ACCOMPLISH = ['finish', 'write', 'read', 'sell', 'buy', 'pay', 'send', 'clean', 'cook', 'do', 'make', 'start', 'find', 'pass', 'visit'];
 
@@ -109,6 +111,8 @@ const USE: Record<Tense, string> = {
   pastPerf: 'pasó antes que otra cosa del pasado',
   futPerf: 'va a estar terminado antes de un momento del futuro',
   futCont: 'va a estar pasando (en curso) en un momento del futuro',
+  pastPerfCont: 'venía pasando durante un tiempo antes de otro momento del pasado',
+  futPerfCont: 'va a llevar un tiempo pasando cuando llegue un momento del futuro',
   can: 'es una habilidad o una posibilidad',
   shouldHave: 'convenía hacerlo y no se hizo',
   couldHave: 'era posible, pero no pasó',
@@ -147,6 +151,10 @@ function formWhy(t: Tense, s: Subject, v: Verb, pol: Exclude<Pol, 'q'>): string 
       return `will have + ${pp}`;
     case 'futCont':
       return 'will be + verbo con -ing';
+    case 'pastPerfCont':
+      return 'had been + verbo con -ing, con cualquier sujeto';
+    case 'futPerfCont':
+      return 'will have been + verbo con -ing';
     case 'can':
       return 'can + verbo base, sin to y sin -s';
     case 'shouldHave':
@@ -202,7 +210,7 @@ function tenseWrong(p: Pick, pol: Exclude<Pol, 'q'>): Record<string, string> {
   }
   if (p.t === 'will' || p.t === 'can') add(`${p.t === 'will' ? 'will' : 'can'} to ${p.v.base}`, `Después de ${p.t === 'will' ? 'will' : 'can'} el verbo va sin to.`);
   // Otros tiempos: el error más común es elegir el tiempo equivocado
-  const others: Tense[] = ['presSimple', 'presCont', 'pastSimple', 'pastCont', 'will', 'goingTo', 'presPerf', 'presPerfCont', 'pastPerf', 'futPerf', 'futCont'];
+  const others: Tense[] = ['presSimple', 'presCont', 'pastSimple', 'pastCont', 'will', 'goingTo', 'presPerf', 'presPerfCont', 'pastPerf', 'futPerf', 'futCont', 'pastPerfCont', 'futPerfCont'];
   for (const t of others) {
     if (t === p.t) continue;
     const cue = p.time[0] ? ` Acá «${p.time[0]}» pide ${TENSE_LABEL[p.t]}.` : ` Acá va ${TENSE_LABEL[p.t]}.`;
@@ -433,7 +441,10 @@ export const GENERATED: Record<string, GenSpec> = {
   'pres-perfect': { tenses: ['presPerf'], from: 'pastSimple' },
   'pres-perf-cont': { tenses: ['presPerfCont'], from: 'presPerf' },
   'past-perfect': { tenses: ['pastPerf'], from: 'pastSimple' },
-  'future-perf': { tenses: ['futPerf', 'futCont'], from: 'will' },
+  'future-perf': { tenses: ['futPerf'], from: 'will' },
+  'future-cont': { tenses: ['futCont'], from: 'will' },
+  'past-perf-cont': { tenses: ['pastPerfCont'], from: 'pastCont' },
+  'future-perf-cont': { tenses: ['futPerfCont'], from: 'futCont' },
   'past-modals': { tenses: ['shouldHave', 'couldHave'] },
   'cond-1-2': { cond: [1, 2] },
   'cond-3': { cond: [3, 2] },

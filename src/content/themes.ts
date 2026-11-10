@@ -15,10 +15,9 @@ export interface Theme {
 export const THEMES: Theme[] = [
   { id: 'basics', title: 'Lo básico', desc: 'to be, pronombres, artículos y plurales, there is/are', units: ['to-be', 'pronouns', 'articles-plurals', 'there-is'] },
   { id: 'questions', title: 'Preguntas', desc: 'palabras interrogativas y el orden de la pregunta', units: ['questions'] },
-  { id: 'present', title: 'Presente', desc: 'presente simple, continuo y can', units: ['pres-simple', 'pres-cont', 'can'] },
-  { id: 'past', title: 'Pasado', desc: 'pasado simple, continuo y perfecto', units: ['past-simple', 'past-cont', 'past-perfect'] },
-  { id: 'future', title: 'Futuro', desc: 'will, going to, futuro perfecto y continuo', units: ['future', 'future-perf'] },
-  { id: 'perfect', title: 'Tiempos perfectos', desc: 'presente perfecto y presente perfecto continuo', units: ['pres-perfect', 'pres-perf-cont'] },
+  { id: 'present', title: 'Presente', desc: 'los 4 presentes (simple, continuo, perfecto y perfecto continuo) y can', units: ['pres-simple', 'pres-cont', 'can', 'pres-perfect', 'pres-perf-cont'] },
+  { id: 'past', title: 'Pasado', desc: 'los 4 pasados: simple, continuo, perfecto y perfecto continuo', units: ['past-simple', 'past-cont', 'past-perfect', 'past-perf-cont'] },
+  { id: 'future', title: 'Futuro', desc: 'los 4 futuros: will / going to, continuo, perfecto y perfecto continuo', units: ['future', 'future-cont', 'future-perf', 'future-perf-cont'] },
   { id: 'conditionals', title: 'Condicionales', desc: 'condicionales 1, 2 y 3, y modales en pasado', units: ['cond-1-2', 'cond-3', 'past-modals'] },
   { id: 'quantity', title: 'Cantidades y comparaciones', desc: 'contables e incontables, comparativos y superlativos', units: ['countables', 'comparatives'] },
   { id: 'prepositions', title: 'Preposiciones', desc: 'in, on y at para tiempo y lugar', units: ['prep-time-place'] },

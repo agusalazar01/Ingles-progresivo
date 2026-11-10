@@ -15,10 +15,10 @@ const shuffle = <T,>(a: T[]) => a.map((x) => ({ x, k: Math.random() })).sort((p,
 
 /** Familias de reglas parecidas, para practicarlas mezcladas. */
 export const FAMILIES: { name: string; units: string[] }[] = [
-  { name: 'Presentes', units: ['pres-simple', 'pres-cont', 'to-be'] },
-  { name: 'Pasados', units: ['past-simple', 'past-cont', 'pres-perfect', 'past-perfect'] },
-  { name: 'Futuros', units: ['future', 'future-perf', 'pres-cont'] },
-  { name: 'Perfectos', units: ['pres-perfect', 'pres-perf-cont', 'past-perfect', 'future-perf'] },
+  { name: 'Presentes', units: ['pres-simple', 'pres-cont', 'pres-perfect', 'pres-perf-cont'] },
+  { name: 'Pasados', units: ['past-simple', 'past-cont', 'past-perfect', 'past-perf-cont'] },
+  { name: 'Futuros', units: ['future', 'future-cont', 'future-perf', 'future-perf-cont'] },
+  { name: 'Perfectos', units: ['pres-perfect', 'pres-perf-cont', 'past-perfect', 'past-perf-cont', 'future-perf', 'future-perf-cont'] },
   { name: 'Condicionales', units: ['cond-1-2', 'cond-3', 'past-modals'] },
   { name: 'Todo lo que sé', units: UNITS.map((u) => u.id) },
 ];

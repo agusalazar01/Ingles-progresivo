@@ -193,6 +193,8 @@ export type EsTense =
   | 'pluperf'
   | 'futPerf'
   | 'futCont'
+  | 'pluperfCont'
+  | 'futPerfCont'
   | 'cond'
   | 'condPerf'
   | 'subjImp'
@@ -222,6 +224,10 @@ export function conjugateEs(inf: string, tense: EsTense, p: P): string {
       return `${simple('haber', 'fut', p)} ${participle(inf)}`;
     case 'futCont':
       return `${simple('estar', 'fut', p)} ${gerund(inf)}`;
+    case 'pluperfCont':
+      return `${simple('haber', 'imp', p)} estado ${gerund(inf)}`;
+    case 'futPerfCont':
+      return `${simple('haber', 'fut', p)} estado ${gerund(inf)}`;
     case 'cond':
       return simple(inf, 'cond', p);
     case 'condPerf':

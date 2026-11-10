@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Icon, Ring } from '../components/ui';
 import { BackButton } from '../components/BackButton';
 import { useBack } from '../lib/nav';
 import { canListen, listenManual, say, stopSpeaking, type ManualListen } from '../lib/speech';
@@ -71,10 +72,11 @@ export function Roleplays({ onExit, onAiCall }: { onExit: () => void; onAiCall: 
 function Library({ onBack, onOpen }: { onBack: () => void; onOpen: (id: string) => void }) {
   const s = useAppState();
   const [level, setLevel] = useState<Level | 'all'>('all');
-  const [onlyReady, setOnlyReady] = useState(true);
-  const [open, setOpen] = useState<string | null>(null);
-  const ready = ROLEPLAYS.filter((r) => r.script).length;
-  const list = (cat: string) => ROLEPLAYS.filter((r) => r.category === cat && (level === 'all' || r.level === level) && (!onlyReady || r.script));
+  const list = (cat: string) => ROLEPLAYS.filter((r) => r.category === cat && r.script && (level === 'all' || r.level === level));
+  const doneCount = Object.keys(s.roleplays ?? {}).length;
+  // Se abre sola la primera categoría que todavía tiene algo sin hacer; las demás, al tocarlas.
+  const firstOpen = RP_CATEGORIES.find((c) => ROLEPLAYS.some((r) => r.category === c.id && r.script && !s.roleplays?.[r.id]))?.id ?? RP_CATEGORIES[0]?.id ?? null;
+  const [open, setOpen] = useState<string | null>(firstOpen);
   return (
     <div className="screen roleplays">
       <div className="top-bar">
@@ -83,8 +85,8 @@ function Library({ onBack, onOpen }: { onBack: () => void; onOpen: (id: string) 
       <p className="eyebrow">Vivir y trabajar en Australia</p>
       <h1>🎭 Roleplays</h1>
       <p className="small">
-        Situaciones reales, del aeropuerto a una entrevista de trabajo. Hablás o escribís libre y la otra persona reacciona a lo que decís. {ready} de {ROLEPLAYS.length} listos;
-        el resto está en preparación.
+        Situaciones reales, del aeropuerto a una entrevista de trabajo. Hablás o escribís libre y la otra persona reacciona a lo que decís. Hiciste {doneCount} de{' '}
+        {ROLEPLAYS.length}.
       </p>
       <div className="chips">
         {(['all', ...LEVELS] as const).map((l) => (
@@ -93,23 +95,28 @@ function Library({ onBack, onOpen }: { onBack: () => void; onOpen: (id: string) 
           </button>
         ))}
       </div>
-      <label className="check">
-        <input type="checkbox" checked={onlyReady} onChange={(e) => setOnlyReady(e.target.checked)} /> Solo los que ya tienen guion
-      </label>
       {RP_CATEGORIES.map((c) => {
         const items = list(c.id);
         if (!items.length) return null;
-        const isOpen = open === c.id || onlyReady;
+        const isOpen = open === c.id;
+        const did = items.filter((r) => s.roleplays?.[r.id]).length;
         return (
-          <div key={c.id}>
-            <button className="explain-toggle" onClick={() => setOpen(open === c.id ? null : c.id)}>
-              <span>
-                {c.id}. {c.title}
+          <div key={c.id} className={`theme ${isOpen ? 'open' : ''} ${did === items.length ? 'complete' : ''}`}>
+            <button className="theme-head" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : c.id)}>
+              <Ring value={did / items.length} size={44} stroke={5}>
+                <span className="ring-small">
+                  {did}/{items.length}
+                </span>
+              </Ring>
+              <span className="theme-text">
+                <span className="theme-title">{c.title}</span>
               </span>
-              <span className="small">{items.length}</span>
+              <span className="theme-chev">
+                <Icon name="chevron" size={18} />
+              </span>
             </button>
             {isOpen && (
-              <div className="ladder">
+              <div className="ladder theme-units">
                 {items.map((r) => {
                   const done = s.roleplays?.[r.id];
                   return (
@@ -213,6 +220,7 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
   const [lastFix, setLastFix] = useState<Fixed[]>([]);
   const [tries, setTries] = useState(0);
   const [typed, setTyped] = useState('');
+  const [hearing, setHearing] = useState(false);
   const [listening, setListening] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [showAim, setShowAim] = useState(SHOW_AIM.includes(e.level));
@@ -332,7 +340,9 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
       const m = mic.current;
       mic.current = null;
       setListening(false);
+      setHearing(true);
       const text = m ? await m.stop() : '';
+      setHearing(false);
       if (text.trim()) await answer(text);
       return;
     }
@@ -389,30 +399,44 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
             💡 Podrías decir: <b>{n.hint}</b>
           </p>
         )}
-        <div className="row">
-          <button className="secondary" onClick={() => voiceSay(current.current, true)} disabled={!current.current || listening}>
+        <div className="rp-actions">
+          <button className="chip" onClick={() => voiceSay(current.current, true)} disabled={!current.current || listening}>
             🔁 Repetir lento
           </button>
-          <button className="secondary" onClick={() => setShowHint(true)}>
+          <button className="chip" onClick={() => setShowHint(true)} disabled={showHint}>
             💡 Ayuda
           </button>
         </div>
-        <form
-          className="row"
-          onSubmit={(ev) => {
-            ev.preventDefault();
-            if (!busy && !listening && typed.trim()) answer(typed);
-          }}
-        >
-          <input className="answer" value={typed} onChange={(ev) => setTyped(ev.target.value)} placeholder={listening ? 'Escuchando… tocá el micrófono para terminar' : 'Escribí tu respuesta en inglés'} autoCapitalize="sentences" disabled={busy || listening} />
-          <button className="primary" type="submit" disabled={busy || listening || !typed.trim()}>
-            Enviar
+        {listening ? (
+          <button className="primary mic-big listening" onClick={toggleMic}>
+            <span className="rec-dot" /> Escuchando… tocá para terminar y enviar
           </button>
-        </form>
-        {micOk && (
-          <button className={`primary mic-big ${listening ? 'listening' : ''}`} onClick={toggleMic} disabled={busy && !listening}>
-            {listening ? '⏹ Terminar y enviar' : '🎙️ Hablar'}
-          </button>
+        ) : (
+          <form
+            className="composer"
+            onSubmit={(ev) => {
+              ev.preventDefault();
+              if (!busy && typed.trim()) answer(typed);
+            }}
+          >
+            <input
+              className="answer"
+              value={typed}
+              onChange={(ev) => setTyped(ev.target.value)}
+              placeholder={hearing ? 'Entendiendo lo que dijiste…' : micOk ? 'Hablá o escribí en inglés' : 'Escribí tu respuesta en inglés'}
+              autoCapitalize="sentences"
+              disabled={busy || hearing}
+            />
+            {typed.trim() || !micOk ? (
+              <button className="round send" type="submit" aria-label="Enviar" disabled={busy || !typed.trim()}>
+                <Icon name="chevron" size={22} />
+              </button>
+            ) : (
+              <button className="round mic" type="button" aria-label="Hablar" onClick={toggleMic} disabled={busy || hearing}>
+                <Icon name="mic" size={22} />
+              </button>
+            )}
+          </form>
         )}
       </div>
     </div>

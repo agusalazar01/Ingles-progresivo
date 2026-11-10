@@ -13,6 +13,8 @@ export type Tense =
   | 'pastPerf'
   | 'futPerf'
   | 'futCont'
+  | 'pastPerfCont'
+  | 'futPerfCont'
   | 'can'
   | 'shouldHave'
   | 'couldHave';
@@ -31,6 +33,8 @@ export const TENSE_LABEL: Record<Tense, string> = {
   pastPerf: 'pasado perfecto',
   futPerf: 'futuro perfecto',
   futCont: 'futuro continuo',
+  pastPerfCont: 'pasado perfecto continuo',
+  futPerfCont: 'futuro perfecto continuo',
   can: 'can',
   shouldHave: 'should have',
   couldHave: 'could have',
@@ -81,6 +85,10 @@ export function verbParts(t: Tense, s: Subject, v: Verb, pol: Pol): { aux: strin
       return { aux: 'will', rest: `have ${v.pp}` };
     case 'futCont':
       return { aux: 'will', rest: `be ${ing}` };
+    case 'pastPerfCont':
+      return { aux: 'had', rest: `been ${ing}` };
+    case 'futPerfCont':
+      return { aux: 'will', rest: `have been ${ing}` };
     case 'can':
       return { aux: 'can', rest: v.base };
     case 'shouldHave':
@@ -121,6 +129,8 @@ const ES_TENSE: Record<Tense, EsTense> = {
   pastPerf: 'pluperf',
   futPerf: 'futPerf',
   futCont: 'futCont',
+  pastPerfCont: 'pluperfCont',
+  futPerfCont: 'futPerfCont',
   can: 'pres',
   shouldHave: 'condPerf',
   couldHave: 'condPerf',

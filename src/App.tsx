@@ -21,6 +21,8 @@ import { checkUpdate, type UpdateInfo } from './lib/update';
 import { WordContext } from './components/Words';
 import { setPreferredVoice, SYSTEM_VOICE } from './lib/speech';
 import { WordSheet } from './components/WordSheet';
+import { Icon } from './components/ui';
+import { Tenses } from './screens/Tenses';
 import './App.css';
 
 export type Route =
@@ -35,6 +37,7 @@ export type Route =
   | { name: 'verbs' }
   | { name: 'verb'; verbId: string; banner?: string }
   | { name: 'mixed'; family: string }
+  | { name: 'tenses' }
   | { name: 'exam'; level: Level }
   | { name: 'remedial'; unitIds: string[]; level: Level }
   | { name: 'placement'; retest: boolean }
@@ -43,13 +46,12 @@ export type Route =
   | { name: 'roleplays' }
   | { name: 'review'; keys: string[]; title: string };
 
-const TABS: { name: 'home' | 'path' | 'vocab' | 'call' | 'errors' | 'progress'; label: string }[] = [
-  { name: 'home', label: 'Hoy' },
-  { name: 'path', label: 'Camino' },
-  { name: 'vocab', label: 'Palabras' },
-  { name: 'call', label: 'Llamar' },
-  { name: 'errors', label: 'Errores' },
-  { name: 'progress', label: 'Progreso' },
+const TABS: { name: 'home' | 'path' | 'vocab' | 'call' | 'progress'; label: string; icon: string }[] = [
+  { name: 'home', label: 'Hoy', icon: 'home' },
+  { name: 'path', label: 'Camino', icon: 'path' },
+  { name: 'call', label: 'Llamar', icon: 'call' },
+  { name: 'vocab', label: 'Palabras', icon: 'words' },
+  { name: 'progress', label: 'Progreso', icon: 'chart' },
 ];
 
 export default function App() {
@@ -61,7 +63,7 @@ export default function App() {
 
   // Historial para el botón «atrás»: cada pantalla vuelve a la anterior, no al menú ni afuera de la app.
   const [stack, setStack] = useState<Route[]>([]);
-  const TAB_NAMES = ['home', 'path', 'vocab', 'errors', 'progress'];
+  const TAB_NAMES = ['home', 'path', 'vocab', 'progress'];
   const go = (r: Route) => {
     if (r.name === 'home' && r.skipWelcome) setState(markActive);
     if (TAB_NAMES.includes(r.name)) setStack(r.name === 'home' ? [] : [{ name: 'home' }]);
@@ -182,6 +184,9 @@ export default function App() {
     case 'mixed':
       body = <Mixed family={route.family} onExit={back} />;
       break;
+    case 'tenses':
+      body = <Tenses onExit={back} onUnit={(unitId) => go({ name: 'lesson', unitId })} />;
+      break;
     case 'exam':
       body = (
         <Exam
@@ -196,7 +201,7 @@ export default function App() {
       body = <Remedial unitIds={route.unitIds} onExit={back} />;
       break;
     case 'errors':
-      body = <Errors go={go} />;
+      body = <Errors go={go} onBack={back} />;
       break;
     case 'progress':
       body = <Progress go={go} />;
@@ -217,7 +222,7 @@ export default function App() {
       body = isNew ? <Welcome go={go} /> : <Home go={go} />;
   }
 
-  const showTabs = ['home', 'path', 'vocab', 'errors', 'progress'].includes(route.name) && !(route.name === 'home' && isNew);
+  const showTabs = ['home', 'path', 'vocab', 'progress'].includes(route.name) && !(route.name === 'home' && isNew);
 
   return (
     <WordContext.Provider value={(w, sentence) => setWord({ word: w, sentence })}>
@@ -243,16 +248,24 @@ export default function App() {
           </svg>
         </button>
       )}
-      <main className={showTabs ? "has-gear" : undefined}>{body}</main>
+      <main className={showTabs ? 'has-gear' : undefined}>
+        <div key={route.name} className="route">
+          {body}
+        </div>
+      </main>
       {showTabs && (
         <nav className="tabs">
           {TABS.map((t) => (
             <button
               key={t.name}
-              className={route.name === t.name ? 'active' : ''}
+              className={`${route.name === t.name ? 'active' : ''} ${t.name === 'call' ? 'tab-call' : ''}`}
+              aria-current={route.name === t.name ? 'page' : undefined}
               onClick={() => go(t.name === 'call' ? { name: 'call', free: true } : ({ name: t.name } as Route))}
             >
-              {t.label}
+              <span className="tab-icon">
+                <Icon name={t.icon} size={22} />
+              </span>
+              <span className="tab-label">{t.label}</span>
             </button>
           ))}
         </nav>

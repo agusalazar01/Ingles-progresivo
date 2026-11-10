@@ -91,16 +91,16 @@ export function Vocab({ go }: { go: (r: Route) => void }) {
   return (
     <div className="screen">
       <h1>Vocabulario</h1>
-      <p className="small">Las 2801 palabras más usadas del inglés (lista NGSL), ordenadas por frecuencia: cubren cerca del 92% del inglés cotidiano.</p>
+      <p className="small">Las 2801 palabras más usadas del inglés y 950 académicas para C1 (listas NGSL y NAWL), ordenadas por frecuencia: cubren cerca del 92% del inglés cotidiano.</p>
 
       <div className="bands">
         {BANDS.map((b) => {
           const bp = bandProgress(s, b.level);
           return (
             <button key={b.level} className={`band ${band === b.level ? 'active' : ''}`} onClick={() => setBand(b.level)}>
-              <span className="unit-title">{BAND_NAME[b.level] ?? b.level}</span>
+              <span className="unit-title">{(BAND_NAME[b.level] ?? b.level).split(' (')[0].replace(' C1', '')}</span>
               <span className="unit-status">
-                {bp.added}/{bp.total}
+                {b.level} · {bp.added}/{bp.total}
               </span>
               <span className="mini-bar">
                 <span style={{ width: `${(bp.added / bp.total) * 100}%` }} />

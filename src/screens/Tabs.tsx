@@ -1,3 +1,5 @@
+import { Fragment, useState } from 'react';
+import { TENSE_UNIT_IDS } from './Tenses';
 import { LEVELS } from '../content/types';
 import { UNITS } from '../content/curriculum';
 import { daysSince, groupPercent, isDone, lastTest, nextUnit, pathLevel, previousLevelDone, unitPercent, unitStatus } from '../lib/progress';
@@ -8,12 +10,14 @@ import { activeSteps } from '../lib/ladder';
 import { callsForUnit } from '../content/calls';
 import { APP_VERSION, BUILD } from '../lib/update';
 import type { Route } from '../App';
+import { BackButton } from '../components/BackButton';
 import { availableFamilies } from './Practice';
 import { nextVerb } from './Verbs';
 import { WORKSHOP } from '../gen/verbs';
 import { levelUnitsDone } from '../lib/progress';
 import { duePhrases } from '../lib/phrases';
-import { BAND_NAME, bandProgress, defaultBand, nextNewWords } from '../lib/vocab';
+import { BAND_NAME, BANDS, bandProgress, defaultBand, nextNewWords } from '../lib/vocab';
+import { Icon, Ring, TaskRow, Tile, WeekBars, WeekDots } from '../components/ui';
 
 const REVIEW_BATCH = 20;
 const RETEST_DAYS = 28;
@@ -25,6 +29,23 @@ export function Home({ go }: { go: (r: Route) => void }) {
   const test = lastTest(s);
   const errorCount = Object.keys(s.errors).length;
   const days = streak(s);
+  const pathPct = groupPercent(s, UNITS.map((u) => u.id));
+  const band = defaultBand(s);
+  const fresh = nextNewWords(s, band, s.settings.newWords).length;
+  const bp = bandProgress(s, band);
+  const ph = s.phrases ?? [];
+  const dueP = duePhrases(ph).length;
+  const nv = nextVerb(s.verbs);
+  const rpDone = Object.keys(s.roleplays ?? {}).length;
+  // Llamada sugerida: de la unidad que estás haciendo (o la última dominada), la que todavía no hiciste.
+  const call = (() => {
+    const started = UNITS.filter((u) => s.units[u.id]?.step || s.units[u.id]?.status === 'mastered');
+    const base = unit && s.units[unit.id]?.step ? unit : started[started.length - 1] ?? unit;
+    if (!base) return null;
+    const calls = callsForUnit(base.id);
+    const c = calls.find((x) => !s.calls[x.id]) ?? calls[0];
+    return c ? { c, base } : null;
+  })();
 
   return (
     <div className="screen">
@@ -35,15 +56,22 @@ export function Home({ go }: { go: (r: Route) => void }) {
         <p className="slogan">Learn English, a lo criollo</p>
       </div>
       <div className="hero">
-        <div>
-          <p className="eyebrow">Tu nivel (según el test)</p>
-          <p className="level">{test?.level ?? (test ? 'Inicial' : 'Sin test')}</p>
-          <p className="small">{Math.round(groupPercent(s, UNITS.map((u) => u.id)) * 100)}% del camino completado</p>
+        <div className="hero-top">
+          <Ring value={pathPct}>
+            <span className="ring-num">{Math.round(pathPct * 100)}%</span>
+          </Ring>
+          <div className="hero-level">
+            <p className="eyebrow">{test ? 'Tu nivel (según el test)' : 'Tu nivel'}</p>
+            <p className="level">{test ? (test.level ?? 'A1 inicial') : (pathLevel(s).level ?? 'A1 inicial')}</p>
+            <p className="small">del camino completado</p>
+          </div>
+          <div className={`streak ${days > 0 ? 'on' : ''}`}>
+            <Icon name="flame" size={22} />
+            <p className="streak-num">{days}</p>
+            <p className="small">{days === 1 ? 'día' : 'días'}</p>
+          </div>
         </div>
-        <div className="streak">
-          <p className="level">{days}</p>
-          <p className="small">{days === 1 ? 'día seguido' : 'días seguidos'}</p>
-        </div>
+        <WeekDots activity={s.activity} />
       </div>
 
       {(() => {
@@ -67,128 +95,82 @@ export function Home({ go }: { go: (r: Route) => void }) {
         );
       })()}
 
-      <h2>Hoy</h2>
-      <div className="card">
-        <p className="card-title">1. Repasos</p>
-        <p>{due.length ? `${due.length} ejercicios para recordar antes de que se olviden.` : 'No hay repasos pendientes. ¡Al día!'}</p>
-        {due.length > 0 && (
-          <button className="primary" onClick={() => go({ name: 'review', keys: due.slice(0, REVIEW_BATCH), title: 'Repaso del día' })}>
-            Repasar {Math.min(due.length, REVIEW_BATCH)}
-          </button>
-        )}
-      </div>
-      <div className="card">
-        <p className="card-title">2. Algo nuevo</p>
+      <h2>Tu plan de hoy</h2>
+      <div className="card plan">
+        <TaskRow
+          icon="review"
+          tone="sun"
+          title="Repasos"
+          done={due.length === 0}
+          detail={due.length ? `${due.length} para recordar antes de que se olviden` : 'Al día: no hay nada pendiente'}
+          cta={due.length ? `Repasar ${Math.min(due.length, REVIEW_BATCH)}` : undefined}
+          onClick={due.length ? () => go({ name: 'review', keys: due.slice(0, REVIEW_BATCH), title: 'Repaso del día' }) : undefined}
+        />
         {unit ? (
-          <>
-            <p>
-              {unit.title} <span className="tag">{themeOf(unit).title}</span>
-            </p>
-            {unitPercent(s, unit.id) > 0 && (
+          <TaskRow
+            icon="spark"
+            tone="violet"
+            title={unit.title}
+            detail={
               <>
-                <Bar value={unitPercent(s, unit.id)} />
-                <p className="small">{Math.round(unitPercent(s, unit.id) * 100)}% de la unidad</p>
+                Unidad nueva · {themeOf(unit).title}
+                {unitPercent(s, unit.id) > 0 && ` · ${Math.round(unitPercent(s, unit.id) * 100)}%`}
               </>
-            )}
-            <button className={due.length ? 'secondary' : 'primary'} onClick={() => go({ name: 'lesson', unitId: unit.id, resume: !!s.resume[unit.id] })}>
-              {s.resume[unit.id] ? 'Seguir' : 'Aprender'}
-            </button>
-          </>
+            }
+            cta={s.resume[unit.id] ? 'Seguir' : 'Aprender'}
+            onClick={() => go({ name: 'lesson', unitId: unit.id, resume: !!s.resume[unit.id] })}
+          />
         ) : (
-          <p>No hay unidades nuevas disponibles por ahora: repasá para afianzar lo aprendido.</p>
+          <TaskRow icon="spark" tone="violet" title="Algo nuevo" done detail="No hay unidades nuevas por ahora: repasá para afianzar" />
         )}
+        <TaskRow
+          icon="words"
+          tone="good"
+          title="Palabras nuevas"
+          done={fresh === 0}
+          detail={`${BAND_NAME[band] ?? band}: ${bp.added} de ${bp.total} vistas`}
+          cta={fresh > 0 ? `+${fresh}` : undefined}
+          onClick={fresh > 0 ? () => go({ name: 'vocab' }) : undefined}
+        />
       </div>
-      <div className="card">
-        <p className="card-title">3. Palabras nuevas</p>
-        {(() => {
-          const b = defaultBand(s);
-          const fresh = nextNewWords(s, b, s.settings.newWords).length;
-          const bp = bandProgress(s, b);
-          return (
-            <>
-              <p>
-                Palabras {(BAND_NAME[b] ?? b).toLowerCase()}: {bp.added} de {bp.total} vistas.
-              </p>
-              {fresh > 0 && (
-                <button className="secondary" onClick={() => go({ name: 'vocab' })}>
-                  Aprender {fresh} palabras
-                </button>
-              )}
-            </>
-          );
-        })()}
-      </div>
-      <div className="card">
-        <p className="card-title">🎭 Roleplays</p>
-        <p className="small">Situaciones reales para vivir y trabajar en Australia: el café, el banco, una entrevista de trabajo…</p>
-        <button className="secondary" onClick={() => go({ name: 'roleplays' })}>
-          Entrar
-        </button>
-      </div>
-      <div className="card">
-        <p className="card-title">🧱 Frases por estructura</p>
-        <p className="small">Patrones con frases reales, la explicación de cada palabra y, al final, oraciones largas combinando todo.</p>
-        <button className="secondary" onClick={() => go({ name: 'structures' })}>
-          Entrar
-        </button>
-      </div>
-      {(() => {
-        const ph = s.phrases ?? [];
-        const dueP = duePhrases(ph).length;
-        return (
-          <div className="card">
-            <p className="card-title">🗣️ Decilo en inglés</p>
-            <p className="small">
-              {ph.length ? `${ph.length} frases tuyas${dueP ? ` · ${dueP} para repasar hoy` : ''}.` : 'Algo que pensaste en español: intentalo en inglés y mirá cómo lo diría un australiano.'}
-            </p>
-            <button className="secondary" onClick={() => go({ name: 'phrases' })}>
-              {dueP ? 'Repasar mis frases' : 'Decir algo nuevo'}
-            </button>
-          </div>
-        );
-      })()}
-      {(() => {
-        // Llamada sugerida: de la unidad que estás haciendo (o la última dominada), la que todavía no hiciste.
-        const started = UNITS.filter((u) => s.units[u.id]?.step || s.units[u.id]?.status === 'mastered');
-        const base = unit && s.units[unit.id]?.step ? unit : started[started.length - 1] ?? unit;
-        if (!base) return null;
-        const calls = callsForUnit(base.id);
-        const c = calls.find((x) => !s.calls[x.id]) ?? calls[0];
-        if (!c) return null;
-        return (
-          <div className="card">
-            <p className="card-title">📞 Llamá a Oliver</p>
-            <p className="small">Una charla corta con un australiano para usar lo de «{base.title}».</p>
-            <button className="call-card" onClick={() => go({ name: 'call', callId: c.id, unitId: base.id })}>
-              <span className="face">
+
+      <h2>Practicar</h2>
+      <div className="tiles">
+        <Tile icon="masks" tone="sky" title="Roleplays" detail={rpDone ? `${rpDone} hechos · situaciones reales` : 'El café, el banco, una entrevista…'} onClick={() => go({ name: 'roleplays' })} />
+        {call && (
+          <Tile
+            icon={
+              <span className="tile-face">
                 <img src={`${import.meta.env.BASE_URL}call/character.svg`} alt="" />
               </span>
-              <span className="grow">
-                <span className="unit-title">{c.title}</span>
-                <span className="unit-status">{c.scene}</span>
-              </span>
-              <span aria-hidden="true">📞</span>
-            </button>
-          </div>
-        );
-      })()}
-      {(() => {
-        const nv = nextVerb(s.verbs);
-        return nv ? (
-          <div className="card">
-            <p className="card-title">Taller de verbos</p>
-            <p>
-              Próximo verbo: <b>{nv.base}</b> ({nv.es})
-            </p>
-            <button className="secondary" onClick={() => go({ name: 'verb', verbId: nv.id })}>
-              Practicar «{nv.base}»
-            </button>
-          </div>
-        ) : null;
-      })()}
+            }
+            tone="none"
+            title="Llamar a Oliver"
+            detail={call.c.title}
+            onClick={() => go({ name: 'call', callId: call.c.id, unitId: call.base.id })}
+          />
+        )}
+        <Tile icon="blocks" tone="violet" title="Frases por estructura" detail="Patrones para armar oraciones largas" onClick={() => go({ name: 'structures' })} />
+        <Tile
+          icon="chat"
+          tone="good"
+          title="Decilo en inglés"
+          detail={ph.length ? `${ph.length} frases tuyas${dueP ? ` · ${dueP} para repasar` : ''}` : 'Lo que pensaste en español'}
+          onClick={() => go({ name: 'phrases' })}
+        />
+        <Tile icon="grid" tone="sky" title="Los 12 tiempos" detail="La tabla entera y práctica mezclada" onClick={() => go({ name: 'tenses' })} />
+        {nv && <Tile icon="verb" tone="sun" title="Taller de verbos" detail={`Próximo: ${nv.base} (${nv.es})`} onClick={() => go({ name: 'verb', verbId: nv.id })} />}
+        <Tile
+          icon="alert"
+          tone="bad"
+          title="Mis errores"
+          detail={errorCount ? `${errorCount} para practicar` : 'Todavía no hay'}
+          onClick={() => go({ name: 'errors' })}
+        />
+      </div>
       {availableFamilies().length > 0 && (
         <div className="card">
-          <p className="card-title">4. Práctica mezclada</p>
+          <p className="card-title">Práctica mezclada</p>
           <p className="small">Reglas parecidas mezcladas y contra reloj: hay que elegir la correcta sin la pista de la unidad.</p>
           <div className="chips">
             {availableFamilies().map((f) => (
@@ -197,15 +179,6 @@ export function Home({ go }: { go: (r: Route) => void }) {
               </button>
             ))}
           </div>
-        </div>
-      )}
-      {errorCount > 0 && (
-        <div className="card">
-          <p className="card-title">Tus errores</p>
-          <p>{errorCount} ejercicios que te costaron.</p>
-          <button className="secondary" onClick={() => go({ name: 'errors' })}>
-            Ver y practicar
-          </button>
         </div>
       )}
       {test && daysSince(test.date) >= RETEST_DAYS && (
@@ -231,11 +204,17 @@ const Bar = ({ value }: { value: number }) => (
 
 export function Path({ go }: { go: (r: Route) => void }) {
   const s = useAppState();
+  const next = nextUnit(s);
+  // Se abre solo el tema donde estás; los demás se despliegan al tocarlos.
+  const current = THEMES.find((t) => next && t.units.includes(next.id))?.id ?? THEMES[0]?.id;
+  const [open, setOpen] = useState<Record<string, boolean>>(current ? { [current]: true } : {});
+  const total = UNITS.length;
+  const doneAll = UNITS.filter((u) => isDone(s, u.id)).length;
   return (
     <div className="screen">
       <h1>Tu camino</h1>
       <p className="small">
-        Organizado por temas. Dentro de cada tema las unidades van de fácil a difícil, y se abren a medida que dominás lo que hace falta saber antes.
+        {doneAll} de {total} unidades completadas. Dentro de cada tema van de fácil a difícil y se abren a medida que dominás lo anterior.
       </p>
       <button className="practice-test" onClick={() => go({ name: 'verbs' })}>
         <span className="unit-title">Taller de verbos</span>
@@ -246,40 +225,73 @@ export function Path({ go }: { go: (r: Route) => void }) {
       {THEMES.map((t) => {
         const units = themeUnits(t);
         const pct = groupPercent(s, t.units);
-        return (
-          <section key={t.id} className="level-block">
-            <div className="theme-head">
-              <h2>{t.title}</h2>
-              <span className="theme-pct">{Math.round(pct * 100)}%</span>
-            </div>
-            <p className="small">{t.desc}</p>
-            <Bar value={pct} />
-            {units.map((u) => {
-              const st = unitStatus(s, u.id);
-              const needs = u.prereqs.filter((p) => !isDone(s, p)).map((p) => UNITS.find((x) => x.id === p)!.title);
-              if (!previousLevelDone(s, u.level)) {
-                const prev = LEVELS[LEVELS.indexOf(u.level) - 1];
-                const left = UNITS.filter((x) => x.level === prev && !isDone(s, x.id)).length;
-                needs.push(`${left} ${left === 1 ? 'unidad más básica' : 'unidades más básicas'}`);
-              }
-              const p = unitPercent(s, u.id);
-              const r = s.resume[u.id];
-              return (
-                <button key={u.id} className={`unit ${st}`} disabled={st === 'locked'} onClick={() => go({ name: 'lesson', unitId: u.id, resume: !!r })}>
-                  <span className="unit-title">
-                    {u.title} <span className="tag">{u.axis}</span>
-                  </span>
-                  <span className="unit-status">
-                    {STATUS_LABEL[st]}
-                    {st === 'progress' && ` · ${Math.round(p * 100)}%`}
-                    {r && ' · seguí donde quedaste'}
-                    {st === 'locked' && needs.length > 0 && ` · antes: ${needs.join(', ')}`}
-                  </span>
-                  {st === 'progress' && <Bar value={p} />}
-                </button>
-              );
-            })}
+        const done = units.filter((u) => isDone(s, u.id)).length;
+        const isOpen = !!open[t.id];
+        const block = (
+          <section key={t.id} className={`theme ${isOpen ? 'open' : ''} ${done === units.length ? 'complete' : ''}`}>
+            <button className="theme-head" aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [t.id]: !o[t.id] }))}>
+              <Ring value={pct} size={44} stroke={5}>
+                {done === units.length ? <Icon name="check" size={16} /> : <span className="ring-small">{done}/{units.length}</span>}
+              </Ring>
+              <span className="theme-text">
+                <span className="theme-title">
+                  {t.title}
+                  {t.id === current && <span className="tag here">Estás acá</span>}
+                </span>
+                <span className="small">{t.desc}</span>
+              </span>
+              <span className="theme-chev">
+                <Icon name="chevron" size={18} />
+              </span>
+            </button>
+            {isOpen && (
+              <div className="theme-units">
+                {units.map((u) => {
+                  const st = unitStatus(s, u.id);
+                  const needs = u.prereqs.filter((p) => !isDone(s, p)).map((p) => UNITS.find((x) => x.id === p)!.title);
+                  if (!previousLevelDone(s, u.level)) {
+                    const prev = LEVELS[LEVELS.indexOf(u.level) - 1];
+                    const left = UNITS.filter((x) => x.level === prev && !isDone(s, x.id)).length;
+                    needs.push(`${left} ${left === 1 ? 'unidad más básica' : 'unidades más básicas'}`);
+                  }
+                  const p = unitPercent(s, u.id);
+                  const r = s.resume[u.id];
+                  return (
+                    <button key={u.id} className={`unit ${st}`} disabled={st === 'locked'} onClick={() => go({ name: 'lesson', unitId: u.id, resume: !!r })}>
+                      <span className="unit-mark">
+                        <Icon name={st === 'mastered' ? 'check' : st === 'locked' ? 'lock' : 'chevron'} size={16} />
+                      </span>
+                      <span className="unit-body">
+                        <span className="unit-title">
+                          {u.title} <span className="tag">{u.axis}</span>
+                        </span>
+                        <span className="unit-status">
+                          {STATUS_LABEL[st]}
+                          {st === 'progress' && ` · ${Math.round(p * 100)}%`}
+                          {r && ' · seguí donde quedaste'}
+                          {st === 'locked' && needs.length > 0 && ` · antes: ${needs.join(', ')}`}
+                        </span>
+                        {st === 'progress' && <Bar value={p} />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </section>
+        );
+        return t.id === 'future' ? (
+          <Fragment key={t.id}>
+            {block}
+            <button className="practice-test" onClick={() => go({ name: 'tenses' })}>
+              <span className="unit-title">Los 12 tiempos juntos</span>
+              <span className="unit-status">
+                {TENSE_UNIT_IDS.filter((id) => isDone(s, id)).length} de 12 completados · la tabla entera y práctica con frases nuevas de cada tiempo o de todos mezclados
+              </span>
+            </button>
+          </Fragment>
+        ) : (
+          block
         );
       })}
       <section className="level-block">
@@ -305,11 +317,14 @@ export function Path({ go }: { go: (r: Route) => void }) {
   );
 }
 
-export function Errors({ go }: { go: (r: Route) => void }) {
+export function Errors({ go, onBack }: { go: (r: Route) => void; onBack: () => void }) {
   const s = useAppState();
   const list = Object.values(s.errors).sort((a, b) => b.count - a.count || b.last.localeCompare(a.last));
   return (
     <div className="screen">
+      <div className="top-bar">
+        <BackButton onClick={onBack} />
+      </div>
       <h1>Mis errores</h1>
       <p className="small">
         Lo que fallás queda acá. Cuando lo respondés bien a la primera en un repaso, baja; si lo acertás de nuevo, desaparece.
@@ -385,6 +400,53 @@ export function Progress({ go }: { go: (r: Route) => void }) {
           {test ? 'Repetir el test' : 'Hacer el test'}
         </button>
       </div>
+      <div className="card">
+        <p className="card-title">Constancia</p>
+        <p className="small">
+          Días que practicaste cada semana (últimas 8). Racha actual: <b>{streak(s)}</b> {streak(s) === 1 ? 'día' : 'días'}.
+        </p>
+        <WeekBars activity={s.activity} />
+      </div>
+      <div className="card">
+        <p className="card-title">Unidades por nivel</p>
+        <div className="level-rows">
+          {LEVELS.map((L) => {
+            const us = UNITS.filter((u) => u.level === L);
+            if (!us.length) return null;
+            const d = us.filter((u) => isDone(s, u.id)).length;
+            return (
+              <div key={L} className="level-row">
+                <span className="level-name">{L}</span>
+                <span className="mini-bar">
+                  <div style={{ width: `${(d / us.length) * 100}%` }} />
+                </span>
+                <span className="level-count">
+                  {d}/{us.length}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="card">
+        <p className="card-title">Vocabulario</p>
+        <div className="level-rows">
+          {BANDS.map((b) => {
+            const bp = bandProgress(s, b.level);
+            return (
+              <div key={b.level} className="level-row">
+                <span className="level-name">{b.level}</span>
+                <span className="mini-bar">
+                  <div style={{ width: `${(bp.added / bp.total) * 100}%` }} />
+                </span>
+                <span className="level-count">
+                  {bp.added}/{bp.total}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
       {s.tests.length > 1 && (
         <div className="card">
           <p className="card-title">Historial de tests</p>
@@ -406,6 +468,14 @@ export function Progress({ go }: { go: (r: Route) => void }) {
             <span>{mastered}</span>
           </li>
           <li>
+            <span>Roleplays hechos</span>
+            <span>{Object.keys(s.roleplays ?? {}).length}</span>
+          </li>
+          <li>
+            <span>Llamadas con Oliver</span>
+            <span>{Object.keys(s.calls).length}</span>
+          </li>
+          <li>
             <span>Repasos hechos</span>
             <span>{s.stats.reviews}</span>
           </li>
@@ -415,8 +485,11 @@ export function Progress({ go }: { go: (r: Route) => void }) {
           </li>
         </ul>
       </div>
+      <button className="secondary" onClick={() => go({ name: 'errors' })}>
+        Mis errores ({Object.keys(s.errors).length})
+      </button>
       <button className="secondary" onClick={() => go({ name: 'settings' })}>
-        ⚙️ Configuración (apariencia, voces, IA y más)
+        Configuración (apariencia, voces, IA y más)
       </button>
       <p className="small center">
         CriollEnglish · Learn English, a lo criollo · v{APP_VERSION}

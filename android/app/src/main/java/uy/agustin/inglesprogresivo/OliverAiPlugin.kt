@@ -930,7 +930,85 @@ class OliverAiPlugin : Plugin() {
         else call.reject("Sin permiso para el micrófono")
     }
 
+    /**
+     * Graba del micrófono hasta que dejás de hablar (o, en modo manual, hasta stopListening).
+     * Devuelve el audio a 16 kHz desde un poco antes de la primera palabra, o null si no hablaste.
+     */
     @SuppressLint("MissingPermission")
+    private fun recordSpeech(maxMs: Long, silenceMs: Long, waitMs: Long, manual: Boolean): FloatArray? {
+        val rate = 16000
+        val chunk = rate / 10
+        var rec: AudioRecord? = null
+        try {
+            val minBuf = AudioRecord.getMinBufferSize(rate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
+            rec = AudioRecord(
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                rate,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                max(minBuf, chunk * 4),
+            )
+            rec.startRecording()
+            val audio = ArrayList<Float>(rate * 8)
+            val buf = ShortArray(chunk)
+            val start = SystemClock.elapsedRealtime()
+            var noise = 0.0
+            var noiseN = 0
+            var started = false
+            var lastVoice = 0L
+            var speechStart = 0
+            var voicedChunks = 0
+            while (!stopListen) {
+                val n = rec.read(buf, 0, chunk)
+                if (n <= 0) continue
+                var sum = 0.0
+                for (i in 0 until n) {
+                    val f = buf[i] / 32768f
+                    audio.add(f)
+                    sum += f * f
+                }
+                val rms = sqrt(sum / n)
+                val now = SystemClock.elapsedRealtime()
+                if (!started && noiseN < 4) {
+                    noise = (noise * noiseN + rms) / (noiseN + 1)
+                    noiseN++
+                }
+                val voiced = rms > max(0.012, noise * 3.0)
+                if (voiced) {
+                    voicedChunks++
+                    if (!started) {
+                        started = true
+                        // Medio segundo antes de la primera palabra, para no comerse el comienzo.
+                        speechStart = max(0, audio.size - n * 5)
+                        notifyListeners("speechStart", JSObject())
+                    }
+                    lastVoice = now
+                }
+                val lv = JSObject()
+                lv.put("level", min(1.0, rms * 12))
+                notifyListeners("level", lv)
+                if (!manual && started && now - lastVoice > silenceMs) break
+                if (!manual && !started && now - start > waitMs) break
+                if (now - start > maxMs) break
+            }
+            rec.stop()
+            // Menos de 0,3 s de voz: fue un ruido, no una frase.
+            if (!started || voicedChunks < 3) return null
+            return FloatArray(audio.size - speechStart) { audio[speechStart + it] }
+        } finally {
+            rec?.release()
+        }
+    }
+
+    private fun wavOf(samples: FloatArray, rate: Int): ByteArray {
+        val bb = java.nio.ByteBuffer.allocate(44 + samples.size * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        bb.put("RIFF".toByteArray()).putInt(36 + samples.size * 2).put("WAVE".toByteArray())
+        bb.put("fmt ".toByteArray()).putInt(16).putShort(1).putShort(1).putInt(rate).putInt(rate * 2).putShort(2).putShort(16)
+        bb.put("data".toByteArray()).putInt(samples.size * 2)
+        for (v in samples) bb.putShort((max(-1f, min(1f, v)) * 32767f).toInt().toShort())
+        return bb.array()
+    }
+
     private fun doListen(call: PluginCall) {
         val maxMs = (call.getInt("maxMs") ?: 15000).toLong()
         val silenceMs = (call.getInt("silenceMs") ?: 1100).toLong()
@@ -950,69 +1028,19 @@ class OliverAiPlugin : Plugin() {
                 call.reject("El reconocimiento de voz no está cargado")
                 return@execute
             }
-            val rate = 16000
-            val chunk = rate / 10
-            var rec: AudioRecord? = null
             try {
-                val minBuf = AudioRecord.getMinBufferSize(rate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-                rec = AudioRecord(
-                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                    rate,
-                    AudioFormat.CHANNEL_IN_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT,
-                    max(minBuf, chunk * 4),
-                )
-                rec.startRecording()
-                val audio = ArrayList<Float>(rate * 8)
-                val buf = ShortArray(chunk)
-                val start = SystemClock.elapsedRealtime()
-                var noise = 0.0
-                var noiseN = 0
-                var started = false
-                var lastVoice = 0L
-                var speechStart = 0
-                while (!stopListen) {
-                    val n = rec.read(buf, 0, chunk)
-                    if (n <= 0) continue
-                    var sum = 0.0
-                    for (i in 0 until n) {
-                        val f = buf[i] / 32768f
-                        audio.add(f)
-                        sum += f * f
-                    }
-                    val rms = sqrt(sum / n)
-                    val now = SystemClock.elapsedRealtime()
-                    if (!started && noiseN < 4) {
-                        noise = (noise * noiseN + rms) / (noiseN + 1)
-                        noiseN++
-                    }
-                    val voiced = rms > max(0.012, noise * 3.0)
-                    if (voiced) {
-                        if (!started) {
-                            started = true
-                            speechStart = max(0, audio.size - n * 3)
-                            notifyListeners("speechStart", JSObject())
-                        }
-                        lastVoice = now
-                    }
-                    val lv = JSObject()
-                    lv.put("level", min(1.0, rms * 12))
-                    notifyListeners("level", lv)
-                    if (!manual && started && now - lastVoice > silenceMs) break
-                    if (!manual && !started && now - start > waitMs) break
-                    // Gemma 4 escucha hasta 30 segundos por vez.
-                    if (now - start > (if (useBrain) min(maxMs, 29000L) else if (manual) max(maxMs, 60000L) else maxMs)) break
-                }
-                rec.stop()
+                // Gemma 4 escucha hasta 30 segundos por vez.
+                val limit = if (useBrain) min(if (manual) 29000L else maxMs, 29000L) else if (manual) max(maxMs, 60000L) else maxMs
+                val samples = recordSpeech(limit, silenceMs, waitMs, manual)
                 val ret = JSObject()
-                if (!started) {
+                if (samples == null) {
                     ret.put("text", "")
                     call.resolve(ret)
                     return@execute
                 }
-                val samples = FloatArray(audio.size - speechStart) { audio[speechStart + it] }
+                notifyListeners("heard", JSObject())
                 if (useBrain) {
-                    ret.put("text", transcribeWithBrain(samples, rate, language))
+                    ret.put("text", transcribeWithBrain(samples, 16000, language))
                     call.resolve(ret)
                     return@execute
                 }
@@ -1021,7 +1049,7 @@ class OliverAiPlugin : Plugin() {
                 val stream = rz.createStream()
                 try {
                     if (earKind == "qwen3") stream.setOption("language", language)
-                    stream.acceptWaveform(samples, rate)
+                    stream.acceptWaveform(samples, 16000)
                     rz.decode(stream)
                     ret.put("text", rz.getResult(stream).text.trim())
                 } finally {
@@ -1031,8 +1059,65 @@ class OliverAiPlugin : Plugin() {
                 call.resolve(ret)
             } catch (e: Throwable) {
                 call.reject("No se pudo escuchar: ${e.message}")
-            } finally {
-                rec?.release()
+            }
+        }
+    }
+
+    /**
+     * Llamada con Gemma 4: escucha y responde en una sola pasada. La grabación entra directo a la charla
+     * (sin transcribir aparte), así que tarda la mitad. La respuesta se va emitiendo por «token».
+     * «text» es la instrucción que acompaña al audio (formato de la respuesta, susurro del entrenador).
+     */
+    @PluginMethod
+    fun hearAndChat(call: PluginCall) {
+        if (getPermissionState("microphone") != PermissionState.GRANTED) {
+            requestPermissionForAlias("microphone", call, "hearPermission")
+            return
+        }
+        doHearAndChat(call)
+    }
+
+    @PermissionCallback
+    private fun hearPermission(call: PluginCall) {
+        if (getPermissionState("microphone") == PermissionState.GRANTED) doHearAndChat(call)
+        else call.reject("Sin permiso para el micrófono")
+    }
+
+    private fun doHearAndChat(call: PluginCall) {
+        val silenceMs = (call.getInt("silenceMs") ?: 1500).toLong()
+        val waitMs = (call.getInt("waitMs") ?: 8000).toLong()
+        val text = call.getString("text") ?: ""
+        val maxTokens = call.getInt("maxTokens") ?: 140
+        stopListen = false
+        ioWork.execute {
+            if (engine == null || !brainAudio || conversation == null) {
+                call.reject("La IA de charla que escucha no está cargada")
+                return@execute
+            }
+            try {
+                val samples = recordSpeech(29000L, silenceMs, waitMs, false)
+                if (samples == null) {
+                    val ret = JSObject()
+                    ret.put("text", "")
+                    ret.put("spoke", false)
+                    call.resolve(ret)
+                    return@execute
+                }
+                notifyListeners("heard", JSObject())
+                val wav = wavOf(samples, 16000)
+                brainWork.execute {
+                    try {
+                        val out = generate(Message.of(Content.AudioBytes(wav), Content.Text(text)), maxTokens)
+                        val ret = JSObject()
+                        ret.put("text", out)
+                        ret.put("spoke", true)
+                        call.resolve(ret)
+                    } catch (e: Throwable) {
+                        call.reject("La IA falló: ${e.message}")
+                    }
+                }
+            } catch (e: Throwable) {
+                call.reject("No se pudo escuchar: ${e.message}")
             }
         }
     }
@@ -1042,13 +1127,7 @@ class OliverAiPlugin : Plugin() {
      * para transcribir, así no se mezcla con la charla del roleplay. No usa el reconocimiento del teléfono.
      */
     private fun transcribeWithBrain(samples: FloatArray, rate: Int, language: String): String {
-        val pcm = ShortArray(samples.size) { (max(-1f, min(1f, samples[it])) * 32767f).toInt().toShort() }
-        val bb = java.nio.ByteBuffer.allocate(44 + pcm.size * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-        bb.put("RIFF".toByteArray()).putInt(36 + pcm.size * 2).put("WAVE".toByteArray())
-        bb.put("fmt ".toByteArray()).putInt(16).putShort(1).putShort(1).putInt(rate).putInt(rate * 2).putShort(2).putShort(16)
-        bb.put("data".toByteArray()).putInt(pcm.size * 2)
-        for (v in pcm) bb.putShort(v)
-        val wav = bb.array()
+        val wav = wavOf(samples, rate)
         val result = AtomicReference("")
         val failure = AtomicReference<Throwable?>(null)
         val done = CountDownLatch(1)
@@ -1061,7 +1140,7 @@ class OliverAiPlugin : Plugin() {
                 val config =
                     ConversationConfig(
                         systemInstruction = Contents.of(
-                            "You are a speech-to-text engine. Write exactly the words the speaker says, in the language they speak ($language or Spanish). " +
+                            "You are a speech-to-text engine. The speaker is a Spanish speaker talking in $language. Write exactly the words they say. " +
                                 "Keep their grammar mistakes, do not correct or translate anything, and do not answer them. Output only the transcription.",
                         ),
                         samplerConfig = SamplerConfig(topK = 1, topP = 1.0, temperature = 0.0),
@@ -1120,31 +1199,54 @@ class OliverAiPlugin : Plugin() {
         val system = call.getString("system") ?: ""
         val audio = call.getBoolean("audio", false) ?: false
         val gpu = call.getBoolean("gpu", false) ?: false
+        val earOnly = call.getBoolean("earOnly", false) ?: false
         temperature = (call.getDouble("temperature") ?: 0.8)
         val key = "$id|$audio|$gpu"
         brainWork.execute {
+            var usedGpu = gpu
             try {
                 if (engineKey != key) {
                     releaseBrain()
-                    val config = EngineConfig(
-                        modelPath = File(dir(id), file).absolutePath,
-                        backend = if (gpu) Backend.GPU() else Backend.CPU(),
-                        // Gemma 4 escucha con su propio oído: el codificador de audio va en el procesador.
-                        audioBackend = if (audio) Backend.CPU() else null,
-                        maxNumTokens = 4096,
-                        cacheDir = context.cacheDir.absolutePath,
-                    )
+                    val make = { useGpu: Boolean ->
+                        val e = Engine(
+                            EngineConfig(
+                                modelPath = File(dir(id), file).absolutePath,
+                                backend = if (useGpu) Backend.GPU() else Backend.CPU(),
+                                // Gemma 4 escucha con su propio oído: el codificador de audio va en el procesador.
+                                audioBackend = if (audio) Backend.CPU() else null,
+                                maxNumTokens = 4096,
+                                cacheDir = context.cacheDir.absolutePath,
+                            ),
+                        )
+                        e.initialize()
+                        e
+                    }
                     step(if (gpu) "cargar la IA de charla $id con la GPU" else "cargar la IA de charla $id")
-                    val e = Engine(config)
-                    e.initialize()
+                    val e = try {
+                        make(gpu)
+                    } catch (t: Throwable) {
+                        // Si la GPU del teléfono no puede con el modelo, se carga con el procesador.
+                        if (!gpu) throw t
+                        usedGpu = false
+                        make(false)
+                    }
                     stepDone()
                     engine = e
                     engineId = id
                     engineKey = key
                     brainAudio = audio
                 }
-                newConversation(system)
-                call.resolve()
+                // Solo para escuchar (roleplays con guion): no hace falta una charla abierta.
+                if (earOnly) {
+                    try {
+                        conversation?.close()
+                    } catch (_: Throwable) {
+                    }
+                    conversation = null
+                } else newConversation(system)
+                val ret = JSObject()
+                ret.put("gpu", usedGpu)
+                call.resolve(ret)
             } catch (e: Throwable) {
                 stepDone()
                 releaseBrain()
@@ -1166,6 +1268,8 @@ class OliverAiPlugin : Plugin() {
                 systemInstruction = if (system.isNotBlank()) Contents.of(system) else null,
                 samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = temperature),
                 thinkingConfig = ThinkingConfig(enableThinking = false),
+                // Las instrucciones se procesan ya (mientras suena el teléfono), no en tu primera frase.
+                prefillPrefaceOnInit = system.isNotBlank(),
             ),
         )
     }
@@ -1187,54 +1291,54 @@ class OliverAiPlugin : Plugin() {
         }
     }
 
+    /** Manda un mensaje a la charla y devuelve la respuesta completa; cada pedazo sale por el evento «token». */
+    private fun generate(message: Message, maxTokens: Int?): String {
+        val conv = conversation ?: throw IllegalStateException("La IA no está cargada")
+        val out = StringBuilder()
+        val done = CountDownLatch(1)
+        val error = AtomicReference<Throwable?>(null)
+        conv.sendMessageAsync(
+            message,
+            object : MessageCallback {
+                override fun onMessage(message: Message) {
+                    val piece = message.toString()
+                    out.append(piece)
+                    val ev = JSObject()
+                    ev.put("text", piece)
+                    notifyListeners("token", ev)
+                }
+
+                override fun onDone() {
+                    done.countDown()
+                }
+
+                override fun onError(throwable: Throwable) {
+                    error.set(throwable)
+                    done.countDown()
+                }
+            },
+            maxOutputToken = maxTokens,
+        )
+        if (!done.await(120, TimeUnit.SECONDS)) {
+            try {
+                conv.cancelProcess()
+            } catch (_: Throwable) {
+            }
+        }
+        val err = error.get()
+        if (err != null && out.isEmpty()) throw err
+        return out.toString()
+    }
+
     @PluginMethod
     fun chat(call: PluginCall) {
         val text = call.getString("text") ?: ""
+        val maxTokens = call.getInt("maxTokens")
         brainWork.execute {
-            val conv = conversation
-            if (conv == null) {
-                call.reject("La IA no está cargada")
-                return@execute
-            }
-            val out = StringBuilder()
-            val done = CountDownLatch(1)
-            val error = AtomicReference<Throwable?>(null)
             try {
-                conv.sendMessageAsync(
-                    Message.user(text),
-                    object : MessageCallback {
-                        override fun onMessage(message: Message) {
-                            val piece = message.toString()
-                            out.append(piece)
-                            val ev = JSObject()
-                            ev.put("text", piece)
-                            notifyListeners("token", ev)
-                        }
-
-                        override fun onDone() {
-                            done.countDown()
-                        }
-
-                        override fun onError(throwable: Throwable) {
-                            error.set(throwable)
-                            done.countDown()
-                        }
-                    },
-                )
-                if (!done.await(120, TimeUnit.SECONDS)) {
-                    try {
-                        conv.cancelProcess()
-                    } catch (_: Throwable) {
-                    }
-                }
-                val err = error.get()
-                if (err != null && out.isEmpty()) {
-                    call.reject("La IA falló: ${err.message}")
-                } else {
-                    val ret = JSObject()
-                    ret.put("text", out.toString())
-                    call.resolve(ret)
-                }
+                val ret = JSObject()
+                ret.put("text", generate(Message.user(text), maxTokens))
+                call.resolve(ret)
             } catch (e: Throwable) {
                 call.reject("La IA falló: ${e.message}")
             }

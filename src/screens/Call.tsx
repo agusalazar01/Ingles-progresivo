@@ -18,7 +18,11 @@ import {
   listenWith,
   loadEarOnly,
   cleanReply,
-  FEEDBACK_REQUEST,
+  feedbackRequest,
+  parseVoiceReply,
+  unclear,
+  voiceTurn,
+  VOICE_FORMAT,
   loadCallAi,
   OliverAi,
   releaseCallAi,
@@ -126,7 +130,6 @@ export function Call({
       const plan = script ? null : planFreeCall((getState().phrases ?? []).slice(-3).map((p) => p.en));
       const opener = script ? (script.turns[0] as { o: string }).o : plan!.opener;
       openerRef.current = opener;
-      systemRef.current = plan?.system ?? '';
       const system = script
         ? roleplayPrompt({
             scene: script.scene,
@@ -135,7 +138,11 @@ export function Call({
             lines: script.turns.filter((t): t is { o: string } => 'o' in t).map((t) => t.o),
           }) + `\nYou already opened the call by saying: "${opener}"`
         : plan!.system;
-      if (chosen.voice || chosen.ear || chosen.brain) chosen = await loadCallAi(chosen, system, script ? 0.8 : 0.9);
+      // Con Gemma 4 escuchando, Oliver oye la grabación y contesta en una sola pasada.
+      const voiceMode = !!chosen.brain && chosen.ear?.asr === 'brain';
+      const fullSystem = voiceMode ? system + VOICE_FORMAT : system;
+      systemRef.current = fullSystem;
+      if (chosen.voice || chosen.ear || chosen.brain) chosen = await loadCallAi(chosen, fullSystem, 0.7);
       if (earBrain) chosen = { ...chosen, ear: await loadEarOnly({ ...chosen, ear: BRAIN_EAR, brain: earBrain }) };
       if (!alive.current) return;
       setAi(chosen);
@@ -280,16 +287,29 @@ export function Call({
     if (alive.current) setIdx((i) => i + 1);
   };
 
-  const answerAi = async (said: string) => {
-    setWaiting(false);
-    setLog((l) => [...l, { who: 'you', text: said }]);
+  /**
+   * Un turno con la IA de charla. Con texto (lo que escribiste o lo que entendió el reconocimiento de voz)
+   * o, si `typedOrHeard` es null, escuchando con Gemma 4: graba y responde en una sola pasada.
+   * Apenas está lista la primera frase, Oliver empieza a decirla mientras el resto se sigue generando.
+   */
+  const aiTurn = async (typedOrHeard: string | null) => {
+    const viaAudio = typedOrHeard === null;
+    const voiceMode = aiRef.current.ear?.asr === 'brain';
+    const addYou = (text: string) => setLog((l) => [...l, { who: 'you', text }]);
+    if (viaAudio) setListening(true);
+    else {
+      setWaiting(false);
+      addYou(typedOrHeard);
+      setThinking(true);
+    }
     const turns = logRef.current.filter((l) => l.who === 'you').length + 1;
-    const userBye = BYE_RE.test(said);
     const limit = script ? maxTurns : FREE_MAX_TURNS;
-    const wrap = userBye || turns >= limit;
     const before = logRef.current.filter((l) => l.who === 'oliver').map((l) => l.text);
-    setThinking(true);
     let reply = '';
+    let said = typedOrHeard ?? '';
+    let streamed = '';
+    let youShown = !viaAudio;
+    const subs: PluginListenerHandle[] = [];
     try {
       // Llamada libre larga: se reinicia la charla de la IA con un resumen, para que no se degrade.
       if (!script && turns > 1 && turns % FREE_RESET_EVERY === 1) {
@@ -297,27 +317,31 @@ export function Call({
           .slice(-8)
           .map((l) => `${l.who === 'oliver' ? 'You' : 'Learner'}: ${l.text}`)
           .join('\n');
-        await OliverAi.resetChat({ system: `${systemRef.current}\n\nThe conversation so far (most recent turns):\n${recap}`, temperature: 0.9 });
+        await OliverAi.resetChat({ system: `${systemRef.current}\n\nThe conversation so far (most recent turns):\n${recap}`, temperature: 0.7 });
       }
       coach.current.turn = turns;
       coach.current.sameTopic += 1;
-      const whisper = wrap
-        ? 'Coach: wrap up the call now. Answer briefly and say goodbye.'
-        : script
-          ? ''
-          : coachWhisper(said, before, coach.current, limit);
+      const whisper =
+        turns >= limit || (!viaAudio && BYE_RE.test(said))
+          ? 'Coach: wrap up the call now. Answer briefly and say goodbye.'
+          : script
+            ? ''
+            : coachWhisper(viaAudio ? null : said, before, coach.current, limit);
       if (whisper.includes('fresh topic')) coach.current.sameTopic = 0;
-      // Respuesta al instante: apenas la IA termina la primera frase, Oliver empieza a decirla
-      // mientras el resto se sigue generando.
-      let streamed = '';
-      let sub: PluginListenerHandle | null = null;
+
       const v = aiRef.current.voice;
-      if (v) {
-        let buf = '';
-        sub = await OliverAi.addListener('token', (e) => {
-          if (streamed) return;
+      let buf = '';
+      subs.push(
+        await OliverAi.addListener('token', (e) => {
           buf += e.text;
-          const first = cleanReply(buf).match(/^(.{12,}?[.!?])\s/);
+          const p = voiceMode ? parseVoiceReply(buf) : { heard: null, reply: buf, replyStarted: true };
+          if (viaAudio && !youShown && p.heard !== null) {
+            youShown = true;
+            said = unclear(p.heard) ? '' : p.heard;
+            addYou(said || '(no se entendió)');
+          }
+          if (streamed || !v || !p.replyStarted) return;
+          const first = cleanReply(p.reply).match(/^(.{12,}?[.!?])\s/);
           if (first && !isRepeat(first[1], before)) {
             streamed = first[1];
             setThinking(false);
@@ -325,46 +349,72 @@ export function Call({
             setTalking(true);
             firstSpeech.current = speakWith(v, aiRef.current.speaker, streamed).catch(() => undefined);
           }
-        });
+        }),
+      );
+      if (viaAudio)
+        subs.push(
+          await OliverAi.addListener('heard', () => {
+            setListening(false);
+            setLevel(0);
+            setWaiting(false);
+            setThinking(true);
+          }),
+        );
+
+      let raw: string;
+      if (viaAudio) {
+        const res = await OliverAi.hearAndChat({ text: voiceTurn(whisper), maxTokens: 150 });
+        if (!res.spoke) {
+          // No hablaste: queda el micrófono para volver a intentar.
+          setListening(false);
+          setLevel(0);
+          return;
+        }
+        raw = res.text;
+      } else {
+        const text = whisper ? `${said}\n(${whisper})` : said;
+        raw = (await OliverAi.chat({ text: voiceMode ? `(Typed message from the learner.) ${text}` : text, maxTokens: 120 })).text;
       }
-      let res: { text: string };
-      try {
-        res = await OliverAi.chat({ text: whisper ? `${said}\n(${whisper})` : said });
-      } finally {
-        sub?.remove();
+      const p = voiceMode ? parseVoiceReply(raw) : { heard: null, reply: raw, replyStarted: true };
+      if (viaAudio && !youShown) {
+        youShown = true;
+        said = p.heard && !unclear(p.heard) ? p.heard : '';
+        addYou(said || '(no se entendió)');
       }
-      reply = shortReply(cleanReply(res.text), 3);
-      if (streamed) {
-        if (!alive.current) return;
-        setThinking(false);
-        const rest = reply.startsWith(streamed) ? reply.slice(streamed.length).trim() : shortReply(reply.replace(/^[^.!?]*[.!?]\s*/, ''), 2);
-        const full = rest ? `${streamed} ${rest}` : streamed;
-        setLog((l) => [...l, { who: 'oliver', text: full }]);
-        await firstSpeech.current;
-        if (rest && alive.current) await speak(rest);
-        else if (alive.current) setTalking(false);
-        lastSaid.current = full;
-        if (!alive.current) return;
-        if (wrap || BYE_RE.test(full)) {
-          setEnding(true);
-          finish();
-        } else setWaiting(true);
-        return;
-      }
+      reply = shortReply(cleanReply(p.reply), 3);
       // Si Oliver repite casi lo mismo que hace poco, se le pide otra cosa.
-      if (reply && isRepeat(reply, before)) {
-        const again = await OliverAi.chat({ text: '(Coach: you just said almost the same thing as before. Say something new and different, and ask a different question.)' });
-        const alt = shortReply(cleanReply(again.text), 3);
+      if (!streamed && reply && isRepeat(reply, before)) {
+        const again = await OliverAi.chat({
+          text: '(Coach: you just said almost the same thing as before. Say something new and different, and ask a different question.)',
+          maxTokens: 120,
+        });
+        const alt = shortReply(cleanReply(voiceMode ? parseVoiceReply(again.text).reply : again.text), 3);
         if (alt) reply = alt;
       }
     } catch {
       reply = '';
+    } finally {
+      subs.forEach((x) => x.remove());
     }
     if (!alive.current) return;
+    setListening(false);
+    setWaiting(false);
     setThinking(false);
-    if (!reply) reply = wrap ? 'No worries, mate. See ya!' : pick(SORRY);
-    setLog((l) => [...l, { who: 'oliver', text: reply }]);
-    await speak(reply);
+    const wrap = turns >= limit || BYE_RE.test(said);
+    if (streamed) {
+      const rest = reply.startsWith(streamed) ? reply.slice(streamed.length).trim() : '';
+      const full = rest ? `${streamed} ${rest}` : streamed;
+      setLog((l) => [...l, { who: 'oliver', text: full }]);
+      await firstSpeech.current;
+      if (rest && alive.current) await speak(rest);
+      else if (alive.current) setTalking(false);
+      lastSaid.current = full;
+      reply = full;
+    } else {
+      if (!reply) reply = wrap ? 'No worries, mate. See ya!' : pick(SORRY);
+      setLog((l) => [...l, { who: 'oliver', text: reply }]);
+      await speak(reply);
+    }
     if (!alive.current) return;
     if (wrap || BYE_RE.test(reply)) {
       setEnding(true);
@@ -372,7 +422,7 @@ export function Call({
     } else setWaiting(true);
   };
 
-  const answer = (heard: string[]) => (brain ? answerAi(heard.find((h) => h.trim()) ?? '') : answerScript(heard));
+  const answer = (heard: string[]) => (brain ? aiTurn(heard.find((h) => h.trim()) ?? '') : answerScript(heard));
 
   const talkNow = async () => {
     if (listening) {
@@ -381,10 +431,15 @@ export function Call({
       return;
     }
     if (!waiting || talking || thinking) return;
+    // Gemma 4 escucha y responde de una.
+    if (brain && aiRef.current.ear?.asr === 'brain') {
+      await aiTurn(null);
+      return;
+    }
     setListening(true);
     try {
       let heard: string[];
-      if (aiRef.current.ear) heard = [(await listenWith(aiRef.current.ear)).text];
+      if (aiRef.current.ear) heard = [(await listenWith(aiRef.current.ear, { silenceMs: 1500 })).text];
       else heard = await listen('en-AU');
       setListening(false);
       setLevel(0);
@@ -621,19 +676,28 @@ function Review({
         releaseCallAi();
       }
     }, 45000);
-    OliverAi.chat({ text: FEEDBACK_REQUEST })
+    const said = yours.map((l) => l.text).filter((t) => t && !t.startsWith('('));
+    if (said.length < 2) {
+      // Con una sola frase no hay de dónde sacar consejos: mejor ninguno que uno inventado.
+      done = true;
+      clearTimeout(giveUp);
+      setTips([]);
+      releaseCallAi();
+      return;
+    }
+    OliverAi.chat({ text: feedbackRequest(said), maxTokens: 260 })
       .then(async (r) => {
         if (done) return;
-        const lines = cleanReply(r.text.replace(/\n/g, ' ¶ '))
+        const lines = cleanReply(r.text.replace(/\b(HEARD|OLIVER)\s*:/gi, '').replace(/\n/g, ' ¶ '))
           .split('¶')
           .map((x) => x.replace(/^\s*[-•]\s*/, '').trim())
-          .filter(Boolean);
+          .filter((x) => x.length > 8);
         setTips(lines.slice(0, 4));
         // Llamada libre: Oliver anota lo que contaste para retomarlo la próxima vez (queda solo en el teléfono).
         if (free && yours.length >= 2) {
           try {
-            const f = await OliverAi.chat({ text: EXTRACT_FACTS });
-            rememberFacts(f.text.split('\n'));
+            const f = await OliverAi.chat({ text: EXTRACT_FACTS, maxTokens: 160 });
+            rememberFacts(f.text.split('\n').filter((x) => !/^\s*(HEARD|OLIVER)\s*:/i.test(x)));
           } catch {
             /* sin memoria esta vez */
           }

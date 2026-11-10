@@ -245,6 +245,9 @@ export const EXTRA_FIX: Record<string, Exercise[]> = {
     f('I should of studied more.', ['I should have studied more.'], 'Se escribe should have (suena parecido a «should of»).'),
     f("You mustn't have told him.", ["You shouldn't have told him."], 'Para un reproche: shouldn\'t have.'),
   ],
+  'future-cont': [
+
+  ],
   'future-perf': [
     f('By next year I will finish my degree.', ['By next year I will have finished my degree.'], 'Con by + momento futuro: will have + participio.'),
     f('This time tomorrow I will fly to Sydney.', ['This time tomorrow I will be flying to Sydney.'], 'En ese momento del futuro, en curso: will be + -ing.'),

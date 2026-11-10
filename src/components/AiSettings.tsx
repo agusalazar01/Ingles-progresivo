@@ -291,8 +291,11 @@ export function AiSettings() {
         {systemOption('brain', '📜 Sin IA: se sigue el guion')}
         {PACKS.filter((p) => p.kind === 'brain').map(packCard)}
         <label className="ai-row small" style={{ gap: 8 }}>
-          <input type="checkbox" checked={!!ai.gpu} onChange={(e) => set({ gpu: e.target.checked })} />
-          <span>⚡ Acelerar con la GPU: contesta más rápido en muchos celulares, pero la primera carga tarda más. Si la app se cierra, apagalo.</span>
+          <input type="checkbox" checked={ai.gpu ?? !!brainPack?.audio} onChange={(e) => set({ gpu: e.target.checked })} />
+          <span>
+            ⚡ Acelerar con la GPU (con Gemma 4 viene prendido): contesta varias veces más rápido, aunque la primera carga tarda más. Si la GPU de tu celular no
+            puede, la app sigue sola con el procesador.
+          </span>
         </label>
       </Menu>
 

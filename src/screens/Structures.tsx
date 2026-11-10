@@ -165,7 +165,7 @@ export function Structures({ onExit }: { onExit: () => void }) {
               <span>
                 <span className="unit-title">{s.title}</span>
                 <span className="unit-status">
-                  {s.level} · {open ? `${pr.started} de ${pr.total} frases${pr.due ? ` · ${pr.due} para repasar` : ''}` : 'Se abre al empezar la mitad de la anterior'}
+                  {s.level} · {open ? `${pr.started} de ${pr.total} frases${pr.due ? ` · ${pr.due} para repasar` : ''}` : 'Se abre al aprender 5 frases de la anterior'}
                 </span>
               </span>
             </button>
@@ -370,10 +370,12 @@ function ConnectorsView({ onBack }: { onBack: () => void }) {
 
 function CombosView({ onBack, go }: { onBack: () => void; go: (v: View) => void }) {
   const s = useAppState();
-  const stages: [1 | 2 | 3, string, string][] = [
+  const stages: [1 | 2 | 3 | 4 | 5, string, string][] = [
     [1, 'Etapa 1: una oración larga', 'Dos estructuras unidas con un conector.'],
     [2, 'Etapa 2: un párrafo', 'Tres estructuras y varios conectores.'],
     [3, 'Etapa 3: una charla', 'Preguntas y respuestas, como en una conversación real.'],
+    [4, 'Etapa 4: oraciones complejas (B2)', 'Pasados, condicionales, pasiva, estilo indirecto y relativas, unidos con conectores más finos.'],
+    [5, 'Etapa 5: textos avanzados (C1)', 'Énfasis, inversión, participios y tono formal en textos de varios renglones.'],
   ];
   return (
     <div className="screen structures">

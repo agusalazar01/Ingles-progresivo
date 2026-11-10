@@ -1,4 +1,5 @@
 import type { Level } from './types';
+import { ADVANCED } from './structures-advanced';
 
 /**
  * «Frases por estructura» (v1.0): un módulo aparte de las unidades. Cada estructura junta ~20 frases
@@ -44,7 +45,7 @@ const BE = {
   not: 'not = no. Va después de am / is / are.',
 };
 
-export const STRUCTURES: Structure[] = [
+const BASIC: Structure[] = [
   {
     id: 'be-aff',
     level: 'A1',
@@ -981,6 +982,9 @@ export const STRUCTURES: Structure[] = [
   },
 ];
 
+/** Todas las estructuras, de A1 a C1. */
+export const STRUCTURES: Structure[] = [...BASIC, ...ADVANCED];
+
 /** Conectores que se enseñan para combinar estructuras en oraciones largas. */
 export const CONNECTORS: { en: string; es: string; use: string; example: string }[] = [
   { en: 'and', es: 'y', use: 'Suma una idea.', example: "I work in a café and I study at night." },
@@ -1002,6 +1006,21 @@ export const CONNECTORS: { en: string; es: string; use: string; example: string 
   { en: 'actually', es: 'en realidad', use: 'Corrige o aclara (¡no es «actualmente»!).', example: "Actually, I'm from Uruguay, not Argentina." },
   { en: 'by the way', es: 'por cierto', use: 'Cambia de tema en una charla.', example: 'By the way, are you coming on Saturday?' },
   { en: 'anyway', es: 'en fin, igual', use: 'Vuelve al tema o cierra.', example: 'Anyway, I have to go. See you!' },
+  { en: 'however', es: 'sin embargo', use: 'Contraste entre dos oraciones (más formal que but).', example: 'It was expensive. However, it was worth it.' },
+  { en: 'despite', es: 'a pesar de', use: 'Contraste + sustantivo o -ing.', example: 'Despite the rain, we went out.' },
+  { en: 'even though', es: 'aunque', use: 'Contraste fuerte + oración.', example: 'Even though I was tired, I kept going.' },
+  { en: 'whereas', es: 'mientras que', use: 'Compara dos cosas distintas.', example: 'I like tea, whereas she prefers coffee.' },
+  { en: 'unless', es: 'a menos que', use: 'Condición negativa.', example: "I won't go unless you come." },
+  { en: 'as long as', es: 'siempre que', use: 'Condición.', example: 'You can stay as long as you help.' },
+  { en: 'therefore', es: 'por lo tanto', use: 'Consecuencia (formal).', example: 'He missed the bus. Therefore, he was late.' },
+  { en: 'in case', es: 'por si', use: 'Precaución.', example: 'Take a jacket in case it gets cold.' },
+  { en: 'so that', es: 'para que', use: 'Propósito.', example: "Speak slowly so that I can understand." },
+  { en: 'as soon as', es: 'apenas, en cuanto', use: 'Inmediatamente después.', example: "I'll call you as soon as I land." },
+  { en: 'by the time', es: 'para cuando', use: 'Límite de tiempo, mucho con perfectos.', example: 'By the time I arrived, they had left.' },
+  { en: 'which', es: 'lo cual, que', use: 'Agrega un comentario sobre lo anterior.', example: 'He was late, which annoyed everyone.' },
+  { en: 'in addition', es: 'además', use: 'Suma una idea (formal).', example: 'In addition, the rent is cheaper.' },
+  { en: 'on the other hand', es: 'por otro lado', use: 'Presenta el otro lado.', example: 'On the other hand, the city is more fun.' },
+  { en: 'as a result', es: 'como resultado', use: 'Consecuencia.', example: 'As a result, we lost the client.' },
 ];
 
 export type ComboKind = 'explicar' | 'contar' | 'preguntar' | 'desarrollar';
@@ -1010,8 +1029,8 @@ export type ComboKind = 'explicar' | 'contar' | 'preguntar' | 'desarrollar';
 export interface ComboPrompt {
   id: string;
   kind: ComboKind;
-  /** 1 oración larga · 2 párrafo · 3 charla. */
-  stage: 1 | 2 | 3;
+  /** 1 oración larga · 2 párrafo · 3 charla · 4 oraciones complejas (B2) · 5 textos avanzados (C1). */
+  stage: 1 | 2 | 3 | 4 | 5;
   prompt: string;
   /** Estructuras que tenés que usar (ids). */
   uses: string[];
@@ -1045,4 +1064,21 @@ export const COMBOS: ComboPrompt[] = [
   { id: 'd3', kind: 'preguntar', stage: 3, prompt: 'Llamás al dueño por un cuarto: preguntá el precio, qué hay en la casa y cuándo lo podés ver.', uses: ['there', 'do-q', 'can', 'would'], connectors: ['and', 'also', 'if'], minWords: 30, model: "Hi, I'm calling about the room. How much is it per week? Is there a washing machine in the house? Are there any other housemates? Do you need a bond? I'd like to see the room. Can I come tomorrow if you're free?" },
   { id: 'd4', kind: 'contar', stage: 3, prompt: 'Contá una anécdota con detalles: dónde estabas, qué pasó y cómo terminó.', uses: ['past-irregular', 'past-regular', 'did'], connectors: ['when', 'then', 'so', 'finally'], minWords: 40, model: "Last summer I was at the beach with my friends when a big storm started. We ran to the car, but I lost my keys in the sand. Then a man helped us look for them. Finally, we found them, so we drove home. We didn't stop laughing all the way." },
   { id: 'd5', kind: 'desarrollar', stage: 3, prompt: 'Opiná: ¿vivir en la ciudad o en el campo? Dá tus razones y hacé una pregunta al final.', uses: ['like', 'should', 'be-aff', 'do-q'], connectors: ['because', 'but', 'although', 'actually'], minWords: 35, model: "I think the city is better because there are more jobs and things to do. Although the country is quieter, I get bored there. Actually, I'd like a house near the beach one day. I think everyone should try both. What do you think? Do you prefer the city?" },
+  // Etapa 4: oraciones complejas (B2)
+  { id: 'x1', kind: 'contar', stage: 4, prompt: 'Contá qué estabas haciendo cuando pasó algo inesperado.', uses: ['past-cont', 'past-irregular'], connectors: ['when', 'while', 'so'], minWords: 14, model: 'I was walking home when it started to rain, so I ran into a café and waited there.' },
+  { id: 'x2', kind: 'contar', stage: 4, prompt: 'Contá que llegaste tarde y lo que ya había pasado.', uses: ['past-perfect'], connectors: ['by the time', 'because', 'so'], minWords: 16, model: 'By the time I got to the station, the train had already left, so I had to wait for an hour.' },
+  { id: 'x3', kind: 'explicar', stage: 4, prompt: 'Explicá cuánto hace que hacés algo y por qué.', uses: ['pres-perf-cont'], connectors: ['because', 'although', 'since'], minWords: 16, model: "I've been studying English for three years because I want to work in Australia, although it's been hard." },
+  { id: 'x4', kind: 'explicar', stage: 4, prompt: 'Decí qué harías si pudieras cambiar algo de tu vida.', uses: ['cond-2'], connectors: ['because', 'however', 'so that'], minWords: 18, model: 'If I had more free time, I would learn to surf, because I love the sea. However, I work six days a week.' },
+  { id: 'x5', kind: 'contar', stage: 4, prompt: 'Lamentá algo del pasado y decí qué habría pasado.', uses: ['cond-3', 'modal-perfect'], connectors: ['because', 'so'], minWords: 18, model: "I should have left earlier. If I had left at seven, I wouldn't have missed the flight, so now I have to wait." },
+  { id: 'x6', kind: 'contar', stage: 4, prompt: 'Contá lo que te dijeron en una entrevista de trabajo.', uses: ['reported'], connectors: ['and', 'however', 'so'], minWords: 18, model: 'She asked if I had experience and I said that I had worked in a café. However, she told me they needed someone full-time.' },
+  { id: 'x7', kind: 'explicar', stage: 4, prompt: 'Describí tu trabajo o tu barrio uniendo ideas con relativas.', uses: ['relative'], connectors: ['which', 'although', 'whereas'], minWords: 18, model: 'I work in a café which is near the beach. The people who work with me are friendly, although the boss is strict.' },
+  { id: 'x8', kind: 'contar', stage: 4, prompt: 'Contá un problema que tuviste y cómo se resolvió, en pasiva.', uses: ['passive', 'causative'], connectors: ['so', 'despite', 'as a result'], minWords: 18, model: 'My bike was stolen last week, so I had a new lock fitted. Despite the cost, I feel much safer now.' },
+  { id: 'x9', kind: 'explicar', stage: 4, prompt: 'Decí dónde vas a estar y qué vas a haber logrado en un año.', uses: ['future-forms'], connectors: ['by the time', 'unless', 'as long as'], minWords: 18, model: "This time next year I'll be living in Australia, and I'll have saved enough money, unless something goes wrong." },
+  { id: 'x10', kind: 'explicar', stage: 4, prompt: 'Contá un deseo sobre tu presente y un lamento sobre tu pasado.', uses: ['wish'], connectors: ['because', 'however', 'even though'], minWords: 18, model: 'I wish I lived closer to the sea, because I love surfing. I also wish I had started learning English earlier, even though it is never too late.' },
+  // Etapa 5: textos avanzados (C1)
+  { id: 'z1', kind: 'desarrollar', stage: 5, prompt: 'Contá una decisión importante: qué pasó, qué habría pasado si elegías distinto y qué aprendiste.', uses: ['past-perfect', 'cond-3', 'cleft'], connectors: ['however', 'despite', 'as a result', 'even though'], minWords: 45, model: "I had never lived abroad before I moved to Australia. Despite being nervous, I bought the ticket. If I had stayed in Uruguay, I would never have learned to live on my own. What I learned is that fear is normal. As a result, I am much more confident now." },
+  { id: 'z2', kind: 'desarrollar', stage: 5, prompt: 'Escribí una noticia corta sobre algo que pasó en tu ciudad, con tono formal.', uses: ['passive', 'passive-report', 'participle'], connectors: ['however', 'therefore', 'in addition'], minWords: 40, model: 'A new bridge was opened in the city yesterday. Built in only two years, it is said to be the longest in the region. In addition, it is expected to reduce traffic. However, some residents were not consulted about the project.' },
+  { id: 'z3', kind: 'explicar', stage: 5, prompt: 'Defendé una opinión con fuerza: usá énfasis e inversión.', uses: ['cleft', 'inversion', 'contrast'], connectors: ['however', 'whereas', 'therefore', 'on the other hand'], minWords: 40, model: 'What people forget is that learning a language takes time. Never have I met anyone who became fluent in a month. Some people study grammar for years, whereas others just talk. However, it is practice that makes the difference. Therefore, we should speak every day.' },
+  { id: 'z4', kind: 'contar', stage: 5, prompt: 'Contá una anécdota de viaje con detalles, mezclando todos los pasados.', uses: ['past-cont', 'past-perfect', 'participle', 'reported'], connectors: ['when', 'by the time', 'even though', 'as soon as'], minWords: 50, model: 'We were driving through the outback when the car broke down. We had been driving for six hours and we had not seen anyone. Not knowing what to do, I called a mechanic. He said that he would come as soon as he could. By the time he arrived, the sun had gone down, even though it was only six.' },
+  { id: 'z5', kind: 'desarrollar', stage: 5, prompt: 'Escribile a tu jefe un mensaje formal: explicá un problema, lo que se tendría que haber hecho y lo que proponés.', uses: ['modal-perfect', 'passive', 'cond-2', 'contrast'], connectors: ['however', 'therefore', 'unless', 'so that'], minWords: 45, model: 'I am writing about the order that was sent late last week. The customer should have been told about the delay. However, nobody called them. If we had a checklist, this would not happen again. Therefore, I suggest we review the process so that every order is checked, unless you have a better idea.' },
 ];

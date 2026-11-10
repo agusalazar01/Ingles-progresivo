@@ -352,6 +352,60 @@ call('future-perf', 'Planes a largo plazo', 'Charla sobre el futuro', 'Proyectat
   u("I hope I'll have learnt.", [b(['will have|ll have|hope|maybe|yes|no'], 'Ha! We can practise here.', 'Bien.')], '«I will have learnt to surf».'),
 ]);
 
+call('future-cont', 'Mañana a esta hora', 'Charla sobre mañana', 'Decí qué vas a estar haciendo con will be + -ing.', [
+  o('What will you be doing this time tomorrow?'),
+  u("I'll be working at the café.", [b(['will be|ll be', '-ing'], 'Busy day then.', 'Bien: will be + -ing.')], 'En curso en el futuro: «I will be working».'),
+  o('And at eight in the evening?'),
+  u("I'll be having dinner with my friends.", [b(['will be|ll be', '-ing'], 'Sounds good.', 'Bien: «will be having».')], '«I will be having dinner».'),
+  o('Will you be using your car on Saturday?'),
+  u("No, I won't be using it.", [b(['will be|ll be|won t be|will not be', '-ing'], 'Great, can I borrow it?', 'Bien: won’t be + -ing.'), b(['yes|no'], 'Fair enough.', 'Bien. Completo: «I won’t be using it».')], '«I won’t be using it» / «Yes, I’ll be using it».'),
+]);
+
+call('future-cont', 'El viaje', 'Antes de un viaje', 'Contá tu viaje con will be + -ing.', [
+  o("So you're flying out next week. Where will you be staying?"),
+  u("I'll be staying at a hostel in Sydney.", [b(['will be|ll be', '-ing'], 'Nice one.', 'Bien: «will be staying».')], '«I will be staying at…».'),
+  o('Will you be travelling alone?'),
+  u("No, I'll be travelling with a friend.", [b(['will be|ll be|won t be', '-ing'], 'Good company helps.', 'Bien.'), b(['yes|no'], 'Right.', 'Bien. Completo: «I’ll be travelling with a friend».')], '«I will be travelling with…».'),
+  o("I'll be thinking of you, mate. Send me a photo."),
+  u("Sure, I'll send you one.", [b([ANY], 'Legend.', 'Bien.')], 'Podés decir: «Sure, I will».'),
+]);
+
+call('past-perf-cont', 'Antes de mudarte', 'Charla sobre tu vida antes', 'Usá had been + -ing para lo que venías haciendo.', [
+  o('How long had you been working at your old job before you left?'),
+  u('I had been working there for three years.', [b(['had been|d been', '-ing'], "That's a fair while.", 'Bien: had been + -ing.')], 'Duración hasta un momento del pasado: «I had been working there for…».'),
+  o('And had you been studying English before you came?'),
+  u('Yes, I had been studying for two years.', [b(['had been|d been|hadn t been', '-ing'], 'It shows, mate.', 'Bien.'), b(['yes|no'], 'Right.', 'Bien. Completo: «I had been studying for two years».')], '«I had been studying for…».'),
+  o('Had you been saving money for a long time?'),
+  u('Yes, I had been saving for a year.', [b(['had been|d been|hadn t been', '-ing'], 'Good planning.', 'Bien: «had been saving».'), b(['yes|no'], 'Good on ya.', 'Bien.')], '«I had been saving for a year».'),
+]);
+
+call('past-perf-cont', 'Un día largo', 'Contando un día agotador', 'Explicá por qué estabas cansado con had been + -ing.', [
+  o('You looked tired yesterday. What had you been doing?'),
+  u('I had been working since six in the morning.', [b(['had been|d been', '-ing'], 'No wonder.', 'Bien: «had been working».')], 'La causa venía de antes: «I had been working since…».'),
+  o('Had it been raining all day too?'),
+  u('Yes, it had been raining for hours.', [b(['had been|d been|hadn t been', '-ing'], 'What a day.', 'Bien.'), b(['yes|no'], 'Right.', 'Bien. Completo: «It had been raining for hours».')], '«It had been raining for hours».'),
+  o('How long had you been waiting for the bus?'),
+  u('I had been waiting for forty minutes.', [b(['had been|d been', '-ing'], 'That’s rough.', 'Bien.'), b(['[0-9]|minutes|hour|hours'], 'That’s rough.', 'Bien. Completo: «I had been waiting for…».')], '«I had been waiting for forty minutes».'),
+]);
+
+call('future-perf-cont', 'Aniversarios', 'Sacando cuentas', 'Decí cuánto vas a llevar con will have been + -ing.', [
+  o('By December, how long will you have been studying English?'),
+  u("I'll have been studying for three years.", [b(['will have been|ll have been', '-ing'], 'Three years, good on ya.', 'Bien: will have been + -ing.')], 'Duración hasta un momento futuro: «I will have been studying for…».'),
+  o('And next year, how long will you have been living in your house?'),
+  u("I'll have been living there for five years.", [b(['will have been|ll have been', '-ing'], 'Time flies.', 'Bien.')], '«I will have been living there for…».'),
+  o('By the end of today, how many hours will you have been working?'),
+  u("I'll have been working for ten hours.", [b(['will have been|ll have been', '-ing'], 'You need a rest.', 'Bien.'), b(['[0-9]|hours|ten|eight|nine'], 'You need a rest.', 'Bien. Completo: «I’ll have been working for ten hours».')], '«I will have been working for ten hours».'),
+]);
+
+call('future-perf-cont', 'El viaje largo', 'Planeando un viaje en auto', 'Sacá cuentas del viaje con will have been + -ing.', [
+  o("We leave at six. By midday, how long will we have been driving?"),
+  u("We'll have been driving for six hours.", [b(['will have been|ll have been', '-ing'], 'Time for a break then.', 'Bien: «will have been driving».')], '«We will have been driving for six hours».'),
+  o('By the time we get to Perth, how long will we have been travelling?'),
+  u("We'll have been travelling for three days.", [b(['will have been|ll have been', '-ing'], 'Worth it.', 'Bien.'), b(['[0-9]|days|three|two'], 'Worth it.', 'Bien. Completo: «We’ll have been travelling for three days».')], '«We will have been travelling for three days».'),
+  o("I reckon we'll be pretty tired."),
+  u("Yes, but it'll be fun.", [b([ANY], 'Too right.', 'Bien.')], 'Podés decir: «Yes, but it will be fun».'),
+]);
+
 // ───────────── Tiempos perfectos ─────────────
 
 call('pres-perfect', 'Experiencias', 'Charla en el asado', 'Hablá de experiencias con have you ever…?', [

@@ -38,10 +38,33 @@ export function variants(t: string): string[] {
   return out;
 }
 
+const NUM = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+const OUR = 'colo|favo|neighbo|flavo|hono|labo|harbo|behavio|humo|rumo';
+
+/**
+ * Deja en una sola forma lo que es igual de correcto escrito de dos maneras, para no marcar mal una
+ * respuesta buena: ortografía de EE. UU. o británica (color / colour, realize / realise, traveling /
+ * travelling), números en cifras o en letras (8 / eight), OK / okay y «do not» / «don't».
+ */
+export function canon(t: string): string {
+  return t
+    .replace(new RegExp(`\\b(${OUR})r(s|ed|ing|ite|ites|ful|hood)?\\b`, 'g'), '$1ur$2')
+    .replace(/\b(\w{3,})iz(e|es|ed|ing|ation|ations)\b/g, '$1is$2')
+    .replace(/\b(travel|cancel|model|label)(ed|ing|er|ers)\b/g, '$1l$2')
+    .replace(/\b(cent|theat|lit|met)er(s)?\b/g, (m, a, b) => (a === 'met' ? m : `${a}re${b ?? ''}`))
+    .replace(/\bgray\b/g, 'grey')
+    .replace(/\bmom\b/g, 'mum')
+    .replace(/\bokay\b/g, 'ok')
+    .replace(/\bo'clock\b/g, '')
+    .replace(/\b(\d|1[0-2])\b/g, (d) => NUM[Number(d)])
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function matches(given: string, answers: string[]): boolean {
-  const g = variants(normalize(given));
+  const g = variants(canon(normalize(given)));
   return answers.some((a) => {
-    const av = variants(normalize(a));
+    const av = variants(canon(normalize(a)));
     return g.some((x) => av.includes(x));
   });
 }
@@ -57,9 +80,9 @@ function levenshtein(a: string, b: string): number {
 
 /** ¿Está a una letra de una respuesta válida? (probable error de tipeo) */
 export function nearMiss(given: string, answers: string[]): boolean {
-  const g = normalize(given);
+  const g = canon(normalize(given));
   if (g.length < 4) return false;
-  return answers.some((a) => levenshtein(g, normalize(a)) === 1);
+  return answers.some((a) => levenshtein(g, canon(normalize(a))) === 1);
 }
 
 /**

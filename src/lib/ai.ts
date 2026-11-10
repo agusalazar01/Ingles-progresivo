@@ -1,5 +1,5 @@
 import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core';
-import { getState } from './store';
+import { getState, setState } from './store';
 
 /**
  * IA sin internet y gratis para la llamada con Oliver.
@@ -26,15 +26,19 @@ interface OliverAiPlugin {
   loadEar(o: { id: string; kind?: string }): Promise<void>;
   listen(o: { maxMs?: number; silenceMs?: number; waitMs?: number; language?: string; brain?: boolean; manual?: boolean }): Promise<{ text: string }>;
   stopListening(): Promise<void>;
-  loadBrain(o: { id: string; file: string; system: string; temperature?: number; audio?: boolean; gpu?: boolean }): Promise<void>;
+  loadBrain(o: { id: string; file: string; system: string; temperature?: number; audio?: boolean; gpu?: boolean; earOnly?: boolean }): Promise<{ gpu?: boolean }>;
+  /** Gemma 4: graba tu voz y responde en una sola pasada (la respuesta sale también por «token»). */
+  hearAndChat(o: { text: string; maxTokens?: number; silenceMs?: number; waitMs?: number }): Promise<{ text: string; spoke: boolean }>;
   resetChat(o: { system: string; temperature?: number }): Promise<void>;
-  chat(o: { text: string }): Promise<{ text: string }>;
+  chat(o: { text: string; maxTokens?: number }): Promise<{ text: string }>;
   cancelChat(): Promise<void>;
   unloadAll(): Promise<void>;
   addListener(event: 'download', fn: (e: { id: string; progress?: number; done?: boolean; error?: string }) => void): Promise<PluginListenerHandle>;
   addListener(event: 'token', fn: (e: { text: string }) => void): Promise<PluginListenerHandle>;
   addListener(event: 'level', fn: (e: { level: number }) => void): Promise<PluginListenerHandle>;
   addListener(event: 'speechStart', fn: () => void): Promise<PluginListenerHandle>;
+  /** Terminaste de hablar: empieza a entender / pensar. */
+  addListener(event: 'heard', fn: () => void): Promise<PluginListenerHandle>;
   addListener(event: 'recording', fn: (e: { progress: number }) => void): Promise<PluginListenerHandle>;
 }
 
@@ -380,7 +384,16 @@ export const packById = (id: string) => PACKS.find((p) => p.id === id);
 
 export async function aiStatus(): Promise<AiStatus> {
   if (!aiAvailable()) return { installed: {}, files: {}, freeBytes: 0, loaded: [] };
-  return OliverAi.status();
+  const st = await OliverAi.status();
+  gpuGuard(st);
+  return st;
+}
+
+/** Si la app se cerró cargando la IA con la GPU, se apaga la GPU para que no vuelva a pasar. */
+function gpuGuard(st: AiStatus) {
+  if (st.crashed?.includes('GPU') && getState().settings.ai.gpu !== false) {
+    setState((x) => ({ ...x, settings: { ...x.settings, ai: { ...x.settings.ai, gpu: false } } }));
+  }
 }
 
 /** Paquete bajado y completo (una versión nueva puede necesitar archivos extra: «Actualizar»). */
@@ -514,6 +527,7 @@ export async function chosenAi(): Promise<CallAi> {
   const a = getState().settings.ai;
   try {
     const st = await OliverAi.status();
+    gpuGuard(st);
     const ok = (id: string) => {
       const p = packById(id);
       return p && packReady(p, st) ? p : null;
@@ -559,15 +573,22 @@ export async function loadCallAi(ai: CallAi, system: string, temperature = 0.8):
   return out;
 }
 
-/** Carga la IA de charla (con su oído si es Gemma 4 y escucha). Usa la GPU si está activada en Ajustes. */
-export function loadBrain(brain: Pack, system: string, temperature = 0.8, audio = false) {
+/**
+ * ¿Usar la GPU? Lo que elegiste en Ajustes; si no tocaste nada, sí con Gemma 4 (está hecha para eso y
+ * responde varias veces más rápido). Si la GPU falla al cargar, la app sigue con el procesador.
+ */
+export const useGpu = (brain: Pack) => getState().settings.ai.gpu ?? !!brain.audio;
+
+/** Carga la IA de charla (con su oído si es Gemma 4 y escucha). */
+export function loadBrain(brain: Pack, system: string, temperature = 0.8, audio = false, earOnly = false) {
   return OliverAi.loadBrain({
     id: brain.id,
     file: brain.file ?? 'model.litertlm',
     system,
     temperature,
     audio: audio && !!brain.audio,
-    gpu: !!getState().settings.ai.gpu,
+    gpu: useGpu(brain),
+    earOnly,
   });
 }
 
@@ -580,7 +601,7 @@ export async function loadEarOnly(ai: CallAi): Promise<Pack | null> {
   try {
     if (ai.ear.asr === 'brain') {
       if (!ai.brain) return null;
-      await loadBrain(ai.brain, '', 0.8, true);
+      await loadBrain(ai.brain, '', 0.8, true, true);
     } else await OliverAi.loadEar({ id: ai.ear.id, kind: ai.ear.asr ?? 'moonshine' });
     return ai.ear;
   } catch {
@@ -589,8 +610,8 @@ export async function loadEarOnly(ai: CallAi): Promise<Pack | null> {
 }
 
 /** Escucha con el oído cargado (Moonshine, Parakeet, Qwen3-ASR o Gemma 4), nunca con el del teléfono. */
-export function listenWith(ear: Pack, o: { language?: string; manual?: boolean } = {}) {
-  return OliverAi.listen({ language: o.language ?? 'English', brain: ear.asr === 'brain', manual: o.manual });
+export function listenWith(ear: Pack, o: { language?: string; manual?: boolean; silenceMs?: number } = {}) {
+  return OliverAi.listen({ language: o.language ?? 'English', brain: ear.asr === 'brain', manual: o.manual, silenceMs: o.silenceMs });
 }
 
 /** Micrófono manual con el oído de la app: empieza ya y termina cuando llamás a stop(). */
@@ -637,10 +658,38 @@ const OLIVER = `You are Oliver, a friendly Australian bloke in his thirties from
 You are on a video call with a Spanish speaker (probably from Uruguay) who is learning English.
 Speak casual Australian English (mate, no worries, reckon, arvo) but keep it easy to understand.
 Rules:
-- Answer in 1 to 3 short sentences, then usually ask one simple question to keep the chat going.
+- Answer in 1 or 2 short sentences, then ask one simple question to keep the chat going.
 - Never use emojis, lists, asterisks or stage directions. Only the words you say out loud.
-- If they make a grammar mistake, reply naturally and then add a quick friendly correction like: "By the way, we say 'I went', not 'I goed'."
+- Never point out or explain the learner's mistakes during the call. If they say something wrong, just use the correct form naturally in your own reply.
 - If they speak Spanish or get stuck, help them with a short English phrase they can use.`;
+
+/**
+ * Con Gemma 4 escuchando: lo que decís llega como grabación. Oliver contesta en dos líneas, así la app
+ * sabe qué entendió (para mostrarlo y para los consejos del final) y qué tiene que decir en voz alta.
+ */
+export const VOICE_FORMAT = `
+The learner's messages arrive as voice recordings (sometimes as typed text). They are a Spanish speaker, so expect a Spanish accent.
+ALWAYS answer in exactly this two-line format and nothing else:
+HEARD: the exact words the learner said, keeping their mistakes (write "(unclear)" if you could not understand them)
+OLIVER: what you say back to them`;
+
+/** Lo que acompaña a cada grabación. */
+export const voiceTurn = (whisper: string) => `(Voice message from the learner. Answer in the two-line format: HEARD, then OLIVER.)${whisper ? `\n(${whisper})` : ''}`;
+
+/** Separa lo que entendió de lo que responde. Sirve también a medio escribir (para empezar a hablar antes). */
+export function parseVoiceReply(raw: string): { heard: string | null; reply: string; replyStarted: boolean } {
+  const o = raw.search(/\bOLIVER\s*:/i);
+  const h = raw.match(/\bHEARD\s*:\s*([\s\S]*?)(?=\n|\bOLIVER\s*:|$)/i);
+  const tidy = (x: string) => x.trim().replace(/^["“«']+|["”»']+$/g, '').trim();
+  if (o >= 0) return { heard: h ? tidy(h[1]) : '', reply: raw.slice(o).replace(/^OLIVER\s*:\s*/i, ''), replyStarted: true };
+  // Sin la marca OLIVER: si tampoco hay HEARD, es una respuesta suelta.
+  if (!/\bHEARD\s*:/i.test(raw)) return { heard: null, reply: raw, replyStarted: raw.trim().length > 12 && !/^\s*H?E?A?R?D?$/i.test(raw.trim()) };
+  const afterLine = raw.replace(/^[\s\S]*?\bHEARD\s*:[^\n]*\n?/i, '');
+  return { heard: raw.includes('\n') && h ? tidy(h[1]) : null, reply: afterLine, replyStarted: false };
+}
+
+/** ¿Oliver no pudo entender la grabación? */
+export const unclear = (heard: string) => !heard || /^\(?\s*(unclear|inaudible|silence|no speech|noise)\s*\)?\.?$/i.test(heard);
 
 /** Instrucciones para una llamada con temática (roleplay de la unidad). */
 export function roleplayPrompt(o: { scene: string; goal: string; unit: string; lines: string[] }) {
@@ -653,10 +702,21 @@ ${o.lines.map((l) => `- ${l}`).join('\n')}
 When the goal is done or after about 8 exchanges, wrap up and say goodbye.`;
 }
 
-/** Pedido final: consejos para el repaso, en español. */
-export const FEEDBACK_REQUEST = `The call is over. Now, in Spanish from Uruguay (voseo), give the learner feedback on their English in this call.
-Write exactly 3 lines, each starting with "- ": one thing they did well, and two concrete mistakes or improvements with the correct English phrase in quotes.
-No greetings, nothing else.`;
+/**
+ * Pedido final: consejos para el repaso, en español. Se le pasan tus frases tal como quedaron escritas,
+ * y se le pide que solo marque errores de los que esté seguro (lo que se escuchó mal no cuenta).
+ */
+export function feedbackRequest(said: string[]) {
+  return `The call is over. Stop being Oliver: you are now an English teacher writing to the learner in Spanish from Uruguay (voseo).
+These are the learner's sentences from the call:
+${said.map((x, i) => `${i + 1}. ${x}`).join('\n')}
+
+Write at most 3 lines, each starting with "- ":
+- First, one specific thing they did well, quoting their own words.
+- Then up to two REAL grammar or vocabulary mistakes, written like this: «what they said» → «correct English»: short reason in Spanish.
+Only include a mistake if you are sure it is wrong English. Ignore punctuation, capital letters, missing words that look like a recording glitch, and casual contractions. Never correct a sentence that is already right, and never invent sentences they did not say. If there are no clear mistakes, give one tip to sound more natural instead.
+No greetings, no HEARD or OLIVER labels, nothing else.`;
+}
 
 // ───────────── descargas (siguen aunque cambies de pantalla) ─────────────
 

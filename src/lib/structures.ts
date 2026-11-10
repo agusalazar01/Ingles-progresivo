@@ -10,6 +10,7 @@ import { COMBOS, CONNECTORS, STRUCTURES, type ComboPrompt, type Structure } from
 import type { Exercise, Unit } from '../content/types';
 import type { RunnerItem } from '../components/ExerciseRunner';
 import { CONTRACTIONS } from '../content/glossary';
+import { EXTRA_WORDS } from '../content/structures-advanced';
 import { lookup } from './dictionary';
 import { normalize } from './answer';
 import { third } from '../gen/english';
@@ -44,6 +45,7 @@ export function breakdown(p: SPhrase): { word: string; why: string; key: boolean
     const key = focusWords.has(l);
     const own = p.structure.keys[l];
     if (own) return { word: w, why: own, key };
+    if (EXTRA_WORDS[l]) return { word: w, why: EXTRA_WORDS[l], key };
     if (CONTRACTIONS[l]) return { word: w, why: `${CONTRACTIONS[l]} (contracción)`, key };
     const d = lookup(l);
     if (d.contraction) return { word: w, why: d.contraction, key };
@@ -170,11 +172,14 @@ export function progressOf(s: Structure) {
   };
 }
 
-/** Las estructuras se abren en orden: la siguiente cuando empezaste al menos la mitad de la anterior. */
+/** Cuántas frases de una estructura alcanzan para pasar a la siguiente (y para usarla al combinar). */
+export const ENOUGH = 5;
+
+/** Las estructuras se abren en orden: la siguiente cuando aprendiste 5 frases de la anterior. */
 export function unlocked(index: number): boolean {
   if (index === 0) return true;
   const prev = progressOf(STRUCTURES[index - 1]);
-  return prev.started >= Math.ceil(prev.total / 2);
+  return prev.started >= Math.min(ENOUGH, prev.total);
 }
 
 export const nextNew = (s: Structure, n = 5) => phrasesOf(s).filter((p) => statusOf(p.id) === 'new').slice(0, n);
@@ -243,6 +248,8 @@ export { COMBOS, CONNECTORS, STRUCTURES };
 
 
 const PRESENT_SIMPLE = new Set(['pres-simple', 'like', 'want-need']);
+/** Estructuras donde cambiar el sujeto a máquina puede dar inglés raro. */
+const NO_CONJUGATE = new Set(['if-will', 'cond-2', 'cond-3', 'wish', 'cleft', 'inversion', 'participle', 'passive-report', 'relative', 'reported', 'contrast', 'causative', 'passive']);
 
 /**
  * Cambia el sujeto de una frase que empieza con «I» (I → she / they) y ajusta el verbo.
@@ -250,7 +257,7 @@ const PRESENT_SIMPLE = new Set(['pres-simple', 'like', 'want-need']);
  */
 export function conjugate(p: SPhrase, to: 'she' | 'they'): string | null {
   const en = p.en;
-  if (!/^I['\s]/.test(en) || p.structure.id === 'if-will') return null;
+  if (!/^I['\s]/.test(en) || NO_CONJUGATE.has(p.structure.id)) return null;
   // Si hay otro «I» más adelante (if I'm late…), cambiar solo el primero quedaría mal.
   if (/\bI\b/.test(en.slice(2))) return null;
   const she = to === 'she';
