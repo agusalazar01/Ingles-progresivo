@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { BackButton } from '../components/BackButton';
 import { ExerciseRunner, type RunnerItem } from '../components/ExerciseRunner';
 import type { Unit } from '../content/types';
 import { GENRE_LABEL, ROLE_LABEL, WRITING, WRITING_LEVELS, type WritingLesson } from '../content/writing';
+import { getDownloads, subscribeDownloads, cancelDownload } from '../lib/ai';
 import { useBack } from '../lib/nav';
+import { diffWords, downloadProof, isRewrite, PROOF_PACK, proofEdits, proofread, proofState, removeProof, unloadProof, type ProofEdit, type ProofState } from '../lib/proofread';
 import { say } from '../lib/speech';
 import { useAppState } from '../lib/store';
 import {
@@ -50,6 +52,8 @@ export function Writing({ onExit, onPhrases }: { onExit: () => void; onPhrases: 
     else setView({ v: 'lesson', id: view.id });
   };
   useBack(true, back, 2);
+  // El corrector se carga al primer uso y se libera al salir de la sección.
+  useEffect(() => () => void unloadProof(), []);
 
   if (view.v === 'list') return <List onExit={onExit} onPhrases={onPhrases} open={(id) => setView({ v: 'lesson', id })} />;
   const lesson = lessonOf(view.id);
@@ -99,6 +103,7 @@ function List({ onExit, onPhrases, open }: { onExit: () => void; onPhrases: () =
           </span>
         </button>
       )}
+      <ProofCard />
       {freq.length > 0 && (
         <div className="card">
           <p className="card-title">Tus errores más frecuentes al escribir</p>
@@ -355,6 +360,13 @@ function Write({
   const [result, setResult] = useState<ReturnType<typeof review> | null>(null);
   const [index, setIndex] = useState<number | undefined>(initial.index);
   const [rounds, setRounds] = useState(0);
+  const [proof, setProof] = useState<ProofState>('web');
+  const [ai, setAi] = useState<AiResult | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [reveal, setReveal] = useState(false);
+  useEffect(() => {
+    proofState().then(setProof);
+  }, []);
   const s = useAppState();
   const words = countWords(text);
   const rewriting = initial.index != null;
@@ -378,8 +390,35 @@ function Write({
       </div>
     );
 
-  const check = () => {
+  const check = async () => {
     const r = review(lesson, text);
+    let res: AiResult | null = null;
+    if (proof === 'ready') {
+      setBusy(true);
+      try {
+        const out = await proofread(text);
+        const edits = proofEdits(text, out.text);
+        res = { text: out.text, edits, rewrite: isRewrite(text, out.text), ms: out.ms };
+      } catch (e) {
+        res = { text: '', edits: [], rewrite: false, ms: 0, error: String((e as Error).message ?? e) };
+      }
+      setBusy(false);
+      // Los cambios del corrector cuentan para aprobar (salvo puntuación, y con un margen chico).
+      if (!res.error && !res.rewrite) {
+        const real = res.edits.filter((x) => !x.minor).length;
+        const allowed = Math.max(1, Math.floor(r.words / 50));
+        const ok = real <= allowed;
+        r.checks.splice(r.checks.length - 1, 0, {
+          label: real ? `Corrector: ${real} cambio${real === 1 ? '' : 's'} de gramática u ortografía` : 'Corrector: nada para corregir',
+          ok,
+          detail: ok ? undefined : `Pasa con hasta ${allowed}. Corregilos y volvé a revisar.`,
+          required: true,
+        });
+        r.passed = r.checks.every((c) => c.ok || !c.required);
+      }
+    }
+    setAi(res);
+    setReveal(false);
     setResult(r);
     setRounds(rounds + 1);
     const errors = r.hits.filter((h) => !h.soft).map((h) => h.id);
@@ -433,10 +472,11 @@ function Write({
         <div className="bar-fill" style={{ width: `${Math.min(100, (words / lesson.words) * 100)}%` }} />
       </div>
       {!result && (
-        <button className="primary" disabled={words < 5} onClick={check}>
-          Revisar
+        <button className="primary" disabled={words < 5 || busy} onClick={check}>
+          {busy ? 'Corrigiendo…' : 'Revisar'}
         </button>
       )}
+      {!result && proof === 'missing' && <p className="small">💡 Bajá el corrector con IA (al principio de la sección) para que revise cada palabra, no solo los errores típicos.</p>}
       {result && (
         <>
           <div className="card">
@@ -450,6 +490,7 @@ function Write({
               ))}
             </ul>
           </div>
+          {ai && <AiCard ai={ai} original={text} reveal={reveal} onReveal={() => setReveal(true)} hits={result.hits} />}
           {result.hits.length > 0 && (
             <div className="card">
               <p className="card-title">Para corregir</p>
@@ -465,7 +506,9 @@ function Write({
             </div>
           )}
           <p className="small">
-            Esta revisión encuentra los errores típicos de hispanohablantes y mira la estructura, pero no ve todo. Si te queda una duda, guardalo y mostráselo a tu profe.
+            {ai && !ai.error
+              ? 'El corrector es muy bueno pero no perfecto: si un cambio no te convence, preguntale a tu profe.'
+              : 'Esta revisión encuentra los errores típicos de hispanohablantes y mira la estructura, pero no ve todo. Si te queda una duda, guardalo y mostráselo a tu profe.'}
           </p>
           {!result.passed && (
             <button className="primary" onClick={() => setResult(null)}>
@@ -527,6 +570,126 @@ function Texts({ lesson, onBack, onRewrite }: { lesson: WritingLesson; onBack: (
           </div>
         );
       })}
+    </div>
+  );
+}
+
+interface AiResult {
+  text: string;
+  edits: ProofEdit[];
+  rewrite: boolean;
+  ms: number;
+  error?: string;
+}
+
+/** Corrección en dos tiempos: primero solo marca dónde; después muestra cómo queda. */
+function AiCard({ ai, original, reveal, onReveal, hits }: { ai: AiResult; original: string; reveal: boolean; onReveal: () => void; hits: { found: string; msg: string }[] }) {
+  const [full, setFull] = useState(false);
+  if (ai.error)
+    return (
+      <div className="card">
+        <p className="card-title">Corrector con IA</p>
+        <p className="small">⚠️ No pudo corregir esta vez ({ai.error}). La revisión de abajo igual vale.</p>
+      </div>
+    );
+  const real = ai.edits.filter((e) => !e.minor);
+  const minor = ai.edits.filter((e) => e.minor);
+  if (!ai.edits.length)
+    return (
+      <div className="card">
+        <p className="card-title">Corrector con IA</p>
+        <p>✅ No encontró nada para corregir.</p>
+      </div>
+    );
+  const why = (e: ProofEdit) => hits.find((h) => e.from.toLowerCase().includes(h.found.toLowerCase()) || h.found.toLowerCase().includes(e.from.toLowerCase()))?.msg;
+  return (
+    <div className="card">
+      <p className="card-title">
+        Corrector con IA · {real.length} cambio{real.length === 1 ? '' : 's'}
+        {minor.length ? ` + ${minor.length} de puntuación o mayúsculas` : ''}
+      </p>
+      {ai.rewrite && <p className="small">⚠️ Cambió casi todo el texto: puede que no haya entendido la idea. Probá con oraciones más simples.</p>}
+      {!reveal ? (
+        <>
+          <p className="small">Marqué dónde hay algo para cambiar. Intentá corregirlo vos primero (arriba) y después mirá la corrección.</p>
+          <p className="w-marked">
+            {diffWords(original, ai.text).map((p, i) =>
+              p.type === 'same' ? <span key={i}>{p.text} </span> : p.type === 'del' ? <mark key={i}>{p.text} </mark> : <mark key={i} className="w-ins" title="falta algo">‸ </mark>,
+            )}
+          </p>
+          <button className="secondary" onClick={onReveal}>
+            Ver cómo lo corrige
+          </button>
+        </>
+      ) : (
+        <>
+          {ai.edits.map((e, i) => (
+            <div key={i} className={`w-hit${e.minor ? ' soft' : ''}`}>
+              <p>
+                {e.before && <span className="small">…{e.before} </span>}
+                {e.from ? <s className="w-found">{e.from}</s> : <span className="small">(falta)</span>} → <b className="w-to">{e.to || '(sacar)'}</b>
+              </p>
+              {why(e) && <p className="small">{why(e)}</p>}
+            </div>
+          ))}
+          <button className="link" onClick={() => setFull(!full)}>
+            {full ? 'Ocultar el texto corregido' : 'Ver el texto corregido entero'}
+          </button>
+          {full && <p className="w-saved">{ai.text}</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Bajar o borrar el corrector (solo en la app de Android). */
+function ProofCard() {
+  const [st, setSt] = useState<ProofState | null>(null);
+  const dl = useSyncExternalStore(subscribeDownloads, getDownloads);
+  const d = dl[PROOF_PACK.id];
+  useEffect(() => {
+    proofState().then(setSt);
+  }, [d?.progress === undefined]);
+  if (!st || st === 'web') return null;
+  return (
+    <div className="card">
+      <p className="card-title">🤖 Corrector con IA (sin internet)</p>
+      {st === 'ready' && !d ? (
+        <>
+          <p className="small">Listo: revisa cada palabra de tus textos en el teléfono, sin mandar nada a internet.</p>
+          <button className="link" onClick={() => removeProof().then(() => setSt('missing'))}>
+            Borrar el corrector
+          </button>
+        </>
+      ) : d && !d.error ? (
+        <>
+          <div className="ai-bar">
+            <div style={{ width: `${Math.round(d.progress * 100)}%` }} />
+          </div>
+          <div className="ai-row">
+            <span className="small" style={{ flex: 1 }}>
+              Bajando… {Math.round(d.progress * 100)}%
+            </span>
+            <button className="link" onClick={() => cancelDownload(PROOF_PACK.id)}>
+              Cancelar
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="small">
+            Un modelo de Google hecho solo para corregir textos en inglés: encuentra errores de gramática y ortografía que la revisión común no ve. Se baja una
+            vez (mejor con wifi) y funciona sin internet. Ocupa unos {PROOF_PACK.mb} MB.
+          </p>
+          {d?.error && <p className="small">⚠️ No se pudo bajar ({d.error}). Probá de nuevo: sigue desde donde quedó.</p>}
+          <button className="secondary" onClick={() => downloadProof().then((ok) => ok && setSt('ready'))}>
+            ⬇️ Bajar el corrector (≈{PROOF_PACK.mb} MB)
+          </button>
+          <p className="small" style={{ opacity: 0.75 }}>
+            Licencia: {PROOF_PACK.license}
+          </p>
+        </>
+      )}
     </div>
   );
 }

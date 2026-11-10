@@ -19,6 +19,9 @@ interface OliverAiPlugin {
   cancelDownload(o: { id: string }): Promise<void>;
   remove(o: { id: string }): Promise<void>;
   readText(o: { id: string; name: string }): Promise<{ text: string }>;
+  /** Corrector de textos (Proofread 200M de Google): devuelve el texto corregido. */
+  proofread(o: { id: string; file?: string; text: string }): Promise<{ text: string; ms: number }>;
+  unloadProofreader(): Promise<void>;
   loadVoice(o: { id: string; kind: string; espeak: string; noise?: number; noiseW?: number }): Promise<{ speakers: number; sampleRate: number }>;
   speak(o: { text: string; speaker: number; speed?: number; pitch?: number; volume?: number; reference?: string } & AudioTest): Promise<AudioDiag>;
   recordReference(o: { id: string; seconds: number }): Promise<{ seconds: number }>;
@@ -747,7 +750,7 @@ export function subscribeDownloads(fn: () => void) {
 }
 export const getDownloads = () => downloads;
 
-export async function startDownload(pack: Pack): Promise<boolean> {
+export async function startDownload(pack: Pick<Pack, 'id' | 'files'>): Promise<boolean> {
   hookDownloads();
   emitDl({ ...downloads, [pack.id]: { progress: 0 } });
   try {

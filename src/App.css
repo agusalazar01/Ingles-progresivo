@@ -894,3 +894,7 @@ main { padding-bottom: 86px; }
 .w-hit.soft .w-found { color: #f59e0b; }
 .w-saved { white-space: pre-wrap; line-height: 1.5; }
 .writing .resume-card { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; width: 100%; }
+.w-marked { line-height: 1.7; }
+.w-marked mark { background: rgba(239,68,68,.25); color: inherit; border-radius: 4px; padding: 0 2px; }
+.w-marked mark.w-ins { background: rgba(245,158,11,.35); }
+.w-to { color: #10b981; }

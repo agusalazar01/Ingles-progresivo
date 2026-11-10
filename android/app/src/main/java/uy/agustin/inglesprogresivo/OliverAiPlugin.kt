@@ -10,6 +10,8 @@ import android.media.MediaRecorder
 import android.media.PlaybackParams
 import android.os.Build
 import android.os.SystemClock
+import com.google.mediapipe.tasks.text.textproofreader.TextProofreader
+import com.google.mediapipe.tasks.text.textproofreader.TextProofreader.TextProofreaderOptions
 import com.getcapacitor.JSArray
 import com.getcapacitor.JSObject
 import com.getcapacitor.PermissionState
@@ -21,17 +23,6 @@ import com.getcapacitor.annotation.Permission
 import com.getcapacitor.annotation.PermissionCallback
 import com.github.csukuangfj.piper.phonemize.piperPhonemizeInitialize
 import com.github.csukuangfj.piper.phonemize.piperPhonemizeText
-import com.google.ai.edge.litertlm.Backend
-import com.google.ai.edge.litertlm.Content
-import com.google.ai.edge.litertlm.Contents
-import com.google.ai.edge.litertlm.Conversation
-import com.google.ai.edge.litertlm.ConversationConfig
-import com.google.ai.edge.litertlm.Engine
-import com.google.ai.edge.litertlm.EngineConfig
-import com.google.ai.edge.litertlm.Message
-import com.google.ai.edge.litertlm.MessageCallback
-import com.google.ai.edge.litertlm.SamplerConfig
-import com.google.ai.edge.litertlm.ThinkingConfig
 import com.k2fsa.sherpa.onnx.GenerationConfig
 import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineMoonshineModelConfig
@@ -76,7 +67,7 @@ import kotlin.math.sqrt
 )
 class OliverAiPlugin : Plugin() {
     private val work = Executors.newSingleThreadExecutor() // carga de modelos y generación de voz
-    private val brainWork = Executors.newSingleThreadExecutor() // IA de charla
+    private val proofWork = Executors.newSingleThreadExecutor() // corrector de textos
     private val genWork = Executors.newSingleThreadExecutor() // genera la frase siguiente mientras suena la actual
     private val ioWork = Executors.newCachedThreadPool() // descargas y micrófono
 
@@ -92,12 +83,8 @@ class OliverAiPlugin : Plugin() {
     @Volatile private var earId: String? = null
     @Volatile private var stopListen = false
 
-    @Volatile private var engine: Engine? = null
-    @Volatile private var engineId: String? = null
-    @Volatile private var conversation: Conversation? = null
-    @Volatile private var engineKey: String? = null
-    /** La IA de charla cargada entiende audio (Gemma 4): puede hacer de oído. */
-    @Volatile private var brainAudio = false
+    @Volatile private var proofreader: TextProofreader? = null
+    @Volatile private var proofId: String? = null
 
     @Volatile private var phonemizerReady = false
 
@@ -149,7 +136,7 @@ class OliverAiPlugin : Plugin() {
         ret.put("crashed", lastCrash)
         ret.put("freeBytes", context.filesDir.usableSpace)
         val loaded = JSArray()
-        listOfNotNull(ttsId, earId, engineId).forEach { loaded.put(it) }
+        listOfNotNull(ttsId, earId, proofId).forEach { loaded.put(it) }
         ret.put("loaded", loaded)
         call.resolve(ret)
     }
@@ -303,7 +290,7 @@ class OliverAiPlugin : Plugin() {
         work.execute {
             if (ttsId == id) releaseTts()
             if (earId == id) releaseEar()
-            if (engineId == id) releaseBrain()
+            if (proofId == id) releaseProof()
             dir(id).deleteRecursively()
             call.resolve()
         }
@@ -1014,23 +1001,17 @@ class OliverAiPlugin : Plugin() {
         val silenceMs = (call.getInt("silenceMs") ?: 1100).toLong()
         val waitMs = (call.getInt("waitMs") ?: 8000).toLong()
         val language = call.getString("language") ?: "English"
-        val useBrain = call.getBoolean("brain", false) ?: false
         // Modo manual: no corta por silencio; termina cuando tocás el micrófono (stopListening).
         val manual = call.getBoolean("manual", false) ?: false
         stopListen = false
         ioWork.execute {
             val recognizer = ear
-            if (useBrain && (engine == null || !brainAudio)) {
-                call.reject("La IA de charla que escucha no está cargada")
-                return@execute
-            }
-            if (!useBrain && recognizer == null) {
+            if (recognizer == null) {
                 call.reject("El reconocimiento de voz no está cargado")
                 return@execute
             }
             try {
-                // Gemma 4 escucha hasta 30 segundos por vez.
-                val limit = if (useBrain) min(if (manual) 29000L else maxMs, 29000L) else if (manual) max(maxMs, 60000L) else maxMs
+                val limit = if (manual) max(maxMs, 60000L) else maxMs
                 val samples = recordSpeech(limit, silenceMs, waitMs, manual)
                 val ret = JSObject()
                 if (samples == null) {
@@ -1039,11 +1020,6 @@ class OliverAiPlugin : Plugin() {
                     return@execute
                 }
                 notifyListeners("heard", JSObject())
-                if (useBrain) {
-                    ret.put("text", transcribeWithBrain(samples, 16000, language))
-                    call.resolve(ret)
-                    return@execute
-                }
                 val rz = recognizer ?: throw IllegalStateException("El reconocimiento de voz no está cargado")
                 step("entender lo que dijiste")
                 val stream = rz.createStream()
@@ -1063,295 +1039,67 @@ class OliverAiPlugin : Plugin() {
         }
     }
 
-    /**
-     * Llamada con Gemma 4: escucha y responde en una sola pasada. La grabación entra directo a la charla
-     * (sin transcribir aparte), así que tarda la mitad. La respuesta se va emitiendo por «token».
-     * «text» es la instrucción que acompaña al audio (formato de la respuesta, susurro del entrenador).
-     */
-    @PluginMethod
-    fun hearAndChat(call: PluginCall) {
-        if (getPermissionState("microphone") != PermissionState.GRANTED) {
-            requestPermissionForAlias("microphone", call, "hearPermission")
-            return
-        }
-        doHearAndChat(call)
-    }
-
-    @PermissionCallback
-    private fun hearPermission(call: PluginCall) {
-        if (getPermissionState("microphone") == PermissionState.GRANTED) doHearAndChat(call)
-        else call.reject("Sin permiso para el micrófono")
-    }
-
-    private fun doHearAndChat(call: PluginCall) {
-        val silenceMs = (call.getInt("silenceMs") ?: 1500).toLong()
-        val waitMs = (call.getInt("waitMs") ?: 8000).toLong()
-        val text = call.getString("text") ?: ""
-        val maxTokens = call.getInt("maxTokens") ?: 140
-        stopListen = false
-        ioWork.execute {
-            if (engine == null || !brainAudio || conversation == null) {
-                call.reject("La IA de charla que escucha no está cargada")
-                return@execute
-            }
-            try {
-                val samples = recordSpeech(29000L, silenceMs, waitMs, false)
-                if (samples == null) {
-                    val ret = JSObject()
-                    ret.put("text", "")
-                    ret.put("spoke", false)
-                    call.resolve(ret)
-                    return@execute
-                }
-                notifyListeners("heard", JSObject())
-                val wav = wavOf(samples, 16000)
-                brainWork.execute {
-                    try {
-                        val out = generate(Message.of(Content.AudioBytes(wav), Content.Text(text)), maxTokens)
-                        val ret = JSObject()
-                        ret.put("text", out)
-                        ret.put("spoke", true)
-                        call.resolve(ret)
-                    } catch (e: Throwable) {
-                        call.reject("La IA falló: ${e.message}")
-                    }
-                }
-            } catch (e: Throwable) {
-                call.reject("No se pudo escuchar: ${e.message}")
-            }
-        }
-    }
-
-    /**
-     * Gemma 4 hace de oído: recibe la grabación (WAV 16 kHz mono, 16 bits) en una charla aparte, solo
-     * para transcribir, así no se mezcla con la charla del roleplay. No usa el reconocimiento del teléfono.
-     */
-    private fun transcribeWithBrain(samples: FloatArray, rate: Int, language: String): String {
-        val wav = wavOf(samples, rate)
-        val result = AtomicReference("")
-        val failure = AtomicReference<Throwable?>(null)
-        val done = CountDownLatch(1)
-        brainWork.execute {
-            var conv: Conversation? = null
-            var reopen = false
-            try {
-                val e = engine ?: throw IllegalStateException("La IA no está cargada")
-                step("entender lo que dijiste con la IA de charla")
-                val config =
-                    ConversationConfig(
-                        systemInstruction = Contents.of(
-                            "You are a speech-to-text engine. The speaker is a Spanish speaker talking in $language. Write exactly the words they say. " +
-                                "Keep their grammar mistakes, do not correct or translate anything, and do not answer them. Output only the transcription.",
-                        ),
-                        samplerConfig = SamplerConfig(topK = 1, topP = 1.0, temperature = 0.0),
-                        thinkingConfig = ThinkingConfig(enableThinking = false),
-                    )
-                conv = try {
-                    e.createConversation(config)
-                } catch (t: Throwable) {
-                    // Si el motor no admite dos charlas a la vez, se cierra la principal y se vuelve a abrir después.
-                    try {
-                        conversation?.close()
-                    } catch (_: Throwable) {
-                    }
-                    conversation = null
-                    reopen = true
-                    e.createConversation(config)
-                }
-                val reply = conv.sendMessage(
-                    Message.of(Content.AudioBytes(wav), Content.Text("Transcribe this recording word for word.")),
-                )
-                result.set(reply.toString().replace(Regex("^\\s*(Transcription|Transcript)\\s*:\\s*", RegexOption.IGNORE_CASE), "").trim().trim('"'))
-            } catch (t: Throwable) {
-                failure.set(t)
-            } finally {
-                try {
-                    conv?.close()
-                } catch (_: Throwable) {
-                }
-                if (reopen) {
-                    try {
-                        newConversation(lastSystem)
-                    } catch (_: Throwable) {
-                    }
-                }
-                stepDone()
-                done.countDown()
-            }
-        }
-        done.await(90, TimeUnit.SECONDS)
-        failure.get()?.let { throw it }
-        return result.get()
-    }
-
     @PluginMethod
     fun stopListening(call: PluginCall) {
         stopListen = true
         call.resolve()
     }
 
-    // ───────────── charla ─────────────
+    // ───────────── corrector de textos ─────────────
 
+    /**
+     * Corrige un texto en inglés con el modelo Proofread de Google (200M, MediaPipe). Se carga al primer uso
+     * y queda cargado hasta salir de «Escribir en inglés» (unloadProofreader).
+     */
     @PluginMethod
-    fun loadBrain(call: PluginCall) {
+    fun proofread(call: PluginCall) {
         val id = call.getString("id") ?: return call.reject("Falta id")
-        val file = call.getString("file") ?: return call.reject("Falta archivo")
-        val system = call.getString("system") ?: ""
-        val audio = call.getBoolean("audio", false) ?: false
-        val gpu = call.getBoolean("gpu", false) ?: false
-        val earOnly = call.getBoolean("earOnly", false) ?: false
-        temperature = (call.getDouble("temperature") ?: 0.8)
-        val key = "$id|$audio|$gpu"
-        brainWork.execute {
-            var usedGpu = gpu
+        val file = call.getString("file") ?: "proofread_quant_200m.litertlm"
+        val text = call.getString("text") ?: return call.reject("Falta el texto")
+        proofWork.execute {
             try {
-                if (engineKey != key) {
-                    releaseBrain()
-                    val make = { useGpu: Boolean ->
-                        val e = Engine(
-                            EngineConfig(
-                                modelPath = File(dir(id), file).absolutePath,
-                                backend = if (useGpu) Backend.GPU() else Backend.CPU(),
-                                // Gemma 4 escucha con su propio oído: el codificador de audio va en el procesador.
-                                audioBackend = if (audio) Backend.CPU() else null,
-                                maxNumTokens = 4096,
-                                cacheDir = context.cacheDir.absolutePath,
-                            ),
-                        )
-                        e.initialize()
-                        e
-                    }
-                    step(if (gpu) "cargar la IA de charla $id con la GPU" else "cargar la IA de charla $id")
-                    val e = try {
-                        make(gpu)
-                    } catch (t: Throwable) {
-                        // Si la GPU del teléfono no puede con el modelo, se carga con el procesador.
-                        if (!gpu) throw t
-                        usedGpu = false
-                        make(false)
-                    }
+                if (proofreader == null || proofId != id) {
+                    releaseProof()
+                    val f = File(dir(id), file)
+                    if (!f.exists()) throw IllegalStateException("El corrector no está descargado")
+                    step("cargar el corrector de textos")
+                    val opts = TextProofreaderOptions.builder().setModelPath(f.absolutePath).setMaxNumTokens(2048).build()
+                    proofreader = TextProofreader.createFromOptions(context, opts)
+                    proofId = id
                     stepDone()
-                    engine = e
-                    engineId = id
-                    engineKey = key
-                    brainAudio = audio
                 }
-                // Solo para escuchar (roleplays con guion): no hace falta una charla abierta.
-                if (earOnly) {
-                    try {
-                        conversation?.close()
-                    } catch (_: Throwable) {
-                    }
-                    conversation = null
-                } else newConversation(system)
+                val pr = proofreader ?: throw IllegalStateException("El corrector no está cargado")
+                step("corregir el texto")
+                val started = SystemClock.elapsedRealtime()
+                val r = pr.proofread(text)
+                stepDone()
                 val ret = JSObject()
-                ret.put("gpu", usedGpu)
+                ret.put("text", r.getProofreadText() ?: "")
+                ret.put("ms", SystemClock.elapsedRealtime() - started)
                 call.resolve(ret)
             } catch (e: Throwable) {
                 stepDone()
-                releaseBrain()
-                call.reject("No se pudo cargar la IA: ${e.message}")
+                releaseProof()
+                call.reject("No se pudo corregir: ${e.message}")
             }
         }
     }
 
-    private fun newConversation(system: String) {
+    @PluginMethod
+    fun unloadProofreader(call: PluginCall) {
+        proofWork.execute {
+            releaseProof()
+            call.resolve()
+        }
+    }
+
+    private fun releaseProof() {
         try {
-            conversation?.close()
+            proofreader?.close()
         } catch (_: Throwable) {
         }
-        conversation = null
-        lastSystem = system
-        val e = engine ?: throw IllegalStateException("La IA no está cargada")
-        conversation = e.createConversation(
-            ConversationConfig(
-                systemInstruction = if (system.isNotBlank()) Contents.of(system) else null,
-                samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = temperature),
-                thinkingConfig = ThinkingConfig(enableThinking = false),
-                // Las instrucciones se procesan ya (mientras suena el teléfono), no en tu primera frase.
-                prefillPrefaceOnInit = system.isNotBlank(),
-            ),
-        )
-    }
-
-    @Volatile private var temperature = 0.8
-    @Volatile private var lastSystem = ""
-
-    @PluginMethod
-    fun resetChat(call: PluginCall) {
-        val system = call.getString("system") ?: ""
-        call.getDouble("temperature")?.let { temperature = it }
-        brainWork.execute {
-            try {
-                newConversation(system)
-                call.resolve()
-            } catch (e: Throwable) {
-                call.reject(e.message ?: "error")
-            }
-        }
-    }
-
-    /** Manda un mensaje a la charla y devuelve la respuesta completa; cada pedazo sale por el evento «token». */
-    private fun generate(message: Message, maxTokens: Int?): String {
-        val conv = conversation ?: throw IllegalStateException("La IA no está cargada")
-        val out = StringBuilder()
-        val done = CountDownLatch(1)
-        val error = AtomicReference<Throwable?>(null)
-        conv.sendMessageAsync(
-            message,
-            object : MessageCallback {
-                override fun onMessage(message: Message) {
-                    val piece = message.toString()
-                    out.append(piece)
-                    val ev = JSObject()
-                    ev.put("text", piece)
-                    notifyListeners("token", ev)
-                }
-
-                override fun onDone() {
-                    done.countDown()
-                }
-
-                override fun onError(throwable: Throwable) {
-                    error.set(throwable)
-                    done.countDown()
-                }
-            },
-            maxOutputToken = maxTokens,
-        )
-        if (!done.await(120, TimeUnit.SECONDS)) {
-            try {
-                conv.cancelProcess()
-            } catch (_: Throwable) {
-            }
-        }
-        val err = error.get()
-        if (err != null && out.isEmpty()) throw err
-        return out.toString()
-    }
-
-    @PluginMethod
-    fun chat(call: PluginCall) {
-        val text = call.getString("text") ?: ""
-        val maxTokens = call.getInt("maxTokens")
-        brainWork.execute {
-            try {
-                val ret = JSObject()
-                ret.put("text", generate(Message.user(text), maxTokens))
-                call.resolve(ret)
-            } catch (e: Throwable) {
-                call.reject("La IA falló: ${e.message}")
-            }
-        }
-    }
-
-    @PluginMethod
-    fun cancelChat(call: PluginCall) {
-        try {
-            conversation?.cancelProcess()
-        } catch (_: Throwable) {
-        }
-        call.resolve()
+        proofreader = null
+        proofId = null
     }
 
     // ───────────── liberar todo ─────────────
@@ -1361,11 +1109,7 @@ class OliverAiPlugin : Plugin() {
     fun unloadAll(call: PluginCall) {
         stopSpeech = true
         stopListen = true
-        try {
-            conversation?.cancelProcess()
-        } catch (_: Throwable) {
-        }
-        brainWork.execute { releaseBrain() }
+        proofWork.execute { releaseProof() }
         work.execute {
             releaseTts()
             releaseEar()
@@ -1394,30 +1138,14 @@ class OliverAiPlugin : Plugin() {
         earId = null
     }
 
-    private fun releaseBrain() {
-        try {
-            conversation?.close()
-        } catch (_: Throwable) {
-        }
-        conversation = null
-        try {
-            engine?.close()
-        } catch (_: Throwable) {
-        }
-        engine = null
-        engineId = null
-        engineKey = null
-        brainAudio = false
-    }
-
     override fun handleOnDestroy() {
         stopSpeech = true
         stopListen = true
-        releaseBrain()
+        releaseProof()
         releaseTts()
         releaseEar()
         work.shutdown()
-        brainWork.shutdown()
+        proofWork.shutdown()
         genWork.shutdown()
         ioWork.shutdown()
         super.handleOnDestroy()

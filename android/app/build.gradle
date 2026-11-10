@@ -14,7 +14,7 @@ android {
         versionCode((System.getenv("BUILD_NUMBER") ?: "1").toInteger())
         versionName(System.getenv("VERSION_NAME") ?: "0.0.0-dev")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        // La IA sin internet (sherpa-onnx y LiteRT-LM) solo trae librerías para celulares de 64 bits.
+        // Las voces y el corrector sin internet solo trae librerías para celulares de 64 bits.
         ndk {
             abiFilters 'arm64-v8a'
         }
@@ -73,7 +73,8 @@ dependencies {
     // sherpa-onnx (voz y oído) y piper-phonemize se bajan en GitHub Actions a app/libs.
     implementation(name: 'sherpa-onnx-2.0.1', ext: 'aar')
     implementation(name: 'piper-phonemize-1.5.9', ext: 'aar')
-    implementation 'com.google.ai.edge.litertlm:litertlm-android:0.19.1'
+    // Corrector de textos sin internet (modelo Proofread 200M de Google).
+    implementation 'com.google.mediapipe:tasks-text:1.0.0'
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"

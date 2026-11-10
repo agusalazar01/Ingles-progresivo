@@ -137,3 +137,25 @@ describe('Escribir en inglés', () => {
     expect(r.passed).toBe(false);
   });
 });
+
+import { diffWords, isRewrite, proofEdits } from './proofread';
+describe('corrector: comparar original y corrección', () => {
+  it('agrupa los cambios y separa los de puntuación', () => {
+    const e = proofEdits('I have 27 years and i live in salto', 'I am 27 years old and I live in Salto.');
+    expect(e.map((x) => [x.from, x.to])).toEqual([
+      ['have', 'am'],
+      ['', 'old'],
+      ['i', 'I'],
+      ['salto', 'Salto.'],
+    ]);
+    expect(e.filter((x) => x.minor).length).toBe(2);
+  });
+  it('sin cambios no hay ediciones', () => {
+    expect(proofEdits('It is fine.', 'It is fine.')).toEqual([]);
+    expect(diffWords('a b', 'a b')).toEqual([{ type: 'same', text: 'a b' }]);
+  });
+  it('detecta cuando reescribió todo', () => {
+    expect(isRewrite('me like dog very', 'I really like dogs.')).toBe(true);
+    expect(isRewrite('She work in a bank in the city.', 'She works in a bank in the city.')).toBe(false);
+  });
+});

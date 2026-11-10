@@ -8,8 +8,10 @@ App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en e
 
 - **Escribir en inglés** (reemplaza a «Decilo en inglés» en el inicio; tus frases siguen adentro): 27 lecciones de A1 a B2, de 30 a 200 palabras, con modelos propios. Hay más lecciones de opinión y de historias propias; también describir, emails y comparar.
 - Cada lección: leés el modelo con sus partes en colores (y lo escuchás) → lo ordenás → practicás los conectores → unís oraciones → escribís el tuyo → lo revisás y lo corregís vos → queda guardado el borrador y la versión final.
-- La revisión mira el largo, los conectores, los párrafos, si hay opinión, pasado o saludo según el tipo de texto, y más de 40 errores típicos de hispanohablantes («I have 27 years», «people is», «depend of», «because is»…). No usa IA todavía.
+- La revisión mira el largo, los conectores, los párrafos, si hay opinión, pasado o saludo según el tipo de texto, y más de 40 errores típicos de hispanohablantes («I have 27 years», «people is», «depend of», «because is»…). Funciona sin descargar nada.
 - Un nivel se abre al aprobar 3 lecciones del anterior. Tus errores más frecuentes aparecen arriba para repasarlos.
+- **Corrector con IA sin internet** (opcional, ≈200 MB): el modelo Proofread de Google (200 millones de parámetros, MediaPipe), hecho solo para corregir textos. Revisa cada palabra; primero marca dónde hay algo para cambiar, intentás corregirlo vos, y después muestra la corrección. Se carga solo en esta sección y se libera al salir.
+- Se quitó del código nativo la librería de la IA de charla (Gemma/LiteRT-LM): la app pesa menos.
 
 ## Novedades de la versión 1.4
 
