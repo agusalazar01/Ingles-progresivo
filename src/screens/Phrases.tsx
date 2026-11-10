@@ -11,13 +11,10 @@ import {
   duePhrases,
   gradePhrase,
   parseRendering,
-  parseVariation,
   savePhrase,
   translateRequest,
   TRANSLATOR,
   updatePhrase,
-  VARIATIONS,
-  variationRequest,
   type Rendering,
 } from '../lib/phrases';
 
@@ -231,10 +228,24 @@ function NewPhrase({ micOk, hear, ensureBrain, onSaved }: { micOk: boolean; hear
       <p className="card-title">3. Así se dice</p>
       <p className="phrase-es">«{es}»</p>
       {!res && (
-        <div className="feedback neutral">
-          <p>No tengo esa frase en el banco y no hay una IA de charla descargada.</p>
-          <p className="small">Bajá una en Configuración › Voces e IA (LFM2.5 o Qwen3) y vas a poder decir cualquier frase, sin internet.</p>
-        </div>
+        <>
+          <div className="feedback neutral">
+            <p>Esa frase no está en el banco de frases comunes.</p>
+            <p className="small">Guardala con tu versión para repasarla y marcala para verla con tu profe, o probá con una frase parecida del banco.</p>
+          </div>
+          {attempt.trim() && (
+            <button
+              className="primary"
+              disabled={saved}
+              onClick={() => {
+                savePhrase({ es, en: attempt.trim(), review: true });
+                setSaved(true);
+              }}
+            >
+              {saved ? '✓ Guardada para revisar' : '📝 Guardar mi versión para revisar con la profe'}
+            </button>
+          )}
+        </>
       )}
       {res && (
         <>
@@ -271,7 +282,7 @@ function NewPhrase({ micOk, hear, ensureBrain, onSaved }: { micOk: boolean; hear
               </>
             )}
             {res.feedback && <div className="feedback neutral">{res.feedback}</div>}
-            {source === 'bank' && <p className="small">Del banco de frases comunes (sin IA).</p>}
+            {source === 'bank' && <p className="small">Del banco de frases comunes.</p>}
           </div>
           <label className="check">
             <input type="checkbox" checked={review} onChange={(e) => setReview(e.target.checked)} /> 📝 Para revisar con la profe
@@ -328,14 +339,12 @@ function BankPicker({ onPick }: { onPick: (b: (typeof BANK)[number]) => void }) 
   );
 }
 
-function Practice({ due, micOk, hear, ensureBrain, onNew }: { due: Phrase[]; micOk: boolean; hear: Hear; ensureBrain: () => Promise<boolean>; onNew: () => void }) {
+function Practice({ due, micOk, hear, onNew }: { due: Phrase[]; micOk: boolean; hear: Hear; ensureBrain: () => Promise<boolean>; onNew: () => void }) {
   const [queue] = useState(() => due.map((p) => p.id));
   const [pos, setPos] = useState(0);
   const [typed, setTyped] = useState('');
   const [shown, setShown] = useState(false);
   const [score, setScore] = useState<number | null>(null);
-  const [variant, setVariant] = useState<{ en: string; es: string; label: string } | null>(null);
-  const [busy, setBusy] = useState(false);
   const s = useAppState();
   const p = (s.phrases ?? []).find((x) => x.id === queue[pos]);
 
@@ -343,7 +352,7 @@ function Practice({ due, micOk, hear, ensureBrain, onNew }: { due: Phrase[]; mic
     return (
       <div className="card">
         <p className="card-title">{queue.length ? '¡Listo por hoy!' : 'No hay frases para repasar hoy'}</p>
-        <p className="small">Las frases vuelven justo antes de que se te olviden. Oliver también las va a usar en la llamada libre.</p>
+        <p className="small">Las frases vuelven justo antes de que se te olviden.</p>
         <button className="primary" onClick={onNew}>
           Agregar una frase
         </button>
@@ -356,27 +365,12 @@ function Practice({ due, micOk, hear, ensureBrain, onNew }: { due: Phrase[]; mic
     setTyped('');
     setShown(false);
     setScore(null);
-    setVariant(null);
     setPos(pos + 1);
   };
 
   const check = (heard: string[]) => {
     setScore(intelligibility(p.en, heard).score);
     setShown(true);
-  };
-
-  const vary = async (v: (typeof VARIATIONS)[number]) => {
-    setBusy(true);
-    if (await ensureBrain()) {
-      try {
-        const r = await OliverAi.chat({ text: variationRequest(p.en, v.ask) });
-        const out = parseVariation(r.text);
-        if (out) setVariant({ ...out, label: v.label });
-      } catch {
-        /* nada */
-      }
-    }
-    setBusy(false);
   };
 
   return (
@@ -428,40 +422,6 @@ function Practice({ due, micOk, hear, ensureBrain, onNew }: { due: Phrase[]; mic
               Bien
             </button>
           </div>
-          {aiAvailable() && (
-            <>
-              <p className="phrase-label">Practicala de otra forma</p>
-              <div className="chips">
-                {VARIATIONS.map((v) => (
-                  <button key={v.id} className="chip" disabled={busy} onClick={() => vary(v)}>
-                    {v.label}
-                  </button>
-                ))}
-              </div>
-              {busy && <p className="small">Pensando…</p>}
-              {variant && (
-                <div className="feedback neutral">
-                  <p className="small">{variant.label}</p>
-                  <p>
-                    <b>{variant.en}</b>{' '}
-                    <button className="link" aria-label="Escuchar" onClick={() => say(variant.en, { accent: 'en-AU' })}>
-                      ▶
-                    </button>
-                  </p>
-                  {variant.es && <p className="small">{variant.es}</p>}
-                  <button
-                    className="link"
-                    onClick={() => {
-                      savePhrase({ es: variant.es || `${p.es} (${variant.label})`, en: variant.en });
-                      setVariant(null);
-                    }}
-                  >
-                    Guardar esta también
-                  </button>
-                </div>
-              )}
-            </>
-          )}
         </>
       )}
     </div>

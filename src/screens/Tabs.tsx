@@ -489,7 +489,7 @@ export function Progress({ go }: { go: (r: Route) => void }) {
         Mis errores ({Object.keys(s.errors).length})
       </button>
       <button className="secondary" onClick={() => go({ name: 'settings' })}>
-        Configuración (apariencia, voces, IA y más)
+        Configuración (apariencia, voces y más)
       </button>
       <p className="small center">
         CriollEnglish · Learn English, a lo criollo · v{APP_VERSION}

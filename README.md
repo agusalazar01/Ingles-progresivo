@@ -4,6 +4,17 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.4
+
+- **Sin IA de charla**: se quitó la llamada libre con Oliver, el modo de roleplay con IA y la IA como oído. Quedan las voces y el reconocimiento de voz (sin internet). Si tenías un modelo de IA descargado, la app lo borra sola para liberar espacio.
+- **La pestaña del medio ahora es «Roleplays»** (192 situaciones con guion). Las llamadas con Oliver de cada unidad siguen igual.
+- **Ya no marca mal lo que está bien dicho de otra manera**:
+  - orden distinto: «We will stay home if it rains» = «If it rains, we will stay home»; «I bought it yesterday» = «Yesterday I bought it»;
+  - «that» optativo («She said (that) she was busy»), «have got» = «have», «everybody» = «everyone», «movie» = «film», «please» de más o de menos, «My brother's working»;
+  - más de 150 respuestas alternativas nuevas en «Corregí el error» y «Completá» (por ejemplo «I was born on December 26», «Could I get the bill?»).
+- **Al hablar**: los homófonos (two / to / too, their / there) y una letra de diferencia ya no cuentan como error de pronunciación.
+- **Decilo en inglés**: si tu frase no está en el banco, podés guardar tu versión para revisarla después.
+
 ## Novedades de la versión 1.0
 
 - **🎭 Roleplays**: biblioteca de situaciones reales para vivir y trabajar en Australia (192 en 13 categorías: llegada, vivienda, banco, cafés, compras, vida social, entrevistas, trabajo, rubros, transporte, salud, trámites e imprevistos). Cada roleplay tiene ficha (lugar, con quién, situación, objetivo, nivel), vocabulario con pronunciación y expresiones australianas. La charla es un guion con ramas: respondés libre (voz o teclado), la otra persona reacciona a lo que decís y, si aparece un error típico, se muestra tu frase, la corregida y el porqué. La otra persona habla con la voz elegida en el motor de voces (sin IA de charla). El micrófono es manual: tocás para empezar y otra vez para enviar, o escribís. Al terminar ves un puntaje, toda la conversación y, en cada respuesta tuya, qué estuvo bien y cómo decirlo mejor. Los 192 roleplays tienen guion. La IA queda como «charla libre» opcional.
@@ -13,7 +24,7 @@ App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en e
 - **Banco más grande**: 96 verbos y 410 complementos en el generador, 826 oraciones de banco y 223 ejercicios de «corregí el error» con errores típicos de hispanohablantes.
 - **Sin repetir**: la app recuerda las oraciones que viste en cada unidad y busca otras.
 - **Contenido general**: ejercicios, llamadas y Oliver hablan de la vida cotidiana (con términos australianos), sin centrarse en viñedos. Oliver vive en Adelaide y trabaja en una bicicletería.
-- Las llamadas de las unidades usan su guion (más confiable); la IA de charla queda para la llamada libre.
+- Las llamadas y los roleplays usan guiones con ramas: no hay IA de charla. Solo se descargan voces y reconocimiento de voz, que funcionan sin internet.
 
 ## Novedades de la versión 0.9.1
 
@@ -23,7 +34,7 @@ App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en e
 
 ## Novedades de la versión 0.9
 
-- **🗣️ Decilo en inglés** (tarjeta en «Hoy»): escribí o decí algo en español, intentalo vos en inglés y la IA del teléfono te da la versión natural (como en Australia), una más simple, bloques para reusar y una devolución en español. Botones «Esto no suena bien» (otra versión) y «Para revisar con la profe». Las frases quedan en tu mazo con repaso espaciado (FSRS), se practican diciéndolas, con variaciones hechas por la IA (en pasado, con «she», como pregunta…), y Oliver las usa en la llamada libre. Sin IA hay un banco de 30 frases comunes.
+- **🗣️ Decilo en inglés** (tarjeta en «Hoy»): escribí o decí algo en español, intentalo vos en inglés y la app te muestra la versión natural (como en Australia), una más simple, bloques para reusar y una devolución en español. Botones «Esto no suena bien» (otra versión) y «Para revisar con la profe». Las frases quedan en tu mazo con repaso espaciado (FSRS), se practican diciéndolas, con variaciones hechas por la IA (en pasado, con «she», como pregunta…), y Oliver las usa en la llamada libre. Sin IA hay un banco de 30 frases comunes.
 - **Oído nivel ChatGPT**: se suman **Parakeet TDT 0.6B v2** (NVIDIA, solo inglés, muy preciso y rápido) y **Qwen3-ASR 0.6B** (entiende también español).
 - **Oliver libre mucho mejor**: personaje con vida propia (Oliver Dawson, cellar hand en el Barossa, su kelpie Bluey, el cacatúa Kev…), 30 temas que no se repiten entre llamadas, novedades que te cuenta, memoria de lo que le contaste (Configuración › Voces e IA › «Lo que Oliver recuerda de vos», se puede borrar), un «entrenador» que lo guía en cada turno para que pregunte, cuente historias y cambie de tema si se estanca, y control para que no repita frases.
 - Corrección: en «pasar a pregunta» se acepta cambiar la persona (my → your).
@@ -39,7 +50,6 @@ App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en e
   - Charla: **LFM2.5 1.2B** (Liquid AI) o **Qwen3 1.7B**, con LiteRT-LM de Google.
   - Todo se carga al atender y se libera al cortar: fuera de la llamada no usa memoria, procesador ni batería. Nada sale del teléfono.
 - **Las llamadas mantienen su temática**: con IA, Oliver responde a lo que digas pero siempre dentro del roleplay de la unidad, y al final te da 3 consejos sobre tu inglés.
-- **Llamada libre**: pestaña «Llamar» para charlar con Oliver de cualquier tema (necesita una IA de charla descargada).
 
 Los modelos de voz y oído se preparan en GitHub Actions (`scripts/preparar-modelos.py`) y quedan en el Release «modelos-6»; las IA de charla se bajan de Hugging Face (litert-community).
 

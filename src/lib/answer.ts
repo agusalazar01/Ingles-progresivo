@@ -32,6 +32,10 @@ export function variants(t: string): string[] {
     let opts = [w];
     const s = w.match(/^(he|she|it|that|there|what|who|where)'s$/);
     if (s) opts = [`${s[1]} is`, `${s[1]} has`];
+    else if (w === "'s") opts = ['is', 'has'];
+    else if (w === "let's") opts = ['let us'];
+    // «My brother's working» = «My brother is working» (y se deja también como posesivo).
+    else if (/^[a-z]+'s$/.test(w)) opts = [w, `${w.slice(0, -2)} is`, `${w.slice(0, -2)} has`];
     else if (/'d$/.test(w)) opts = [w.replace(/'d$/, ' would'), w.replace(/'d$/, ' had')];
     out = out.flatMap((o) => opts.map((x) => (o ? `${o} ${x}` : x))).slice(0, 64);
   }
@@ -39,6 +43,8 @@ export function variants(t: string): string[] {
 }
 
 const NUM = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+const THAT_VERBS = 'say|says|said|tell|tells|told|think|thinks|thought|know|knows|knew|hope|hopes|hoped|believe|believes|believed|realise|realised|promise|promised|sure|glad|afraid|explained|mean|means|meant|feel|feels|felt|heard|wish';
+const THAT_NEXT = 'i|you|he|she|it|we|they|there|the|my|your|his|her|our|their|this|these|those|a|an|some|no|nothing|everything|someone|everyone';
 const OUR = 'colo|favo|neighbo|flavo|hono|labo|harbo|behavio|humo|rumo';
 
 /**
@@ -55,14 +61,66 @@ export function canon(t: string): string {
     .replace(/\bgray\b/g, 'grey')
     .replace(/\bmom\b/g, 'mum')
     .replace(/\bokay\b/g, 'ok')
+    .replace(/\balright\b/g, 'all right')
+    .replace(/\b(every|some|any)body\b/g, '$1one')
+    .replace(/\bnobody\b/g, 'no one')
+    .replace(/\btill\b/g, 'until')
+    .replace(/\blots of\b/g, 'a lot of')
+    .replace(/\b(television|telly)\b/g, 'tv')
+    .replace(/\be-mail(s)?\b/g, 'email$1')
+    .replace(/\bmovie(s)?\b/g, 'film$1')
+    .replace(/\b(have|has|had) got\b/g, '$1')
+    .replace(/\b(\d+)(st|nd|rd|th)\b/g, '$1')
+    // «that» optativo: «She said (that) she was busy», «I think (that) it is late».
+    .replace(new RegExp(`\\b(${THAT_VERBS})( me| you| him| her| us| them)? that (?=(${THAT_NEXT})\\b)`, 'g'), '$1$2 ')
+    // «please» no cambia si la oración está bien.
+    .replace(/\bplease\b/g, '')
+    .replace(/-/g, ' ')
     .replace(/\bo'clock\b/g, '')
     .replace(/\b(\d|1[0-2])\b/g, (d) => NUM[Number(d)])
     .replace(/\s+/g, ' ')
     .trim();
 }
 
+const TIME_WORD = 'yesterday|tomorrow|today|tonight|now|right now|at the moment|currently|usually|sometimes|normally|nowadays|these days|every \\w+|last \\w+|next \\w+|this (?:morning|afternoon|evening|week|weekend|month|year|summer|winter)|on \\w+days?|on the weekend|at the weekend|on weekends|in the (?:morning|afternoon|evening)|at night|at \\w+(?: o\'clock)?|by \\w+(?: \\w+)?|in \\d{4}|in \\w+ (?:minutes|hours|days|weeks|months|years)|\\w+ (?:minutes|hours|days|weeks|months|years) ago|this time tomorrow|tomorrow at this time|tomorrow \\w+';
+const CLAUSE_WORD = 'if|when|while|although|even though|though|unless|because|since|as soon as|after|before|by the time|despite|in spite of|until|once';
+const lower1 = (x: string) => (/^I\b/.test(x) ? x : x.charAt(0).toLowerCase() + x.slice(1));
+const upper1 = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+
+/**
+ * Otras maneras igual de correctas de ordenar la misma oración, para no marcar mal una respuesta buena:
+ * «If it rains, we will stay home» = «We will stay home if it rains» y «Yesterday I went» = «I went yesterday».
+ */
+export function reorderings(answer: string): string[] {
+  const out: string[] = [];
+  const end = answer.match(/[.!?]+$/)?.[0] ?? '';
+  const body = answer.slice(0, answer.length - end.length).trim();
+  if (/[.!?;]/.test(body)) return out; // dos oraciones: no se toca
+  const isQ = end.includes('?');
+  // Subordinada adelante con coma → al final sin coma.
+  const cl = body.match(new RegExp(`^((?:${CLAUSE_WORD})\\b[^,]+), (.+)$`, 'i'));
+  if (cl && !isQ && !/,/.test(cl[2])) out.push(`${upper1(cl[2])} ${lower1(cl[1])}${end}`);
+  // Subordinada al final → adelante.
+  if (!cl && !isQ && !/,/.test(body)) {
+    const back = body.match(new RegExp(`^(.+?) ((?:${CLAUSE_WORD}) .+)$`, 'i'));
+    if (back && back[1].split(' ').length >= 2 && back[2].split(' ').length >= 3 && !/^(if|when|while|because|after|before|since|until|once)$/i.test(back[1].split(' ').pop()!))
+      out.push(`${upper1(back[2])}, ${lower1(back[1])}${end}`);
+  }
+  // Expresión de tiempo adelante → al final, y al revés.
+  if (!isQ) {
+    const front = body.match(new RegExp(`^(${TIME_WORD}),? (.+)$`, 'i'));
+    if (front && !cl && front[2].split(' ').length >= 2 && /^(i|you|he|she|it|we|they|the|my|your|his|her|our|their|this|that|there|[A-Z])/i.test(front[2]) && !/^(is|are|was|were|will|do|does|did|have|has|had)\b/i.test(front[2]))
+      out.push(`${upper1(front[2])} ${lower1(front[1])}${end}`);
+    const tail = body.match(new RegExp(`^(.+) (${TIME_WORD})$`, 'i'));
+    if (tail && !cl && !/,/.test(tail[1]) && tail[1].split(' ').length >= 2 && !/^(yesterday|tomorrow|today|now|every|last|next|this|usually|sometimes)/i.test(body))
+      out.push(`${upper1(tail[2])} ${lower1(tail[1])}${end}`);
+  }
+  return out;
+}
+
 export function matches(given: string, answers: string[]): boolean {
   const g = variants(canon(normalize(given)));
+  answers = [...answers, ...answers.flatMap(reorderings)];
   return answers.some((a) => {
     const av = variants(canon(normalize(a)));
     return g.some((x) => av.includes(x));

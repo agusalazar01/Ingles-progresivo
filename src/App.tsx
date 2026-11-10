@@ -49,7 +49,7 @@ export type Route =
 const TABS: { name: 'home' | 'path' | 'vocab' | 'call' | 'progress'; label: string; icon: string }[] = [
   { name: 'home', label: 'Hoy', icon: 'home' },
   { name: 'path', label: 'Camino', icon: 'path' },
-  { name: 'call', label: 'Llamar', icon: 'call' },
+  { name: 'call', label: 'Roleplays', icon: 'masks' },
   { name: 'vocab', label: 'Palabras', icon: 'words' },
   { name: 'progress', label: 'Progreso', icon: 'chart' },
 ];
@@ -260,7 +260,7 @@ export default function App() {
               key={t.name}
               className={`${route.name === t.name ? 'active' : ''} ${t.name === 'call' ? 'tab-call' : ''}`}
               aria-current={route.name === t.name ? 'page' : undefined}
-              onClick={() => go(t.name === 'call' ? { name: 'call', free: true } : ({ name: t.name } as Route))}
+              onClick={() => go(t.name === 'call' ? { name: 'roleplays' } : ({ name: t.name } as Route))}
             >
               <span className="tab-icon">
                 <Icon name={t.icon} size={22} />

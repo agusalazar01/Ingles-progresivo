@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { AiSettings } from '../components/AiSettings';
-import { forgetFact, forgetOliverMemory } from '../lib/oliver';
 import { BackButton } from '../components/BackButton';
 import { resetAll, setState, useAppState } from '../lib/store';
 import { ACCENT_LABEL, listVoices, openVoiceSettings, say, SYSTEM_VOICE, type Accent } from '../lib/speech';
@@ -14,7 +13,7 @@ export type SettingsSection = 'look' | 'voice' | 'ai' | 'study' | 'about';
 const SECTIONS: { id: SettingsSection; icon: string; title: string; desc: string }[] = [
   { id: 'look', icon: '🎨', title: 'Apariencia y sonido', desc: 'Modo oscuro o claro, sonidos de acierto y error' },
   { id: 'voice', icon: '🗣️', title: 'Voz del teléfono y acento', desc: 'La voz de los ejercicios y el acento de las voces' },
-  { id: 'ai', icon: '🤖', title: 'Voces e IA para la llamada', desc: 'Voz de Oliver, reconocimiento de voz y charla sin internet' },
+  { id: 'ai', icon: '🤖', title: 'Voces', desc: 'Voz de los roleplays y de Oliver, y reconocimiento de voz, sin internet' },
   { id: 'study', icon: '📚', title: 'Estudio', desc: 'Palabras nuevas por sesión' },
   { id: 'about', icon: 'ℹ️', title: 'Datos y acerca de', desc: 'Versión de la app y borrar el progreso' },
 ];
@@ -72,7 +71,6 @@ export function Settings({ initial, onExit }: { initial?: SettingsSection; onExi
       {section === 'ai' && (
         <>
           <AiSettings />
-          <OliverMemoryCard />
         </>
       )}
       {section === 'study' && <StudySettings />}
@@ -167,11 +165,11 @@ function About() {
           Versión {APP_VERSION}
           {BUILD ? ` · compilación ${BUILD}` : ' · desarrollo'}
         </p>
-        <p className="small">Tu progreso y tus llamadas se guardan solo en este teléfono. La IA de la llamada funciona sin internet: nada de lo que decís sale del teléfono.</p>
+        <p className="small">Tu progreso y tus llamadas se guardan solo en este teléfono. Las voces funcionan sin internet: nada de lo que decís sale del teléfono.</p>
       </div>
       <div className="card">
         <p className="card-title">Borrar el progreso</p>
-        <p className="small">Borra unidades, repasos, palabras, errores y llamadas. Las voces e IA descargadas se mantienen.</p>
+        <p className="small">Borra unidades, repasos, palabras, errores y llamadas. Las voces descargadas se mantienen.</p>
         <button
           className="secondary"
           onClick={() => {
@@ -249,30 +247,3 @@ function VoiceSettings() {
   );
 }
 
-/** Lo que Oliver anotó de vos en las llamadas libres (queda solo en el teléfono). */
-function OliverMemoryCard() {
-  const s = useAppState();
-  const facts = s.oliver?.facts ?? [];
-  return (
-    <div className="card">
-      <p className="card-title">🧠 Lo que Oliver recuerda de vos</p>
-      <p className="small">
-        Después de cada llamada libre con IA, Oliver anota datos que le contaste para retomarlos la próxima vez. Queda solo en tu teléfono.
-      </p>
-      {!facts.length && <p className="small">Todavía nada.</p>}
-      {facts.map((f, i) => (
-        <div key={i} className="row between">
-          <span>{f}</span>
-          <button className="link" aria-label="Olvidar" onClick={() => forgetFact(i)}>
-            ✕
-          </button>
-        </div>
-      ))}
-      {facts.length > 0 && (
-        <button className="link" onClick={() => forgetOliverMemory()}>
-          Que olvide todo
-        </button>
-      )}
-    </div>
-  );
-}

@@ -1,3 +1,4 @@
+import { EXTRA_ANSWERS } from './extra-answers';
 import type { Unit } from './types';
 import { VERB_UNITS } from './units';
 import { FOUNDATION_UNITS } from './units-foundation';
@@ -37,6 +38,13 @@ for (const u of UNITS) {
   const extra = EXTRA_FIX[u.id];
   if (extra) u.exercises.push(...extra.filter((e) => !u.exercises.some((x) => x.prompt === e.prompt)));
 }
+
+// Respuestas alternativas igual de correctas.
+for (const u of UNITS)
+  for (const e of u.exercises) {
+    const more = EXTRA_ANSWERS[e.prompt];
+    if (more && 'answers' in e) e.answers.push(...more.filter((m) => !e.answers.includes(m)));
+  }
 
 if (UNITS.length !== ALL.length) throw new Error('Hay unidades fuera del orden del programa');
 

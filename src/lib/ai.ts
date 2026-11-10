@@ -532,11 +532,10 @@ export async function chosenAi(): Promise<CallAi> {
       const p = packById(id);
       return p && packReady(p, st) ? p : null;
     };
-    const brain = ok(a.brain);
-    // Con Gemma 4 elegida, escucha ella misma (salvo que hayas elegido otro oído descargado).
-    // («phone» = elegiste a propósito el reconocimiento del teléfono.)
-    const ear = a.ear === 'brain' || (brain?.audio && a.ear !== 'phone' && !ok(a.ear)) ? (brain?.audio ? BRAIN_EAR : null) : ok(a.ear);
-    return { voice: ok(a.voice), ear, brain, speaker: a.speaker };
+    // Desde la 1.4 no hay IA de charla: solo voces y reconocimiento de voz. Si quedó alguna IA
+    // descargada de versiones anteriores, se borra para devolverte el espacio (son varios GB).
+    for (const p of PACKS) if (p.kind === 'brain' && (st.installed[p.id] || Object.keys(st.files?.[p.id] ?? {}).length)) removePack(p.id).catch(() => {});
+    return { voice: ok(a.voice), ear: a.ear === 'brain' ? null : ok(a.ear), brain: null, speaker: a.speaker };
   } catch {
     return none;
   }

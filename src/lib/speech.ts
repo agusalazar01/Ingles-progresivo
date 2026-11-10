@@ -1,7 +1,7 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
-import { normalize } from './answer';
+import { canon, normalize } from './answer';
 
 /**
  * Voz y reconocimiento de habla con los motores que ya trae el teléfono (Android TTS y SpeechRecognizer).
@@ -194,16 +194,42 @@ export async function listen(lang = 'en-US'): Promise<string[]> {
  * Qué parte de la frase se entendió (0–1): palabras de la frase objetivo reconocidas en orden.
  * Se mide si te entienden, no si tenés acento: la evidencia dice que la inteligibilidad es lo que importa.
  */
+/** Palabras que suenan igual: el reconocedor escribe cualquiera de las dos y no es un error de pronunciación. */
+const HOMOPHONES = [
+  ['to', 'too', 'two'], ['there', 'their', 'they are'], ['your', 'you are'], ['its', 'it is'], ['for', 'four'], ['by', 'buy', 'bye'],
+  ['here', 'hear'], ['know', 'no'], ['right', 'write'], ['see', 'sea'], ['one', 'won'], ['ate', 'eight'], ['whose', 'who is'],
+  ['meet', 'meat'], ['week', 'weak'], ['our', 'hour'], ['wait', 'weight'], ['where', 'wear'], ['new', 'knew'], ['mate', 'mite'],
+  ['would', 'wood'], ['whole', 'hole'], ['son', 'sun'], ['than', 'then'], ['a', 'uh'], ['i', 'eye'],
+];
+const SOUND: Record<string, string> = {};
+for (const g of HOMOPHONES) for (const w of g) SOUND[w] = g[0];
+
+function sameWord(a: string, b: string): boolean {
+  if (a === b || (SOUND[a] ?? a) === (SOUND[b] ?? b)) return true;
+  // Una letra de diferencia en palabras largas (plural, -ed, un error de escucha): se da por entendida.
+  if (a.length < 5 || b.length < 5 || Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  let j = 0;
+  while (j < a.length - i && j < b.length - i && a[a.length - 1 - j] === b[b.length - 1 - j]) j++;
+  return Math.max(a.length, b.length) - i - j <= 1;
+}
+
 export function intelligibility(target: string, heard: string[]): { score: number; best: string } {
-  const t = normalize(target).split(' ');
+  const words = (x: string) => {
+    let n = canon(normalize(x));
+    for (const g of HOMOPHONES) for (const w of g) if (w.includes(' ')) n = n.replace(new RegExp(`\\b${w}\\b`, 'g'), g[0]);
+    return n.split(' ').filter(Boolean);
+  };
+  const t = words(target);
   let best = { score: 0, best: heard[0] ?? '' };
   for (const h of heard) {
-    const w = normalize(h).split(' ');
+    const w = words(h);
     const dp = Array.from({ length: t.length + 1 }, () => Array(w.length + 1).fill(0));
     for (let i = 1; i <= t.length; i++)
       for (let j = 1; j <= w.length; j++)
-        dp[i][j] = t[i - 1] === w[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
-    const score = dp[t.length][w.length] / t.length;
+        dp[i][j] = sameWord(t[i - 1], w[j - 1]) ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    const score = dp[t.length][w.length] / Math.max(1, t.length);
     if (score > best.score) best = { score, best: h };
   }
   return best;

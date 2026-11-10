@@ -95,8 +95,8 @@ export function AiSettings() {
   if (!aiAvailable())
     return (
       <div className="card" id="voces-ia">
-        <p className="card-title">Voces e IA (sin internet)</p>
-        <p className="small">La IA para la llamada con Oliver funciona en la app de Android. En la web se usa la voz y el micrófono del navegador.</p>
+        <p className="card-title">Voces (sin internet)</p>
+        <p className="small">Las voces descargables funcionan en la app de Android. En la web se usa la voz y el micrófono del navegador.</p>
       </div>
     );
 
@@ -265,7 +265,7 @@ export function AiSettings() {
 
   return (
     <div className="card" id="voces-ia">
-      <p className="card-title">Voces e IA para la llamada (sin internet)</p>
+      <p className="card-title">Voces y reconocimiento de voz (sin internet)</p>
       <p className="small">
         Se bajan una sola vez (mejor con wifi) y después funcionan sin conexión y gratis. Solo usan memoria y batería mientras las usás: al terminar se
         liberan. Lo que decís se procesa en el teléfono y no se manda a ningún lado.
@@ -283,29 +283,7 @@ export function AiSettings() {
         {PACKS.filter((p) => p.kind === 'voice').map(packCard)}
       </Menu>
 
-      <Menu icon="💬" label="IA utilizada" value={chosenTitle('brain', '📜 Sin IA: se sigue el guion')} detail={counts('brain')} busy={anyDl('brain')}>
-        <p className="small">
-          Con IA, Oliver responde a lo que digas (dentro del roleplay) y al final te da consejos. También habilita la «Llamada libre». Sin IA, se sigue el guion.
-          Las que dicen «también escucha» entienden tu voz por sí mismas.
-        </p>
-        {systemOption('brain', '📜 Sin IA: se sigue el guion')}
-        {PACKS.filter((p) => p.kind === 'brain').map(packCard)}
-        <label className="ai-row small" style={{ gap: 8 }}>
-          <input type="checkbox" checked={ai.gpu ?? !!brainPack?.audio} onChange={(e) => set({ gpu: e.target.checked })} />
-          <span>
-            ⚡ Acelerar con la GPU (con Gemma 4 viene prendido): contesta varias veces más rápido, aunque la primera carga tarda más. Si la GPU de tu celular no
-            puede, la app sigue sola con el procesador.
-          </span>
-        </label>
-      </Menu>
-
       <Menu icon="👂" label="Reconocimiento de voz" value={chosenTitle('ear', '📱 El del teléfono')} detail={counts('ear')} busy={anyDl('ear')}>
-        {brainPack?.audio && (
-          <button className={`option ${earIsBrain ? 'right' : ''}`} onClick={() => set({ ear: 'brain' })}>
-            🧠 Que escuche {brainPack.title.replace(' · también escucha', '')} (sin el reconocimiento del teléfono)
-          </button>
-        )}
-        {!brainPack?.audio && <p className="small">Si elegís Gemma 4 como IA, también puede escucharte ella misma.</p>}
         {systemOption('ear', '📱 Reconocimiento de voz del teléfono')}
         {PACKS.filter((p) => p.kind === 'ear').map(packCard)}
       </Menu>

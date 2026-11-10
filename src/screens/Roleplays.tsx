@@ -8,7 +8,7 @@ import type { Level } from '../content/types';
 import { chosenAi, listenManualWith, loadEarOnly, loadVoicePack, releaseCallAi, speakWith, tuneFor, type CallAi } from '../lib/ai';
 import { RP_CATEGORIES, ROLEPLAYS } from '../content/roleplays/catalog';
 import type { RFix, RoleplayEntry, RoleplayScript } from '../content/roleplays/types';
-import { fixesFor, matchOption, pickLine, roleplayById, saveRoleplay, toCallScript } from '../lib/roleplay';
+import { fixesFor, matchOption, pickLine, roleplayById, saveRoleplay } from '../lib/roleplay';
 import type { CallScript } from '../content/calls';
 
 type View = { v: 'library' } | { v: 'brief'; id: string } | { v: 'talk'; id: string } | { v: 'done'; id: string; log: Line[]; turns: Turn[] };
@@ -141,12 +141,8 @@ function Library({ onBack, onOpen }: { onBack: () => void; onOpen: (id: string) 
   );
 }
 
-function Brief({ e, onBack, onStart, onAiCall }: { e: RoleplayEntry; onBack: () => void; onStart: () => void; onAiCall: (s: CallScript) => void }) {
+function Brief({ e, onBack, onStart }: { e: RoleplayEntry; onBack: () => void; onStart: () => void; onAiCall: (s: CallScript) => void }) {
   const s = e.script!;
-  const [hasBrain, setHasBrain] = useState(false);
-  useEffect(() => {
-    chosenAi().then((c) => setHasBrain(!!c.brain));
-  }, []);
   return (
     <div className="screen roleplays">
       <div className="top-bar">
@@ -204,11 +200,6 @@ function Brief({ e, onBack, onStart, onAiCall }: { e: RoleplayEntry; onBack: () 
       <button className="primary" onClick={onStart}>
         Empezar
       </button>
-      {hasBrain && (
-        <button className="link" onClick={() => onAiCall(toCallScript(e, s))}>
-          Charla libre con IA (experimental: puede salirse del tema)
-        </button>
-      )}
     </div>
   );
 }

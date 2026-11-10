@@ -1,5 +1,5 @@
 import type { Branch, UserTurn } from '../content/calls';
-import { normalize, variants } from './answer';
+import { canon, normalize, variants } from './answer';
 
 /** Las formas de lo que se escuchó, normalizadas (contracciones expandidas, 's como is y has). */
 function forms(heard: string[]): string[] {
@@ -9,6 +9,7 @@ function forms(heard: string[]): string[] {
     if (!n) continue;
     out.add(n);
     for (const v of variants(n)) out.add(v);
+    for (const v of variants(canon(n))) out.add(v);
     // «thirty-dollar», «second-hand»: también separadas.
     if (n.includes('-')) out.add(n.replace(/-/g, ' '));
   }
