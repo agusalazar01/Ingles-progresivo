@@ -15,7 +15,7 @@ import { availableFamilies } from './Practice';
 import { nextVerb } from './Verbs';
 import { WORKSHOP } from '../gen/verbs';
 import { levelUnitsDone } from '../lib/progress';
-import { duePhrases } from '../lib/phrases';
+import { nextLesson } from '../lib/writing';
 import { BAND_NAME, BANDS, bandProgress, defaultBand, nextNewWords } from '../lib/vocab';
 import { Icon, Ring, TaskRow, Tile, WeekBars, WeekDots } from '../components/ui';
 
@@ -33,8 +33,7 @@ export function Home({ go }: { go: (r: Route) => void }) {
   const band = defaultBand(s);
   const fresh = nextNewWords(s, band, s.settings.newWords).length;
   const bp = bandProgress(s, band);
-  const ph = s.phrases ?? [];
-  const dueP = duePhrases(ph).length;
+  const nw = nextLesson(s);
   const nv = nextVerb(s.verbs);
   const rpDone = Object.keys(s.roleplays ?? {}).length;
   // Llamada sugerida: de la unidad que estás haciendo (o la última dominada), la que todavía no hiciste.
@@ -154,9 +153,9 @@ export function Home({ go }: { go: (r: Route) => void }) {
         <Tile
           icon="chat"
           tone="good"
-          title="Decilo en inglés"
-          detail={ph.length ? `${ph.length} frases tuyas${dueP ? ` · ${dueP} para repasar` : ''}` : 'Lo que pensaste en español'}
-          onClick={() => go({ name: 'phrases' })}
+          title="Escribir en inglés"
+          detail={nw ? `Seguí: ${nw.title} (${nw.level})` : 'Textos de hasta 200 palabras'}
+          onClick={() => go({ name: 'writing' })}
         />
         <Tile icon="grid" tone="sky" title="Los 12 tiempos" detail="La tabla entera y práctica mezclada" onClick={() => go({ name: 'tenses' })} />
         {nv && <Tile icon="verb" tone="sun" title="Taller de verbos" detail={`Próximo: ${nv.base} (${nv.es})`} onClick={() => go({ name: 'verb', verbId: nv.id })} />}

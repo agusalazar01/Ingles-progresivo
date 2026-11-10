@@ -864,3 +864,33 @@ main { padding-bottom: 86px; }
 .tense-example { font-weight: 700; font-size: 16px; }
 .tense-form { font-size: 12.5px; color: var(--muted); }
 .tense-body { display: flex; flex-direction: column; gap: 8px; padding: 0 12px 12px; }
+
+/* Escribir en inglés (v1.5) */
+.writing .w-row { display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; padding: 12px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; margin-top: 8px; }
+.writing .w-row:disabled { opacity: 0.45; }
+.writing .w-mark { width: 28px; text-align: center; font-weight: 800; color: var(--brand); flex: none; }
+.writing .w-text { display: flex; flex-direction: column; gap: 2px; }
+.w-model { display: flex; flex-direction: column; gap: 10px; }
+.w-part { border-left: 4px solid var(--rc, var(--brand)); background: var(--surface); border-radius: 10px; padding: 8px 12px; }
+.w-part p { margin: 2px 0 0; font-size: 17px; line-height: 1.5; }
+.w-role { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--rc, var(--brand)); }
+.role-greet, .role-sign { --rc: #8a8f98; }
+.role-open { --rc: #3b82f6; }
+.role-body { --rc: #10b981; }
+.role-example { --rc: #f59e0b; }
+.role-turn { --rc: #ef4444; }
+.role-close { --rc: #8b5cf6; }
+.w-order { padding-left: 22px; display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.w-order li { padding: 8px 10px; border-radius: 10px; background: var(--brand-soft); line-height: 1.45; }
+.w-order li.ok { background: rgba(16,185,129,.18); }
+.w-order li.bad { background: rgba(239,68,68,.18); }
+.w-bank { display: flex; flex-direction: column; gap: 8px; }
+.w-piece { text-align: left; padding: 10px 12px; border-radius: 10px; border: 1.5px dashed var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 15px; line-height: 1.45; }
+.w-area { width: 100%; box-sizing: border-box; font: inherit; font-size: 17px; line-height: 1.5; padding: 12px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); resize: vertical; }
+.w-hit { border-top: 1px solid var(--line); padding: 8px 0; }
+.w-hit p { margin: 2px 0; }
+.w-hit.soft { opacity: .8; }
+.w-found { font-weight: 800; color: #ef4444; }
+.w-hit.soft .w-found { color: #f59e0b; }
+.w-saved { white-space: pre-wrap; line-height: 1.5; }
+.writing .resume-card { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; width: 100%; }

@@ -4,6 +4,13 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.5
+
+- **Escribir en inglés** (reemplaza a «Decilo en inglés» en el inicio; tus frases siguen adentro): 27 lecciones de A1 a B2, de 30 a 200 palabras, con modelos propios. Hay más lecciones de opinión y de historias propias; también describir, emails y comparar.
+- Cada lección: leés el modelo con sus partes en colores (y lo escuchás) → lo ordenás → practicás los conectores → unís oraciones → escribís el tuyo → lo revisás y lo corregís vos → queda guardado el borrador y la versión final.
+- La revisión mira el largo, los conectores, los párrafos, si hay opinión, pasado o saludo según el tipo de texto, y más de 40 errores típicos de hispanohablantes («I have 27 years», «people is», «depend of», «because is»…). No usa IA todavía.
+- Un nivel se abre al aprobar 3 lecciones del anterior. Tus errores más frecuentes aparecen arriba para repasarlos.
+
 ## Novedades de la versión 1.4
 
 - **Sin IA de charla**: se quitó la llamada libre con Oliver, el modo de roleplay con IA y la IA como oído. Quedan las voces y el reconocimiento de voz (sin internet). Si tenías un modelo de IA descargado, la app lo borra sola para liberar espacio.
