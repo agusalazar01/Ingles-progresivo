@@ -4,6 +4,11 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.8
+
+- **Oliver vuelve a verse** en las llamadas de las unidades: arriba la escena con Oliver animado mientras habla y abajo el texto de la charla.
+- **Guiones profundos** (primeros 6: aeropuerto, inmigración, valija perdida, aduana, SIM y Uber): 8 a 10 momentos, charla de cortesía, la otra persona te pregunta por vos, aparece una complicación que tenés que resolver (la valija demorada, el teléfono bloqueado, la dirección equivocada, el salamín en la aduana…), caminos distintos según lo que digas y un objetivo en cada momento. Se van a ir reescribiendo todos.
+
 ## Novedades de la versión 1.7 (todo sin internet)
 
 - **Charla nueva, estilo Preply**, en los 192 roleplays y en las llamadas con Oliver de cada unidad: burbujas con lo que dice cada uno, tarjeta «Prueba a:» con el objetivo del momento y el avance (1/3, 2/3…), micrófono grande (tocás para hablar y tocás de nuevo para enviar), teclado, repetir lento y ayuda.

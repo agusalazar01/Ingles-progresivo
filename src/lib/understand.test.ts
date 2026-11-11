@@ -22,7 +22,7 @@ describe('entender sin internet', () => {
   });
   it('los sinónimos amplían lo que se entiende', () => {
     const e = ROLEPLAYS.find((r) => r.script && r.title.includes('airport'))!;
-    const n = e.script!.nodes[e.script!.start];
+    const n = e.script!.nodes.help;
     expect(matchOption(n, ['Where do I pick up my suitcase?'])).not.toBeNull();
   });
   it('reconoce los pedidos de repetir', () => {
@@ -47,5 +47,23 @@ describe('llamadas de las unidades con la charla nueva', () => {
       }
     }
     expect(bad.slice(0, 10)).toEqual([]);
+  });
+});
+
+import { DEEP_NS, SCRIPTS_BY_N } from '../content/roleplays/all';
+describe('guiones profundos', () => {
+  it('tienen objetivo en cada momento, 7 o más momentos y la pista se entiende', () => {
+    const bad: string[] = [];
+    for (const n of DEEP_NS) {
+      const s = SCRIPTS_BY_N[n];
+      const nodes = Object.entries(s.nodes);
+      if (nodes.length < 7) bad.push(`${n}: ${nodes.length} momentos`);
+      for (const [id, x] of nodes) {
+        if (!x.aim) bad.push(`${n}/${id}: sin objetivo`);
+        if (!matchOption(x, [x.hint])) bad.push(`${n}/${id}: no entiende «${x.hint}»`);
+        if (x.options[0] && !matchOption({ ...x, options: [x.options[0]] }, [x.hint])) bad.push(`${n}/${id}: la pista no lleva a la primera opción`);
+      }
+    }
+    expect(bad).toEqual([]);
   });
 });
