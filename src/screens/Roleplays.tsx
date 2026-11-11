@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Icon, Ring } from '../components/ui';
+import { Oliver } from '../components/Oliver';
+import callBg from '../assets/call/background.svg?url';
+import callArm from '../assets/call/arm.svg?raw';
 import { BackButton } from '../components/BackButton';
 import { useBack } from '../lib/nav';
 import { canListen, listenManual, say, stopSpeaking, type ManualListen } from '../lib/speech';
@@ -411,14 +414,25 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
 
   const doneCount = Math.min(total, new Set(turns.filter((t) => t.ok).map((t) => t.node)).size);
   const state = listening ? 'Tocá de nuevo para enviar' : hearing ? 'Entendiendo lo que dijiste…' : speaking ? `${s.partner.name} está hablando…` : busy ? 'Un momento…' : 'Tocá para hablar';
+  // En las llamadas de las unidades se ve Oliver (animado mientras habla); en los roleplays, solo la charla.
+  const withOliver = s.id.startsWith('call-');
   return (
-    <div className="screen roleplays talk">
+    <div className={`screen roleplays talk ${withOliver ? 'with-oliver' : ''}`}>
       <div className="top-bar">
         <BackButton onClick={onBack} label="Salir" />
         <p className="eyebrow">
           {s.partner.name} · {e.title}
         </p>
       </div>
+      {withOliver && (
+        <div className="oliver-stage" aria-hidden="true">
+          <img className="call-bg" src={callBg} alt="" />
+          <div className="stage-oliver">
+            <Oliver talking={speaking} />
+            <div className="oliver-arm-wrap" dangerouslySetInnerHTML={{ __html: callArm }} />
+          </div>
+        </div>
+      )}
       <div className="rp-log">
         {log.map((l, i) => (
           <div key={i} className={`bubble ${l.who}`}>

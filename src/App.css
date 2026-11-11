@@ -932,3 +932,7 @@ main { padding-bottom: 86px; }
 .vocab-text { flex: 1; min-width: 0; }
 .vocab-text p { margin: 2px 0 0; }
 .small-round { width: 40px; height: 40px; font-size: 18px; flex: none; }
+/* Llamadas con Oliver en la charla nueva: escena arriba y el texto debajo. */
+.roleplays.talk.with-oliver .oliver-stage { position: relative; height: 34vh; min-height: 210px; margin: 0 -16px; overflow: hidden; border-radius: 0 0 22px 22px; flex: none; }
+.oliver-stage .stage-oliver { position: absolute; left: 50%; transform: translateX(-50%); width: min(62%, 290px); bottom: -12%; }
+.roleplays.talk.with-oliver .rp-log { max-height: none; }
