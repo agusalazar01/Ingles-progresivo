@@ -5,10 +5,10 @@ import { tuneKey } from './ai';
 export type Gender = 'f' | 'm';
 
 const FEMALE_NAMES = new Set(
-  `kate priya chloe lena ruby emma ella zoe grace mia karen lisa nok sophie lily hannah nina amy megan sarah emily tara margaret zara ruth maria kelly linda tina kylie jess jessica jodie nicole anna aiko matilda olivia charlotte isla ava amelia sienna jade jasmine rachel rebecca laura claire helen susan sue jenny jen julia lucy alice holly molly bella isabella sky nadia fatima mei yuki sakura ana lucia sofia valentina camila maya leah sam-f deb debbie sharon tracey michelle kim mel melissa bec becky shaz shazza kirsty brooke tegan jane mary beth liz elizabeth amanda mandy natalie nat georgia hayley abby abigail eva elena rosa carmen pat patricia joan joanne anne annie gemma erin naomi tash natasha ellie ivy willow hazel poppy daisy rose violet stella luna aria`.split(/\s+/),
+  `kate priya chloe lena ruby emma ella zoe grace mia karen lisa nok sophie lily hannah nina amy megan sarah emily tara margaret zara ruth maria kelly linda tina kylie jess jessica jodie nicole anna aiko matilda bindi kirra olivia charlotte isla ava amelia sienna jade jasmine rachel rebecca laura claire helen susan sue jenny jen julia lucy alice holly molly bella isabella sky nadia fatima mei yuki sakura ana lucia sofia valentina camila maya leah sam-f deb debbie sharon tracey michelle kim mel melissa bec becky shaz shazza kirsty brooke tegan jane mary beth liz elizabeth amanda mandy natalie nat georgia hayley abby abigail eva elena rosa carmen pat patricia joan joanne anne annie gemma erin naomi tash natasha ellie ivy willow hazel poppy daisy rose violet stella luna aria`.split(/\s+/),
 );
 const MALE_NAMES = new Set(
-  `tom dave josh jack mark gary dan liam david ben ollie oliver marco jake gus chris ahmed kevin nick ray mateo darren davo ash paul luca tony steve mick gav bill craig dean rob greg shane raj bruce bazza angus banjo clancy james john mike michael matt matthew luke harry henry charlie noah leo max sam joe will william george lewis adam peter pete brian phil scott tim jason ryan andrew andy simon richard rick ricky wayne trent brett kyle cameron cam jordan lachlan lachie hamish fraser callum connor ethan lucas hugo felix arthur alfie archie oscar finn hiro kenji wei omar ali hassan carlos diego juan pablo luis jorge miguel ivan sergei dmitri kofi sione tane rangi brad bradley gazza robbo stevo johnno thommo ken ted fred frank stan doug don ron reg col kev sanjay arjun vikram mohammed`.split(/\s+/),
+  `tom dave josh jack mark gary dan liam david ben ollie oliver marco jake gus chris ahmed kevin nick ray mateo darren davo ash paul luca tony steve mick gav bill craig dean rob greg shane raj bruce bazza angus banjo clancy flynn james john mike michael matt matthew luke harry henry charlie noah leo max sam joe will william george lewis adam peter pete brian phil scott tim jason ryan andrew andy simon richard rick ricky wayne trent brett kyle cameron cam jordan lachlan lachie hamish fraser callum connor ethan lucas hugo felix arthur alfie archie oscar finn hiro kenji wei omar ali hassan carlos diego juan pablo luis jorge miguel ivan sergei dmitri kofi sione tane rangi brad bradley gazza robbo stevo johnno thommo ken ted fred frank stan doug don ron reg col kev sanjay arjun vikram mohammed`.split(/\s+/),
 );
 
 /** Palabras que no dicen el género del personaje (artículos, lugares, roles que valen para los dos). */
@@ -69,7 +69,8 @@ export function speakerGender(packId: string, id: number, name = ''): Gender | n
       // voice.bin: 0–4 = F1–F5, 5–9 = M1–M5
       return id <= 4 ? 'f' : 'm';
     case 'pocket':
-      return id === 100 ? null : 'm';
+      // Voces 0–9 de hombre y 10–19 de mujer; 100 es tu grabación.
+      return id < 10 ? 'm' : id < 20 ? 'f' : null;
     default: {
       const first = name
         .toLowerCase()

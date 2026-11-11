@@ -4,6 +4,10 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.10
+
+- **Pocket TTS con 20 voces:** 10 de hombre y 10 de mujer, con el acento aclarado en cada una (australiano, neozelandés, británico, escocés, irlandés, estadounidense, canadiense). La mayoría son grabaciones de estudio (VCTK), más limpias que las anteriores; las australianas de LibriVox pasan por una limpieza de ruido. Si ya tenías Pocket, tocá «Actualizar» en Configuración › Voces (baja solo las voces nuevas).
+
 ## Novedades de la versión 1.9
 
 - **Voz según el personaje:** en los roleplays, si el personaje es mujer habla con voz de mujer y si es hombre, con voz de hombre. Se elige sola (por el nombre y el rol), con la voz que tengas; si no tiene de ese género, usa una del teléfono. Se puede apagar en Configuración › Voces, y marcar a mano si una voz es de mujer o de hombre (👩/👨). Kokoro suma 6 voces de mujer.

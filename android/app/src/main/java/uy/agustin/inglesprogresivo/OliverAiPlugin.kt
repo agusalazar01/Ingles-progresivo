@@ -536,7 +536,7 @@ class OliverAiPlugin : Plugin() {
             val diag = JSObject()
             val log = StringBuilder()
             try {
-                if (ttsKind == "pocket") loadReference(ref ?: "ref-howard-skyman-2.wav")
+                if (ttsKind == "pocket") loadReference(ref ?: "ref-m01.wav")
                 val rate = voice.sampleRate()
                 val encoding = if (pcm16) AudioFormat.ENCODING_PCM_16BIT else AudioFormat.ENCODING_PCM_FLOAT
                 val bytes = if (pcm16) 2 else 4

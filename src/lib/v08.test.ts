@@ -50,11 +50,11 @@ describe('v0.8.2 — ajustes de la voz', () => {
     expect(tuneFor('kokoro', 0).speed).toBe(1);
     expect(tuneFor('piper-au', 4).volume).toBe(1); // sin subir el volumen solo
     expect(referenceFor(MY_RECORDING)).toBe('mi-voz.wav');
-    expect(referenceFor(0)).toBe('ref-howard-skyman-2.wav');
+    expect(referenceFor(0)).toBe('ref-m01.wav');
     // 12 voces australianas en el paquete de Pocket, sin los ejemplos que no se usan
     const { PACKS, POCKET_VOICES } = await import('./ai');
     const pocket = PACKS.find((p) => p.id === 'pocket')!;
-    expect(POCKET_VOICES).toHaveLength(12);
+    expect(POCKET_VOICES).toHaveLength(20);
     for (const v of POCKET_VOICES) expect(pocket.files.map((f) => f.name)).toContain(v.file);
     expect(pocket.files.some((f) => /^ref-\d\.wav$/.test(f.name))).toBe(false);
   });

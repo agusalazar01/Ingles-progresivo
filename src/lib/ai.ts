@@ -128,23 +128,14 @@ export interface Pack {
 const REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-6/';
 
 /**
- * Voces australianas de Pocket TTS: grabaciones reales de narradores australianos de LibriVox (dominio público),
- * con el acento verificado. Ordenadas de la más grave/rústica a la más clara.
+ * Voces de Pocket TTS: 10 de hombre y 10 de mujer, con varios acentos (australiano, británico, estadounidense…).
+ * Son grabaciones de referencia libres: VCTK (estudio, CC BY 4.0) y narradores australianos de LibriVox (dominio público).
+ * Las arma scripts/voces-pocket.py; el nombre y el acento de cada una vienen en voces.json.
  */
-export const POCKET_VOICES: { file: string; name: string }[] = [
-  { file: 'ref-howard-skyman-2.wav', name: 'Howard Skyman 2 · grave y claro' },
-  { file: 'ref-howard-skyman-1.wav', name: 'Howard Skyman 1 · más grave' },
-  { file: 'ref-howard-skyman-3.wav', name: 'Howard Skyman 3 · el más grave' },
-  { file: 'ref-son-of-the-exiles-2.wav', name: 'Son of the Exiles 2 · más áspero' },
-  { file: 'ref-son-of-the-exiles-1.wav', name: 'Son of the Exiles 1' },
-  { file: 'ref-son-of-the-exiles-3.wav', name: 'Son of the Exiles 3' },
-  { file: 'ref-algy-pug-3.wav', name: 'Algy Pug 3' },
-  { file: 'ref-algy-pug-2.wav', name: 'Algy Pug 2' },
-  { file: 'ref-algy-pug-1.wav', name: 'Algy Pug 1' },
-  { file: 'ref-timothy-ferguson-3.wav', name: 'Timothy Ferguson 3' },
-  { file: 'ref-timothy-ferguson-2.wav', name: 'Timothy Ferguson 2' },
-  { file: 'ref-timothy-ferguson-1.wav', name: 'Timothy Ferguson 1 · el más claro' },
-];
+const POCKET_REL = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/voces-pocket-2/';
+const slots = (letter: string, label: string) => Array.from({ length: 10 }, (_, i) => ({ file: `ref-${letter}${String(i + 1).padStart(2, '0')}.wav`, name: `${label} ${i + 1}` }));
+/** Primero las 10 de hombre (voces 0–9) y después las 10 de mujer (10–19). */
+export const POCKET_VOICES: { file: string; name: string }[] = [...slots('m', '👨 Hombre'), ...slots('f', '👩 Mujer')];
 const HF = 'https://huggingface.co/litert-community/';
 const KITTEN = 'https://github.com/agusalazar01/Ingles-progresivo/releases/download/modelos-kitten/';
 const MB = 1024 * 1024;
@@ -241,9 +232,9 @@ export const PACKS: Pack[] = [
     kind: 'voice',
     engine: 'pocket',
     title: 'Pocket TTS (imita una voz)',
-    desc: '12 voces australianas de hombre sacadas de grabaciones reales (narradores de LibriVox), o la de una grabación tuya de 10 segundos. La más natural, pero la más lenta.',
+    desc: '20 voces (10 de hombre y 10 de mujer) con varios acentos: australiano, británico, estadounidense y más. O la de una grabación tuya de 10 segundos. La más natural, pero la más lenta.',
     mb: 190,
-    license: 'MIT; voces de LibriVox de dominio público (CC0). Si grabás a alguien, que te dé permiso.',
+    license: 'MIT; voces de VCTK (CC BY 4.0) y de LibriVox (dominio público). Si grabás a alguien, que te dé permiso.',
     files: [
       { url: REL + 'pocket-lm_flow.onnx', name: 'lm_flow.onnx', size: 10 * MB },
       { url: REL + 'pocket-lm_main.onnx', name: 'lm_main.onnx', size: 80 * MB },
@@ -252,7 +243,8 @@ export const PACKS: Pack[] = [
       { url: REL + 'pocket-text_conditioner.onnx', name: 'text_conditioner.onnx', size: 16 * MB },
       { url: REL + 'pocket-vocab.json', name: 'vocab.json', size: 1 * MB },
       { url: REL + 'pocket-token_scores.json', name: 'token_scores.json', size: 1 * MB },
-      ...POCKET_VOICES.map((v) => ({ url: REL + 'pocket-' + v.file, name: v.file, size: 700 * 1024 })),
+      ...POCKET_VOICES.map((v) => ({ url: POCKET_REL + v.file, name: v.file, size: 450 * 1024 })),
+      { url: POCKET_REL + 'voces.json', name: 'voces.json', size: 1 },
     ],
   },
   {
@@ -420,7 +412,17 @@ export const MY_RECORDING = 100;
 export async function packSpeakers(pack: Pack, files?: string[]): Promise<{ id: number; name: string }[]> {
   if (pack.speakers) return pack.speakers;
   if (pack.engine === 'pocket') {
-    const list = POCKET_VOICES.map((v, i) => ({ id: i, name: v.name }));
+    // Nombre y acento de cada voz (voces.json, que viene con el paquete).
+    let info: { file: string; name: string; gender: string; studio?: boolean }[] = [];
+    try {
+      info = JSON.parse((await OliverAi.readText({ id: pack.id, name: 'voces.json' })).text).voices ?? [];
+    } catch {
+      /* sin la lista: quedan «Hombre 1», «Mujer 1»… */
+    }
+    const list = POCKET_VOICES.map((v, i) => {
+      const x = info.find((k) => k.file === v.file);
+      return { id: i, name: x ? `${x.gender === 'f' ? '👩' : '👨'} ${x.name}${x.studio ? '' : ' · LibriVox'}` : v.name };
+    });
     if (files?.includes('mi-voz.wav')) list.unshift({ id: MY_RECORDING, name: '🎙️ Mi grabación' });
     return list;
   }

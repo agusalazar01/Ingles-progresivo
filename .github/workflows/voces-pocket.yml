@@ -1,6 +1,6 @@
-# Arma voces australianas de hombre para Pocket TTS a partir de grabaciones reales (LibriVox, CC0)
-# y deja los audios de prueba en el Release «voces-pocket-prueba» para elegir la de Oliver.
-name: Voces australianas para Pocket TTS
+# Arma las 20 voces de Pocket TTS (10 de hombre y 10 de mujer, con varios acentos) a partir de grabaciones
+# libres (VCTK y LibriVox) y las deja en el Release «voces-pocket-2», de donde las baja la app.
+name: Voces para Pocket TTS
 
 on:
   workflow_dispatch:
@@ -27,14 +27,14 @@ jobs:
           python-version: '3.12'
 
       - name: Preparar
-        run: pip install "datasets>=3" soundfile librosa numpy sherpa-onnx==2.0.1
+        run: pip install "datasets>=3" huggingface_hub soundfile librosa noisereduce numpy sherpa-onnx==2.0.1
 
       - name: Armar las voces
         run: python3 scripts/voces-pocket.py
 
-      - name: Subir los audios de prueba
+      - name: Publicar las voces
         run: |
-          gh release delete voces-pocket-prueba --yes --cleanup-tag 2>/dev/null || true
-          gh release create voces-pocket-prueba voces-pocket/* --prerelease --latest=false \
-            --title "Voces australianas para Pocket TTS (prueba)" \
-            --notes "Grabaciones reales de LibriVox (dominio público) y Pocket TTS hablando con cada una. Para elegir la voz de Oliver."
+          gh release delete voces-pocket-2 --yes --cleanup-tag 2>/dev/null || true
+          gh release create voces-pocket-2 voces-pocket/* --prerelease --latest=false \
+            --title "Voces de Pocket TTS (10 de hombre y 10 de mujer)" \
+            --notes "Grabaciones de referencia para Pocket TTS: VCTK (CC BY 4.0, versión limpiada por Kyutai) y narradores australianos de LibriVox (dominio público). La app las baja de acá."

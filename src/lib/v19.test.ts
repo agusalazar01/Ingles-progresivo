@@ -36,6 +36,11 @@ describe('voz según el personaje', () => {
     expect(f! % 2).toBe(1);
     expect(speakerFor('kitten', sp, 0, 'f', 'Kate')).toBe(f);
     expect(speakerFor('pocket', [{ id: 0, name: 'x' }], 0, 'f', 'Kate')).toBeNull();
+    // Pocket: voces 0–9 de hombre y 10–19 de mujer.
+    const pocket = Array.from({ length: 20 }, (_, id) => ({ id, name: `v${id}` }));
+    expect(speakerFor('pocket', pocket, 0, 'f', 'Kate')).toBeGreaterThanOrEqual(10);
+    expect(speakerFor('pocket', pocket, 15, 'm', 'Tom')).toBeLessThan(10);
+    expect(speakerGender('pocket', 100)).toBeNull();
     expect(speakerFor('kitten', sp, 4, null, 'Officer Lee')).toBe(4);
   });
   it('se puede marcar a mano una voz', () => {
