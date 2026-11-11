@@ -4,6 +4,11 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.9
+
+- **Voz según el personaje:** en los roleplays, si el personaje es mujer habla con voz de mujer y si es hombre, con voz de hombre. Se elige sola (por el nombre y el rol), con la voz que tengas; si no tiene de ese género, usa una del teléfono. Se puede apagar en Configuración › Voces, y marcar a mano si una voz es de mujer o de hombre (👩/👨). Kokoro suma 6 voces de mujer.
+- **IA con internet (opcional, Groq):** con tu clave gratis, en los roleplays entiende lo que decís con otras palabras, el personaje reacciona a lo que contaste y al final te corrige como un profe (en español). También corrige tus textos en «Escribir en inglés». Si no hay internet o tarda, sigue todo como antes, en el teléfono. Se prende en Configuración › IA con internet.
+
 ## Novedades de la versión 1.8
 
 - **Oliver vuelve a verse** en las llamadas de las unidades: arriba la escena con Oliver animado mientras habla y abajo el texto de la charla.

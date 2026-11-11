@@ -1,3 +1,4 @@
+import { groqReady, groqWritingFeedback } from '../lib/groq';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { BackButton } from '../components/BackButton';
 import { ExerciseRunner, type RunnerItem } from '../components/ExerciseRunner';
@@ -491,6 +492,7 @@ function Write({
             </ul>
           </div>
           {ai && <AiCard ai={ai} original={text} reveal={reveal} onReveal={() => setReveal(true)} hits={result.hits} />}
+          {groqReady() && <OnlineCard key={rounds} text={text} level={lesson.level} task={prompt} />}
           {result.hits.length > 0 && (
             <div className="card">
               <p className="card-title">Para corregir</p>
@@ -636,6 +638,55 @@ function AiCard({ ai, original, reveal, onReveal, hits }: { ai: AiResult; origin
             {full ? 'Ocultar el texto corregido' : 'Ver el texto corregido entero'}
           </button>
           {full && <p className="w-saved">{ai.text}</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Corrección con la IA online (Groq), a pedido: explica cada error en español. */
+function OnlineCard({ text, level, task }: { text: string; level: string; task: string }) {
+  const [res, setRes] = useState<Awaited<ReturnType<typeof groqWritingFeedback>> | 'wait' | string | null>(null);
+  const [full, setFull] = useState(false);
+  const run = () => {
+    setRes('wait');
+    groqWritingFeedback({ text, level, task })
+      .then(setRes)
+      .catch((e) => setRes(`No pude conectarme con la IA online (${(e as Error).message ?? e}).`));
+  };
+  return (
+    <div className="card">
+      <p className="card-title">🌐 Corrección con IA online</p>
+      {res === null && (
+        <button className="secondary" onClick={run}>
+          Corregir con la IA online (explica cada error)
+        </button>
+      )}
+      {res === 'wait' && <p className="small">La IA está leyendo tu texto…</p>}
+      {typeof res === 'string' && res !== 'wait' && (
+        <>
+          <p className="small">⚠️ {res}</p>
+          <button className="link" onClick={run}>
+            Probar de nuevo
+          </button>
+        </>
+      )}
+      {res && typeof res === 'object' && (
+        <>
+          {res.fixes.length === 0 && <p>✅ No encontró errores.</p>}
+          {res.fixes.map((f, i) => (
+            <div key={i} className="w-hit">
+              <p>
+                {f.from ? <s className="w-found">{f.from}</s> : <span className="small">(falta)</span>} → <b className="w-to">{f.to || '(sacar)'}</b>
+              </p>
+              {f.why && <p className="small">{f.why}</p>}
+            </div>
+          ))}
+          {res.comment && <p className="small">💬 {res.comment}</p>}
+          <button className="link" onClick={() => setFull(!full)}>
+            {full ? 'Ocultar el texto corregido' : 'Ver el texto corregido entero'}
+          </button>
+          {full && <p className="w-saved">{res.corrected}</p>}
         </>
       )}
     </div>

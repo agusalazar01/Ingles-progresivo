@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { AiSettings } from '../components/AiSettings';
+import { AiSettings, GenderVoiceSettings } from '../components/AiSettings';
+import { GroqSettings } from '../components/GroqSettings';
 import { BackButton } from '../components/BackButton';
 import { resetAll, setState, useAppState } from '../lib/store';
 import { ACCENT_LABEL, listVoices, openVoiceSettings, say, SYSTEM_VOICE, type Accent } from '../lib/speech';
@@ -8,12 +9,13 @@ import { useBack } from '../lib/nav';
 import { aiAvailable, packById } from '../lib/ai';
 import { APP_VERSION, BUILD } from '../lib/update';
 
-export type SettingsSection = 'look' | 'voice' | 'ai' | 'study' | 'about';
+export type SettingsSection = 'look' | 'voice' | 'ai' | 'online' | 'study' | 'about';
 
 const SECTIONS: { id: SettingsSection; icon: string; title: string; desc: string }[] = [
   { id: 'look', icon: '🎨', title: 'Apariencia y sonido', desc: 'Modo oscuro o claro, sonidos de acierto y error' },
   { id: 'voice', icon: '🗣️', title: 'Voz del teléfono y acento', desc: 'La voz de los ejercicios y el acento de las voces' },
   { id: 'ai', icon: '🤖', title: 'Voces', desc: 'Voz de los roleplays y de Oliver, y reconocimiento de voz, sin internet' },
+  { id: 'online', icon: '🌐', title: 'IA con internet (opcional)', desc: 'Groq: entiende mejor en los roleplays y corrige como un profe. Sin internet sigue todo igual' },
   { id: 'study', icon: '📚', title: 'Estudio', desc: 'Palabras nuevas por sesión' },
   { id: 'about', icon: 'ℹ️', title: 'Datos y acerca de', desc: 'Versión de la app y borrar el progreso' },
 ];
@@ -35,6 +37,7 @@ export function Settings({ initial, onExit }: { initial?: SettingsSection; onExi
       const b = packById(s.settings.ai.brain)?.title ?? 'sin IA de charla';
       return `${v} · ${b}`;
     }
+    if (id === 'online') return s.settings.ai.groq?.on ? 'Prendida (cuando hay internet)' : 'Apagada: todo en el teléfono';
     if (id === 'study') return `${s.settings.newWords} palabras nuevas`;
     return `v${APP_VERSION}`;
   };
@@ -71,8 +74,10 @@ export function Settings({ initial, onExit }: { initial?: SettingsSection; onExi
       {section === 'ai' && (
         <>
           <AiSettings />
+          <GenderVoiceSettings />
         </>
       )}
+      {section === 'online' && <GroqSettings />}
       {section === 'study' && <StudySettings />}
       {section === 'about' && <About />}
     </div>

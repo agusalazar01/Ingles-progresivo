@@ -5,13 +5,15 @@ import callBg from '../assets/call/background.svg?url';
 import callArm from '../assets/call/arm.svg?raw';
 import { BackButton } from '../components/BackButton';
 import { useBack } from '../lib/nav';
-import { canListen, listenManual, say, stopSpeaking, type ManualListen } from '../lib/speech';
+import { canListen, listenManual, listVoices, say, stopSpeaking, type ManualListen } from '../lib/speech';
 import { useAppState } from '../lib/store';
 import type { Level } from '../content/types';
-import { chosenAi, listenManualWith, loadEarOnly, loadVoicePack, releaseCallAi, speakWith, tuneFor, type CallAi } from '../lib/ai';
+import { chosenAi, listenManualWith, loadEarOnly, loadVoicePack, packSpeakers, releaseCallAi, speakWith, tuneFor, type CallAi } from '../lib/ai';
+import { autoGender, partnerGender, speakerFor, systemVoiceFor } from '../lib/voicegender';
 import { RP_CATEGORIES, ROLEPLAYS } from '../content/roleplays/catalog';
 import type { RFix, RoleplayEntry, RoleplayScript } from '../content/roleplays/types';
-import { fixesFor, isRepeatRequest, pickLine, roleplayById, saveRoleplay, understand } from '../lib/roleplay';
+import { fixesFor, isRepeatRequest, matchOption, pickLine, roleplayById, saveRoleplay, understand } from '../lib/roleplay';
+import { groqReady, groqRoleplayFeedback, groqRoleplayTurn, type GroqFeedback } from '../lib/groq';
 import { downloadMeaning, loadMeaning, MEANING_PACK, meaningState, releaseMeaning, removeMeaning, type MeaningState } from '../lib/understand';
 import { cancelDownload, getDownloads, subscribeDownloads } from '../lib/ai';
 import { SEM_OFFTOPIC, type Embedder } from '../lib/semantic';
@@ -237,6 +239,30 @@ function Brief({ e, onBack, onStart }: { e: RoleplayEntry; onBack: () => void; o
   );
 }
 
+/**
+ * Voz para el personaje del roleplay: si es mujer, una voz de mujer; si es hombre, de hombre.
+ * Primero en el paquete de voces elegido; si no tiene de ese género, una voz del teléfono. Oliver mantiene la elegida.
+ */
+async function castVoice(c: CallAi, partner: { name: string; role: string }): Promise<{ speaker: number; sys?: string }> {
+  const g = autoGender() && partner.name !== 'Oliver' ? partnerGender(partner.name, partner.role) : null;
+  if (!g) return { speaker: c.speaker };
+  if (c.voice) {
+    try {
+      const pick = speakerFor(c.voice.id, await packSpeakers(c.voice), c.speaker, g, partner.name);
+      if (pick !== null) return { speaker: pick };
+    } catch {
+      return { speaker: c.speaker };
+    }
+  }
+  try {
+    const sys = systemVoiceFor(await listVoices(), g, partner.name);
+    if (sys) return { speaker: c.speaker, sys };
+  } catch {
+    /* sin lista de voces */
+  }
+  return { speaker: c.speaker };
+}
+
 function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; onBack: () => void; onDone: (log: Line[], turns: Turn[]) => void }) {
   const [node, setNode] = useState(s.start);
   const [log, setLog] = useState<Line[]>([]);
@@ -253,6 +279,9 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
   const [praise, setPraise] = useState('');
   const [keyboard, setKeyboard] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [thinking, setThinking] = useState(false);
+  /** Estado de la IA online en esta charla: sin usar, respondiendo bien o falló (y se sigue sin internet). */
+  const [online, setOnline] = useState<'off' | 'ok' | 'fail'>(groqReady() ? 'ok' : 'off');
   const emb = useRef<Embedder | null>(null);
   const total = pathLength(s);
   const current = useRef('');
@@ -267,18 +296,22 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
   const n = s.nodes[node];
   const slow = SLOW.includes(e.level);
 
-  /** Habla con la voz elegida en Configuración (motor de voces del teléfono, sin IA de charla). */
+  /** Voz de este personaje: la del paquete (con el número de voz) o una del teléfono (`sys`). */
+  const cast = useRef<{ speaker: number; sys?: string }>({ speaker: 0 });
+
+  /** Habla con la voz elegida en Configuración, o con una del mismo género que el personaje (motor de voces del teléfono, sin IA de charla). */
   const voiceSay = async (text: string, slower = slow) => {
     const v = voice.current;
-    if (v?.voice) {
+    const { speaker, sys } = cast.current;
+    if (v?.voice && !sys) {
       try {
-        await speakWith(v.voice, v.speaker, text, slower ? { ...tuneFor(v.voice.id, v.speaker), speed: Math.min(tuneFor(v.voice.id, v.speaker).speed, 0.8) } : undefined);
+        await speakWith(v.voice, speaker, text, slower ? { ...tuneFor(v.voice.id, speaker), speed: Math.min(tuneFor(v.voice.id, speaker).speed, 0.8) } : undefined);
         return;
       } catch {
         /* sigue con la voz del sistema */
       }
     }
-    await Promise.race([say(text, { slow: slower, lang: 'en-AU' }).catch(() => {}), new Promise((r) => setTimeout(r, 2500 + text.length * (slower ? 110 : 80)))]);
+    await Promise.race([say(text, { slow: slower, lang: sys ? undefined : 'en-AU', voice: sys }).catch(() => {}), new Promise((r) => setTimeout(r, 2500 + text.length * (slower ? 110 : 80)))]);
   };
 
   const speak = async (raw: string) => {
@@ -300,7 +333,8 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
       // Si el oído es Gemma 4, se carga solo para escuchar: no se usa el reconocimiento del teléfono.
       try {
         const c = await chosenAi();
-        if (c.voice) await loadVoicePack(c.voice, c.speaker);
+        cast.current = await castVoice(c, s.partner);
+        if (c.voice && !cast.current.sys) await loadVoicePack(c.voice, cast.current.speaker);
         const ear = await loadEarOnly(c);
         voice.current = { ...c, voice: c.voice, ear, brain: null };
         if (ear) setMicOk(true);
@@ -360,20 +394,38 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
     }
     const found = fixesFor(n, said).map((f) => ({ ...f, said }));
     setLastFix(found);
-    const u = await understand(n, said, emb.current);
+    // Con la IA online prendida (Groq), entiende y responde ella; si no hay internet o tarda, sigue sin internet.
+    let u: Awaited<ReturnType<typeof understand>> | null = null;
+    let aiReply = '';
+    if (groqReady()) {
+      setThinking(true);
+      try {
+        const byWords = matchOption(n, [said]);
+        const g = await groqRoleplayTurn({ s, node: n, level: e.level, history: logRef.current, said, matched: byWords ? n.options.indexOf(byWords) : undefined });
+        u = { option: g.choice >= 0 ? n.options[g.choice] : null, how: byWords ? 'words' : 'meaning', closeness: g.choice >= 0 ? 1 : 0.5 };
+        aiReply = g.reply;
+        setOnline('ok');
+      } catch {
+        setOnline('fail');
+      }
+      setThinking(false);
+    }
+    if (!u) u = await understand(n, said, emb.current);
     const opt = u.option;
     const turn: Turn = { said, node, hint: n.hint, aim: n.aim, ok: !!opt, firstTry: tries === 0, fixes: found, praise: opt?.praise, meaning: u.how === 'meaning' };
     setTurns((t) => [...t, turn]);
     if (opt) {
       if (opt.praise && !found.length) setPraise(opt.praise);
-      await goTo(opt.next, pickLine(opt.reply));
+      await goTo(opt.next, aiReply || pickLine(opt.reply));
     } else if (tries === 0) {
       setTries(1);
       setShowAim(true);
       // Si lo que dijiste no tiene que ver con el momento, vuelve a la pregunta en vez de saltar a otra cosa.
       const offTopic = u.closeness >= 0 && u.closeness < SEM_OFFTOPIC;
       await speak(
-        offTopic
+        aiReply
+          ? aiReply
+          : offTopic
           ? `${pickLine(["Sorry, I'm not sure that answers my question.", 'Hmm, I think we got a bit off track.', "Sorry, I didn't follow that."])} ${pickLine(n.say)}`
           : pickLine(['Sorry, could you say that again?', "Sorry, I didn't catch that.", 'Sorry, what was that?']),
       );
@@ -413,7 +465,7 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
   };
 
   const doneCount = Math.min(total, new Set(turns.filter((t) => t.ok).map((t) => t.node)).size);
-  const state = listening ? 'Tocá de nuevo para enviar' : hearing ? 'Entendiendo lo que dijiste…' : speaking ? `${s.partner.name} está hablando…` : busy ? 'Un momento…' : 'Tocá para hablar';
+  const state = listening ? 'Tocá de nuevo para enviar' : hearing ? 'Entendiendo lo que dijiste…' : thinking ? 'La IA está pensando…' : speaking ? `${s.partner.name} está hablando…` : busy ? 'Un momento…' : 'Tocá para hablar';
   // En las llamadas de las unidades se ve Oliver (animado mientras habla); en los roleplays, solo la charla.
   const withOliver = s.id.startsWith('call-');
   return (
@@ -422,6 +474,8 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
         <BackButton onClick={onBack} label="Salir" />
         <p className="eyebrow">
           {s.partner.name} · {e.title}
+          {online === 'ok' && <span className="online-badge"> · 🌐 IA online</span>}
+          {online === 'fail' && <span className="online-badge off"> · 📴 sin internet: sigo en el teléfono</span>}
         </p>
       </div>
       {withOliver && (
@@ -530,6 +584,16 @@ function Done({ e, log, turns, onAgain, onBack }: { e: RoleplayEntry; log: Line[
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [ai, setAi] = useState<{ said: string; text: string; edits: ProofEdit[] }[] | null>(null);
   const mine = turns.filter((t) => t.said.split(' ').length >= 3);
+
+  // Con la IA online prendida: corrección como un profe (Groq). Si falla, quedan las correcciones del teléfono.
+  const [online, setOnline] = useState<GroqFeedback | 'wait' | 'fail' | null>(groqReady() && mine.length ? 'wait' : null);
+  useEffect(() => {
+    if (online !== 'wait') return;
+    groqRoleplayFeedback({ s, level: e.level, said: mine.map((t) => t.said) })
+      .then(setOnline)
+      .catch(() => setOnline('fail'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Con el corrector bajado, se revisa cada respuesta tuya (en el teléfono).
   useEffect(() => {
@@ -641,6 +705,48 @@ function Done({ e, log, turns, onAgain, onBack }: { e: RoleplayEntry; log: Line[
         ))}
         {ai === null && mine.length > 0 && <p className="small">Si bajás el corrector con IA (en «Escribir en inglés»), también revisa cada frase tuya.</p>}
       </div>
+
+      {online && (
+        <div className="card">
+          <p className="card-title">🌐 Corrección con IA online</p>
+          {online === 'wait' && <p className="small">La IA está revisando tus respuestas…</p>}
+          {online === 'fail' && <p className="small">No pude conectarme con la IA online (¿sin internet?). Arriba tenés la corrección hecha en el teléfono.</p>}
+          {typeof online === 'object' && (
+            <>
+              {online.good.map((g, i) => (
+                <div key={`og${i}`} className="sum-item good">
+                  <p className="small">✅ {g}</p>
+                </div>
+              ))}
+              {online.fixes.length === 0 && <p className="small">No encontró errores en lo que dijiste. ¡Muy bien!</p>}
+              {online.fixes.map((f, i) => (
+                <div key={`of${i}`} className="sum-item fix">
+                  <p className="sum-said">
+                    <s>{f.said}</s>
+                  </p>
+                  <p className="sum-right">→ {f.better}</p>
+                  <p className="small">{f.why}</p>
+                </div>
+              ))}
+              {online.vocab.length > 0 && <p className="sum-head">Para sonar más natural</p>}
+              {online.vocab.map((v) => (
+                <div key={v.en} className="vocab-row">
+                  <button className="round small-round" onClick={() => say(v.en, { lang: 'en-AU' })} aria-label={`Escuchar ${v.en}`}>
+                    🔊
+                  </button>
+                  <div className="vocab-text">
+                    <b>{v.en}</b>
+                    <p className="small">{v.es}</p>
+                  </div>
+                  <button className="round small-round" onClick={() => saveWord(v.en, v.es)} aria-label="Guardar">
+                    {saved.has(v.en) ? '✅' : '🔖'}
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
 
       {s.vocab.length > 0 && (
         <div className="card">

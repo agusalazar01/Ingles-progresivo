@@ -1,3 +1,4 @@
+import { speakerGender } from '../lib/voicegender';
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { setState, useAppState } from '../lib/store';
 import {
@@ -44,6 +45,18 @@ export function AiSettings() {
   const [testing, setTesting] = useState<number | null>(null);
   const [msg, setMsg] = useState('');
 
+  /** Marca a mano si una voz es de mujer o de hombre (para las que el modelo no dice, como las de Piper). */
+  const markGender = (packId: string, id: number, name: string) => {
+    const k = tuneKey(packId, id);
+    const now = speakerGender(packId, id, name);
+    const next = now === 'f' ? 'm' : now === 'm' ? undefined : 'f';
+    setState((x) => {
+      const g = { ...x.settings.ai.genders };
+      if (next) g[k] = next;
+      else delete g[k];
+      return { ...x, settings: { ...x.settings, ai: { ...x.settings.ai, genders: g } } };
+    });
+  };
   const set = (patch: Partial<AiChoice>) => setState((st) => ({ ...st, settings: { ...st.settings, ai: { ...st.settings.ai, ...patch } } }));
   const refresh = () => aiStatus().then(setSt);
 
@@ -195,7 +208,7 @@ export function AiSettings() {
         </p>
         {chosen && p.kind === 'voice' && speakers.length > 0 && (
           <div className="options">
-            <p className="small">Elegí la voz de Oliver (tocá ▶ para escucharla):</p>
+            <p className="small">Elegí la voz de Oliver (tocá ▶ para escucharla). 👩/👨: si es de mujer o de hombre (tocalo para cambiarlo); así cada personaje de los roleplays habla con una voz de su género.</p>
             {speakers.map((v) => (
               <div key={v.id} className="ai-row">
                 <button className={`option ${ai.speaker === v.id ? 'right' : ''}`} style={{ flex: 3 }} onClick={() => set({ speaker: v.id })}>
@@ -203,6 +216,14 @@ export function AiSettings() {
                 </button>
                 <button className="secondary" style={{ flex: 1, minWidth: 60 }} disabled={testing !== null} onClick={() => test(p, v.id)}>
                   {testing === v.id ? '…' : '▶'}
+                </button>
+                <button
+                  className="secondary"
+                  style={{ flex: 1, minWidth: 52 }}
+                  title="Voz de mujer, de hombre o sin marcar: sirve para elegir la voz de cada personaje"
+                  onClick={() => markGender(p.id, v.id, v.name)}
+                >
+                  {({ f: '👩', m: '👨' } as Record<string, string>)[speakerGender(p.id, v.id, v.name) ?? ''] ?? '❔'}
                 </button>
               </div>
             ))}
@@ -403,6 +424,25 @@ function AudioLab({ pack, speaker }: { pack: Pack; speaker: number }) {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/** Voz según el personaje: mujer → voz de mujer, hombre → voz de hombre (se puede apagar). */
+export function GenderVoiceSettings() {
+  const s = useAppState();
+  const on = s.settings.ai.autoGender !== false;
+  const toggle = () => setState((x) => ({ ...x, settings: { ...x.settings, ai: { ...x.settings.ai, autoGender: !on } } }));
+  return (
+    <div className="card">
+      <p className="card-title">🎭 Voz según el personaje</p>
+      <p className="small">
+        En los roleplays, si el personaje es mujer (Kate, la vendedora…) habla con una voz de mujer, y si es hombre, con una de hombre. Se elige sola con
+        la voz que tengas: si no tiene de ese género, usa una del teléfono. Oliver mantiene siempre la voz que elegiste.
+      </p>
+      <button className={`option ${on ? 'right' : ''}`} onClick={toggle}>
+        {on ? '✅ Elegir la voz automáticamente' : '⬜ Elegir la voz automáticamente'}
+      </button>
     </div>
   );
 }
