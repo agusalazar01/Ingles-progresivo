@@ -4,6 +4,16 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.7 (todo sin internet)
+
+- **Charla nueva, estilo Preply**, en los 192 roleplays y en las llamadas con Oliver de cada unidad: burbujas con lo que dice cada uno, tarjeta «Prueba a:» con el objetivo del momento y el avance (1/3, 2/3…), micrófono grande (tocás para hablar y tocás de nuevo para enviar), teclado, repetir lento y ayuda.
+- **Te entiende aunque lo digas distinto**:
+  - sinónimos siempre activos (yeah = yes, suitcase = bags, loo = toilet, arvo = afternoon…);
+  - modelo opcional «Entender lo que quisiste decir» (all-MiniLM-L6-v2, 23 MB, sin internet): compara el significado de lo que dijiste con lo que espera la otra persona;
+  - si decís algo que no tiene que ver, la otra persona vuelve a su pregunta en vez de saltar a otra cosa; «Can you repeat that?» hace que repita más lento.
+- **Resumen al final («Puntos clave del ejercicio»)**: transcripción completa, qué hiciste bien (con el porqué), qué podés mejorar (tu frase → cómo queda mejor, y por qué; con el corrector bajado, revisa cada frase) y vocabulario clave con audio para guardar en «Mis frases».
+- Nueva regla de errores: «I want go» → «I want to go».
+
 ## Novedades de la versión 1.6
 
 - **Armá la frase** (como en clase): te doy las palabras clave en orden y el tiempo verbal, y armás la oración entera. 84 frases de B1 a C1 en 10 temas: dos tiempos en pasado, presente perfecto, futuro, condicionales, pasiva, estilo indirecto, modales en pasado, deseos, costumbres y estructuras C1 (inversión, cleft…). Si tu versión no coincide, ves el modelo y decidís si la tuya también estaba bien. Lo que fallás vuelve primero. Está en el plan de hoy desde B1.

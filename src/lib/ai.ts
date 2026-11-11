@@ -88,6 +88,8 @@ export interface AiStatus {
   /** Archivos de cada paquete bajado. */
   files?: Record<string, string[]>;
   freeBytes: number;
+  /** Carpeta de los paquetes en el teléfono. */
+  root?: string;
   loaded: string[];
   /** Si la app se cerró de golpe usando la IA: en qué paso. */
   crashed?: string | null;

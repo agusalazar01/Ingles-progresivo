@@ -135,6 +135,7 @@ class OliverAiPlugin : Plugin() {
         ret.put("files", files)
         ret.put("crashed", lastCrash)
         ret.put("freeBytes", context.filesDir.usableSpace)
+        ret.put("root", root().absolutePath)
         val loaded = JSArray()
         listOfNotNull(ttsId, earId, proofId).forEach { loaded.put(it) }
         ret.put("loaded", loaded)
@@ -162,7 +163,9 @@ class OliverAiPlugin : Plugin() {
                 for ((i, f) in list.withIndex()) {
                     val (url, name, _) = f
                     val out = File(target, name)
-                    if (!out.exists()) {
+                    // Un .tgz ya descomprimido no se vuelve a bajar.
+                    val unpacked = name.endsWith(".tgz") && File(target, name.removeSuffix(".tgz")).isDirectory
+                    if (!out.exists() && !unpacked) {
                         out.parentFile?.mkdirs()
                         val part = File(target, "$name.part")
                         fetch(url, part, id) { got, len ->
@@ -180,6 +183,11 @@ class OliverAiPlugin : Plugin() {
                         if (!part.renameTo(out)) throw Exception("No se pudo guardar $name")
                         // Un .zip se descomprime en una carpeta con su nombre (por ejemplo, el tokenizer de Qwen3-ASR).
                         if (name.endsWith(".zip")) unzip(out, File(target, name.removeSuffix(".zip")))
+                        // Un .tgz (paquete de npm) se descomprime y se borra: solo quedan el modelo y su vocabulario.
+                        if (name.endsWith(".tgz")) {
+                            untgz(out, File(target, name.removeSuffix(".tgz"))) { it.endsWith(".onnx") || it.endsWith("tokenizer.json") }
+                            out.delete()
+                        }
                     }
                     before += weights[i]
                 }
@@ -218,6 +226,56 @@ class OliverAiPlugin : Plugin() {
                 }
             }
         }
+    }
+
+    /** Descomprime un .tar.gz guardando (sin carpetas) solo los archivos que pide `wanted`. */
+    private fun untgz(tgz: File, dest: File, wanted: (String) -> Boolean) {
+        dest.deleteRecursively()
+        dest.mkdirs()
+        java.util.zip.GZIPInputStream(tgz.inputStream().buffered()).use { gz ->
+            val header = ByteArray(512)
+            val buf = ByteArray(64 * 1024)
+            while (true) {
+                if (!readBlock(gz, header)) break
+                if (header.all { it.toInt() == 0 }) break
+                val name = String(header, 0, 100, Charsets.UTF_8).trimEnd('\u0000')
+                val prefix = String(header, 345, 155, Charsets.UTF_8).trimEnd('\u0000')
+                val sizeText = String(header, 124, 12, Charsets.US_ASCII).trim('\u0000', ' ')
+                val size = if (sizeText.isEmpty()) 0L else sizeText.toLong(8)
+                val type = header[156].toInt()
+                val full = if (prefix.isNotEmpty()) "$prefix/$name" else name
+                val base = full.substringAfterLast('/')
+                val keep = (type == '0'.code || type == 0) && base.isNotEmpty() && !base.startsWith(".") && wanted(full)
+                val out = if (keep) FileOutputStream(File(dest, base)) else null
+                try {
+                    var left = size
+                    while (left > 0) {
+                        val n = gz.read(buf, 0, min(buf.size.toLong(), left).toInt())
+                        if (n < 0) throw Exception("Archivo incompleto")
+                        out?.write(buf, 0, n)
+                        left -= n
+                    }
+                } finally {
+                    out?.close()
+                }
+                var pad = (512 - size % 512) % 512
+                while (pad > 0) {
+                    val n = gz.read(buf, 0, pad.toInt())
+                    if (n < 0) break
+                    pad -= n
+                }
+            }
+        }
+    }
+
+    private fun readBlock(input: java.io.InputStream, b: ByteArray): Boolean {
+        var off = 0
+        while (off < b.size) {
+            val n = input.read(b, off, b.size - off)
+            if (n < 0) return false
+            off += n
+        }
+        return true
     }
 
     /** Descarga con reanudación: si se corta, sigue desde donde quedó. */

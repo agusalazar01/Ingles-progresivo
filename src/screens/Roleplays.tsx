@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Icon, Ring } from '../components/ui';
 import { BackButton } from '../components/BackButton';
 import { useBack } from '../lib/nav';
@@ -8,7 +8,13 @@ import type { Level } from '../content/types';
 import { chosenAi, listenManualWith, loadEarOnly, loadVoicePack, releaseCallAi, speakWith, tuneFor, type CallAi } from '../lib/ai';
 import { RP_CATEGORIES, ROLEPLAYS } from '../content/roleplays/catalog';
 import type { RFix, RoleplayEntry, RoleplayScript } from '../content/roleplays/types';
-import { fixesFor, matchOption, pickLine, roleplayById, saveRoleplay } from '../lib/roleplay';
+import { fixesFor, isRepeatRequest, pickLine, roleplayById, saveRoleplay, understand } from '../lib/roleplay';
+import { downloadMeaning, loadMeaning, MEANING_PACK, meaningState, releaseMeaning, removeMeaning, type MeaningState } from '../lib/understand';
+import { cancelDownload, getDownloads, subscribeDownloads } from '../lib/ai';
+import { SEM_OFFTOPIC, type Embedder } from '../lib/semantic';
+import { connectorsIn, ruleHits } from '../lib/writing';
+import { proofEdits, proofread, proofState, unloadProof, type ProofEdit } from '../lib/proofread';
+import { savePhrase } from '../lib/phrases';
 import type { CallScript } from '../content/calls';
 
 type View = { v: 'library' } | { v: 'brief'; id: string } | { v: 'talk'; id: string } | { v: 'done'; id: string; log: Line[]; turns: Turn[] };
@@ -29,6 +35,20 @@ interface Turn {
   firstTry: boolean;
   fixes: Fixed[];
   praise?: string;
+  /** Te entendió por el significado (dicho con otras palabras). */
+  meaning?: boolean;
+}
+
+/** Cuántos momentos tiene el camino principal del guion (para el avance «1 de 4»). */
+function pathLength(s: RoleplayScript): number {
+  let id: string | undefined = s.start;
+  const seen = new Set<string>();
+  while (id && id !== 'end' && s.nodes[id] && !seen.has(id)) {
+    seen.add(id);
+    const n: RoleplayScript['nodes'][string] = s.nodes[id];
+    id = n.options[0]?.next ?? n.fallback.next;
+  }
+  return Math.max(1, seen.size);
 }
 
 /** Puntaje 0–100: te entendió de una (60), sin errores previstos (30) y llegar al final sin trabarte (10). */
@@ -69,6 +89,15 @@ export function Roleplays({ onExit, onAiCall }: { onExit: () => void; onAiCall: 
   return <Library onBack={back} onOpen={(id) => setView({ v: 'brief', id })} />;
 }
 
+/** Una llamada de unidad con Oliver, con la misma pantalla de charla y el mismo resumen que los roleplays. */
+export function ScriptedCall({ entry, onExit }: { entry: RoleplayEntry; onExit: () => void }) {
+  const [view, setView] = useState<{ v: 'talk' } | { v: 'done'; log: Line[]; turns: Turn[] }>({ v: 'talk' });
+  const [round, setRound] = useState(0);
+  useBack(true, () => (stopSpeaking(), onExit()), 2);
+  if (view.v === 'done') return <Done e={entry} log={view.log} turns={view.turns} onAgain={() => (setRound(round + 1), setView({ v: 'talk' }))} onBack={onExit} />;
+  return <Talk key={round} e={entry} s={entry.script!} onBack={onExit} onDone={(log, turns) => setView({ v: 'done', log, turns })} />;
+}
+
 function Library({ onBack, onOpen }: { onBack: () => void; onOpen: (id: string) => void }) {
   const s = useAppState();
   const [level, setLevel] = useState<Level | 'all'>('all');
@@ -88,6 +117,7 @@ function Library({ onBack, onOpen }: { onBack: () => void; onOpen: (id: string) 
         Situaciones reales, del aeropuerto a una entrevista de trabajo. Hablás o escribís libre y la otra persona reacciona a lo que decís. Hiciste {doneCount} de{' '}
         {ROLEPLAYS.length}.
       </p>
+      <MeaningCard />
       <div className="chips">
         {(['all', ...LEVELS] as const).map((l) => (
           <button key={l} className={`chip ${level === l ? 'chosen' : ''}`} onClick={() => setLevel(l)}>
@@ -214,10 +244,14 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
   const [hearing, setHearing] = useState(false);
   const [listening, setListening] = useState(false);
   const [showHint, setShowHint] = useState(false);
-  const [showAim, setShowAim] = useState(SHOW_AIM.includes(e.level));
+  const [, setShowAim] = useState(SHOW_AIM.includes(e.level));
   const [micOk, setMicOk] = useState(false);
   const [busy, setBusy] = useState(true);
   const [praise, setPraise] = useState('');
+  const [keyboard, setKeyboard] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const emb = useRef<Embedder | null>(null);
+  const total = pathLength(s);
   const current = useRef('');
   const alive = useRef(true);
   const mic = useRef<ManualListen | null>(null);
@@ -250,7 +284,9 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
     if (!text) return;
     setLog((l) => [...l, { who: 'them', text }]);
     current.current = text;
+    setSpeaking(true);
     await voiceSay(text);
+    setSpeaking(false);
   };
 
   useEffect(() => {
@@ -269,6 +305,10 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
         voice.current = null;
       }
       if (!alive.current) return;
+      // El modelo que entiende lo que quisiste decir (si está bajado) se carga mientras Oliver habla.
+      loadMeaning().then((m) => {
+        if (alive.current) emb.current = m;
+      });
       await speak(pickLine(s.nodes[s.start].say));
       if (alive.current) setBusy(false);
     })();
@@ -277,6 +317,7 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
       mic.current?.stop();
       stopSpeaking();
       if (voice.current?.voice || voice.current?.ear) releaseCallAi();
+      releaseMeaning();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -306,10 +347,19 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
     setTyped('');
     setPraise('');
     setLog((l) => [...l, { who: 'you', text: said }]);
+    // «Can you repeat that?»: repite más lento, no cuenta como respuesta.
+    if (isRepeatRequest(said) && said.split(' ').length <= 7) {
+      setSpeaking(true);
+      await voiceSay(current.current, true);
+      setSpeaking(false);
+      if (alive.current) setBusy(false);
+      return;
+    }
     const found = fixesFor(n, said).map((f) => ({ ...f, said }));
     setLastFix(found);
-    const opt = matchOption(n, [said]);
-    const turn: Turn = { said, node, hint: n.hint, aim: n.aim, ok: !!opt, firstTry: tries === 0, fixes: found, praise: opt?.praise };
+    const u = await understand(n, said, emb.current);
+    const opt = u.option;
+    const turn: Turn = { said, node, hint: n.hint, aim: n.aim, ok: !!opt, firstTry: tries === 0, fixes: found, praise: opt?.praise, meaning: u.how === 'meaning' };
     setTurns((t) => [...t, turn]);
     if (opt) {
       if (opt.praise && !found.length) setPraise(opt.praise);
@@ -317,7 +367,13 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
     } else if (tries === 0) {
       setTries(1);
       setShowAim(true);
-      await speak(pickLine(['Sorry, could you say that again?', "Sorry, I didn't catch that.", 'Sorry, what was that?']));
+      // Si lo que dijiste no tiene que ver con el momento, vuelve a la pregunta en vez de saltar a otra cosa.
+      const offTopic = u.closeness >= 0 && u.closeness < SEM_OFFTOPIC;
+      await speak(
+        offTopic
+          ? `${pickLine(["Sorry, I'm not sure that answers my question.", 'Hmm, I think we got a bit off track.', "Sorry, I didn't follow that."])} ${pickLine(n.say)}`
+          : pickLine(['Sorry, could you say that again?', "Sorry, I didn't catch that.", 'Sorry, what was that?']),
+      );
     } else {
       setShowHint(true);
       await goTo(n.fallback.next, n.fallback.reply);
@@ -353,56 +409,42 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
     }
   };
 
+  const doneCount = Math.min(total, new Set(turns.filter((t) => t.ok).map((t) => t.node)).size);
+  const state = listening ? 'Tocá de nuevo para enviar' : hearing ? 'Entendiendo lo que dijiste…' : speaking ? `${s.partner.name} está hablando…` : busy ? 'Un momento…' : 'Tocá para hablar';
   return (
     <div className="screen roleplays talk">
       <div className="top-bar">
         <BackButton onClick={onBack} label="Salir" />
         <p className="eyebrow">
-          {e.title} · {s.partner.name}, {s.partner.role}
+          {s.partner.name} · {e.title}
         </p>
       </div>
       <div className="rp-log">
         {log.map((l, i) => (
           <div key={i} className={`bubble ${l.who}`}>
-            {l.who === 'them' && <b>{s.partner.name}: </b>}
+            {l.who === 'them' && <span className="bubble-name">{s.partner.name}</span>}
             {l.text}
           </div>
         ))}
-        {lastFix.map((f, i) => (
-          <div key={`f${i}`} className="feedback neutral rp-fix">
-            <p className="small">✏️ Corrección</p>
-            <p>
-              <s>{f.said}</s>
-            </p>
-            <p>
-              <b>{f.right}</b>
-            </p>
-            <p className="small">{f.why}</p>
-          </div>
-        ))}
+        {(listening || hearing) && <div className="bubble you ghost">{typed || (hearing ? '…' : '🎙️ …')}</div>}
         {praise && <p className="small rp-praise">✓ {praise}</p>}
         <div ref={endRef} />
       </div>
       <div className="rp-controls">
-        {showAim && n.aim && <p className="small">🎯 {n.aim}</p>}
-        {showHint && (
-          <p className="small">
-            💡 Podrías decir: <b>{n.hint}</b>
+        <div className="try-card">
+          <p className="try-label">Prueba a:</p>
+          <p className="try-aim">{n.aim ?? `Respondele a ${s.partner.name}. Objetivo: ${s.goal}`}</p>
+          {showHint && (
+            <p className="small">
+              💡 Podrías decir: <b>{n.hint}</b>
+            </p>
+          )}
+          <p className="try-meta">
+            {doneCount}/{total} completado
+            {lastFix.length > 0 ? ' · ✏️ hay algo para pulir (lo ves al final)' : ''}
           </p>
-        )}
-        <div className="rp-actions">
-          <button className="chip" onClick={() => voiceSay(current.current, true)} disabled={!current.current || listening}>
-            🔁 Repetir lento
-          </button>
-          <button className="chip" onClick={() => setShowHint(true)} disabled={showHint}>
-            💡 Ayuda
-          </button>
         </div>
-        {listening ? (
-          <button className="primary mic-big listening" onClick={toggleMic}>
-            <span className="rec-dot" /> Escuchando… tocá para terminar y enviar
-          </button>
-        ) : (
+        {keyboard ? (
           <form
             className="composer"
             onSubmit={(ev) => {
@@ -410,42 +452,119 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
               if (!busy && typed.trim()) answer(typed);
             }}
           >
-            <input
-              className="answer"
-              value={typed}
-              onChange={(ev) => setTyped(ev.target.value)}
-              placeholder={hearing ? 'Entendiendo lo que dijiste…' : micOk ? 'Hablá o escribí en inglés' : 'Escribí tu respuesta en inglés'}
-              autoCapitalize="sentences"
-              disabled={busy || hearing}
-            />
-            {typed.trim() || !micOk ? (
-              <button className="round send" type="submit" aria-label="Enviar" disabled={busy || !typed.trim()}>
-                <Icon name="chevron" size={22} />
-              </button>
-            ) : (
-              <button className="round mic" type="button" aria-label="Hablar" onClick={toggleMic} disabled={busy || hearing}>
-                <Icon name="mic" size={22} />
-              </button>
-            )}
+            <button type="button" className="round" aria-label="Usar el micrófono" onClick={() => setKeyboard(false)} disabled={!micOk}>
+              <Icon name="mic" size={20} />
+            </button>
+            <input className="answer" value={typed} onChange={(ev) => setTyped(ev.target.value)} placeholder="Escribí tu respuesta en inglés" autoCapitalize="sentences" disabled={busy} autoFocus />
+            <button className="round send" type="submit" aria-label="Enviar" disabled={busy || !typed.trim()}>
+              <Icon name="chevron" size={22} />
+            </button>
           </form>
+        ) : (
+          <div className="talk-dock">
+            <button className="dock-side" onClick={() => setKeyboard(true)} aria-label="Escribir con el teclado">
+              ⌨️
+            </button>
+            <div className="dock-center">
+              <button className={`talk-mic ${listening ? 'on' : ''}`} onClick={toggleMic} disabled={!micOk || (busy && !listening) || hearing} aria-label={state}>
+                {listening ? '↑' : <Icon name="mic" size={34} />}
+              </button>
+              <span className="small">{micOk ? state : 'Micrófono no disponible: escribí con el teclado'}</span>
+            </div>
+            <div className="dock-side-col">
+              <button className="dock-side" onClick={() => voiceSay(current.current, true)} disabled={!current.current || listening} aria-label="Repetir lento">
+                🔁
+              </button>
+              <button className="dock-side" onClick={() => setShowHint(true)} disabled={showHint} aria-label="Ayuda">
+                💡
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
+/** Qué estuvo bien de una respuesta, en concreto (no solo «Bien»). */
+function goodNote(said: string, praise?: string): string {
+  const t = said.toLowerCase();
+  const notes: string[] = [];
+  if (praise && !/^bien\.?$/i.test(praise.trim())) notes.push(praise);
+  if (/\b(could|can|would|may) (i|you)\b/.test(t) || /\bi'?d like\b|\bwould like\b/.test(t)) notes.push('Pedido amable y natural (could / would like).');
+  else if (/\bplease\b/.test(t)) notes.push('Buen uso de «please» para pedir con cortesía.');
+  if (/^(where|how|what|when|which|who|why|is|are|do|does|did|can|could)\b[^?]*\??$/.test(t.trim()) && t.split(' ').length >= 3) notes.push('Pregunta bien armada.');
+  const c = connectorsIn(said).filter((x) => !['and', 'so', 'then'].includes(x));
+  if (c.length) notes.push(`Buen uso de «${c[0]}» para unir ideas.`);
+  if (/\b(have|has) (been|\w+ed|done|seen|had|got|made|lived|worked)\b/.test(t)) notes.push('Usaste bien el presente perfecto.');
+  if (!notes.length) notes.push('Respuesta clara: te entendió a la primera.');
+  return notes.slice(0, 2).join(' ');
+}
+
+interface Improve {
+  said: string;
+  right: string;
+  why: string;
+  tag: string;
+}
+
+/** «Puntos clave» al terminar: transcripción, qué hiciste bien, qué podés mejorar y vocabulario. */
 function Done({ e, log, turns, onAgain, onBack }: { e: RoleplayEntry; log: Line[]; turns: Turn[]; onAgain: () => void; onBack: () => void }) {
   const s = e.script!;
   const r = scoreRoleplay(turns);
-  // Cada respuesta tuya con su devolución, en el orden de la charla.
-  let t = 0;
+  const [showLog, setShowLog] = useState(false);
+  const [saved, setSaved] = useState<Set<string>>(new Set());
+  const [ai, setAi] = useState<{ said: string; text: string; edits: ProofEdit[] }[] | null>(null);
+  const mine = turns.filter((t) => t.said.split(' ').length >= 3);
+
+  // Con el corrector bajado, se revisa cada respuesta tuya (en el teléfono).
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if ((await proofState()) !== 'ready') return;
+      const out: { said: string; text: string; edits: ProofEdit[] }[] = [];
+      for (const t of mine) {
+        try {
+          const p = await proofread(t.said);
+          const edits = proofEdits(t.said, p.text).filter((x) => !x.minor);
+          if (edits.length) out.push({ said: t.said, text: p.text, edits });
+        } catch {
+          break;
+        }
+      }
+      await unloadProof();
+      if (alive) setAi(out);
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const good = turns.filter((t) => t.ok && !t.fixes.length && !ruleHits(t.said).some((h) => !h.soft));
+  const improve: Improve[] = [];
+  for (const t of turns) {
+    for (const f of t.fixes) improve.push({ said: t.said, right: f.right, why: f.why, tag: 'Error típico' });
+    for (const h of ruleHits(t.said)) if (!h.soft && !t.fixes.length) improve.push({ said: t.said, right: h.fix ?? '', why: `«${h.found}»: ${h.msg}`, tag: 'Gramática' });
+    if (!t.ok) improve.push({ said: t.said, right: t.hint, why: t.aim ? `${t.aim} Una forma natural de decirlo:` : 'No se entendió. Una forma natural de decirlo:', tag: 'Para que te entiendan' });
+  }
+  for (const a of ai ?? []) if (!improve.some((x) => x.said === a.said)) improve.push({ said: a.said, right: a.text, why: 'El corrector sugiere: ' + a.edits.map((x) => `${x.from || '(falta)'} → ${x.to || '(sacar)'}`).join(' · '), tag: 'Corrector' });
+
+  const saveWord = (en: string, es: string) => {
+    if (saved.has(en)) return;
+    savePhrase({ es, en });
+    setSaved(new Set([...saved, en]));
+  };
+
   return (
-    <div className="screen roleplays">
+    <div className="screen roleplays writing">
       <p className="summary-emoji" aria-hidden="true">
         {r.score >= 80 ? '🏆' : r.score >= 50 ? '🎉' : '💪'}
       </p>
-      <h1 className="center">Roleplay terminado</h1>
-      <p className="center small">{e.title}</p>
+      <h1 className="center">Puntos clave del ejercicio</h1>
+      <p className="center small">
+        {e.title} · con {s.partner.name}
+      </p>
       <div className="summary-stats">
         <div className="stat">
           <span className="stat-num">{r.score}</span>
@@ -458,34 +577,83 @@ function Done({ e, log, turns, onAgain, onBack }: { e: RoleplayEntry; log: Line[
           <span className="stat-label">te entendió de una</span>
         </div>
         <div className="stat">
-          <span className="stat-num">{r.fixes}</span>
-          <span className="stat-label">para corregir</span>
+          <span className="stat-num">{improve.length}</span>
+          <span className="stat-label">para mejorar</span>
         </div>
       </div>
-      <div className="card">
-        <p className="card-title">🎯 Objetivo</p>
-        <p className="small">{s.goal}</p>
-        <p>{r.verdict}</p>
-      </div>
-      <h2>La charla, con sugerencias</h2>
-      <div className="rp-log">
-        {log.map((l, i) => {
-          if (l.who === 'them')
-            return (
-              <div key={i} className="bubble them">
-                <b>{s.partner.name}: </b>
-                {l.text}
-              </div>
-            );
-          const turn = turns[t++];
-          return (
-            <div key={i} className="rp-turn">
-              <div className="bubble you">{l.text}</div>
-              {turn && <TurnNote turn={turn} />}
+      <p>{r.verdict}</p>
+
+      <button className="w-row" onClick={() => setShowLog(!showLog)}>
+        <span className="w-mark">💬</span>
+        <span className="w-text">
+          <b>{showLog ? 'Ocultar la transcripción' : 'Ver transcripción completa'}</b>
+        </span>
+      </button>
+      {showLog && (
+        <div className="rp-log">
+          {log.map((l, i) => (
+            <div key={i} className={`bubble ${l.who}`}>
+              {l.who === 'them' && <span className="bubble-name">{s.partner.name}</span>}
+              {l.text}
             </div>
-          );
-        })}
+          ))}
+        </div>
+      )}
+
+      <div className="card">
+        <p className="card-title">
+          Comentarios <span className="count-pill">{good.length + improve.length}</span>
+        </p>
+        {good.length > 0 && <p className="sum-head">Qué hiciste bien</p>}
+        {good.map((t, i) => (
+          <div key={`g${i}`} className="sum-item good">
+            <p className="sum-said">{t.said}</p>
+            <p className="small">
+              {goodNote(t.said, t.praise)}
+              {t.meaning ? ' Lo dijiste con tus palabras y se entendió.' : ''}
+            </p>
+          </div>
+        ))}
+        {improve.length > 0 && <p className="sum-head">Qué podés mejorar</p>}
+        {improve.map((x, i) => (
+          <div key={`m${i}`} className="sum-item fix">
+            <p className="sum-tag">{x.tag}</p>
+            <p className="sum-said">
+              <s>{x.said}</s>
+            </p>
+            <p className="small">{x.why}</p>
+            {x.right && <p className="sum-right">→ {x.right}</p>}
+          </div>
+        ))}
+        {ai === null && mine.length > 0 && <p className="small">Si bajás el corrector con IA (en «Escribir en inglés»), también revisa cada frase tuya.</p>}
       </div>
+
+      {s.vocab.length > 0 && (
+        <div className="card">
+          <p className="card-title">Vocabulario clave</p>
+          <p className="small">Las palabras de esta situación. Guardalas para repasarlas en «Mis frases».</p>
+          {s.vocab.map((v) => (
+            <div key={v.en} className="vocab-row">
+              <button className="round small-round" onClick={() => say(v.en, { lang: 'en-AU' })} aria-label={`Escuchar ${v.en}`}>
+                🔊
+              </button>
+              <div className="vocab-text">
+                <b>{v.en}</b> <span className="small">({v.say})</span>
+                <p className="small">
+                  {v.es} · <i>{v.example}</i>
+                </p>
+              </div>
+              <button className="round small-round" onClick={() => saveWord(v.en, v.es)} aria-label="Guardar">
+                {saved.has(v.en) ? '✅' : '🔖'}
+              </button>
+            </div>
+          ))}
+          <button className="secondary" onClick={() => s.vocab.forEach((v) => saveWord(v.en, v.es))} disabled={s.vocab.every((v) => saved.has(v.en))}>
+            🔖 Guardar todas en mis frases
+          </button>
+        </div>
+      )}
+
       <button className="primary" onClick={onAgain}>
         Hacerlo de nuevo (va a ser distinto)
       </button>
@@ -496,37 +664,58 @@ function Done({ e, log, turns, onAgain, onBack }: { e: RoleplayEntry; log: Line[
   );
 }
 
-function TurnNote({ turn }: { turn: Turn }) {
-  if (turn.fixes.length)
+
+/** Bajar o borrar el modelo que entiende lo que quisiste decir (solo en la app de Android). */
+function MeaningCard() {
+  const [st, setSt] = useState<MeaningState | null>(null);
+  const dl = useSyncExternalStore(subscribeDownloads, getDownloads);
+  const d = dl[MEANING_PACK.id];
+  const busy = !!d && !d.error;
+  useEffect(() => {
+    meaningState().then(setSt);
+  }, [busy]);
+  if (!st || st === 'web') return null;
+  if (st === 'ready' && !d)
     return (
-      <div className="turn-note fix">
-        {turn.fixes.map((f, i) => (
-          <div key={i}>
-            <p>
-              ✏️ Mejor: <b>{f.right}</b>
-            </p>
-            <p className="small">{f.why}</p>
-          </div>
-        ))}
-      </div>
-    );
-  if (turn.ok && turn.firstTry)
-    return (
-      <div className="turn-note good">
-        <p>✓ {turn.praise ?? 'Bien dicho.'}</p>
-      </div>
-    );
-  if (turn.ok)
-    return (
-      <div className="turn-note good">
-        <p>✓ Al segundo intento te entendió. {turn.praise ?? ''}</p>
-      </div>
+      <p className="small">
+        🧠 Oliver entiende lo que quisiste decir aunque uses otras palabras.{' '}
+        <button className="link" onClick={() => removeMeaning().then(() => setSt('missing'))}>
+          Borrar el modelo
+        </button>
+      </p>
     );
   return (
-    <div className="turn-note tip">
-      <p>
-        💡 No te entendió. {turn.aim ? `${turn.aim} ` : ''}Podrías decir: <b>{turn.hint}</b>
-      </p>
+    <div className="card">
+      <p className="card-title">🧠 Que te entienda aunque lo digas distinto</p>
+      {busy ? (
+        <>
+          <div className="ai-bar">
+            <div style={{ width: `${Math.round(d.progress * 100)}%` }} />
+          </div>
+          <div className="ai-row">
+            <span className="small" style={{ flex: 1 }}>
+              Bajando… {Math.round(d.progress * 100)}%
+            </span>
+            <button className="link" onClick={() => cancelDownload(MEANING_PACK.id)}>
+              Cancelar
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="small">
+            Un modelo chico ({MEANING_PACK.mb} MB) que compara el significado de lo que decís con lo que espera la otra persona: «Where do I grab my luggage?» vale
+            igual que «Where's the baggage claim?». Funciona sin internet y no manda nada a ningún lado.
+          </p>
+          {d?.error && <p className="small">⚠️ No se pudo bajar ({d.error}). Probá de nuevo con wifi.</p>}
+          <button className="secondary" onClick={() => downloadMeaning().then((ok) => ok && setSt('ready'))}>
+            ⬇️ Bajar ({MEANING_PACK.mb} MB)
+          </button>
+          <p className="small" style={{ opacity: 0.75 }}>
+            Licencia: {MEANING_PACK.license}
+          </p>
+        </>
+      )}
     </div>
   );
 }

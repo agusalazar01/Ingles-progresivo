@@ -13,7 +13,10 @@ import { Writing } from './screens/Writing';
 import { BuildPractice } from './screens/BuildPractice';
 import { Phrases } from './screens/Phrases';
 import { Structures } from './screens/Structures';
-import { Roleplays } from './screens/Roleplays';
+import { Roleplays, ScriptedCall } from './screens/Roleplays';
+import { callById } from './content/calls';
+import { unitById } from './content/curriculum';
+import { callToRoleplay } from './lib/roleplay';
 import { Settings, type SettingsSection } from './screens/Settings';
 import { VerbLesson, VerbWorkshop } from './screens/Verbs';
 import type { Level } from './content/types';
@@ -150,6 +153,14 @@ export default function App() {
       );
       break;
     case 'call':
+      // Las llamadas de las unidades usan la charla nueva (sin IA, con resumen al final).
+      if (route.callId && !route.free && !route.script) {
+        const c = callById(route.callId);
+        if (c) {
+          body = <ScriptedCall key={c.id} entry={callToRoleplay(c, unitById(c.unitId)?.level ?? 'A2')} onExit={back} />;
+          break;
+        }
+      }
       body = (
         <Call
           key={route.script?.id ?? route.callId ?? 'libre'}

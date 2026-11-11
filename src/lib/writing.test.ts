@@ -76,6 +76,7 @@ describe('Escribir en inglés', () => {
       ['I went to home.', 'go-to-home'],
       ['I lost the bus.', 'lose-bus'],
       ['I like it because is quiet.', 'clause-no-subject'],
+      ['I want go by train.', 'want-to'],
       ['It is bigger that my house.', 'comp-that'],
     ];
     const miss = cases.filter(([t, id]) => !ruleHits(t).some((h) => h.id === id)).map(([t]) => t);
