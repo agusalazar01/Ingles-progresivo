@@ -80,7 +80,7 @@ const SHOW_AIM: Level[] = ['A1', 'A2'];
  * Biblioteca de roleplays: situaciones reales para vivir y trabajar en Australia. Cada una es un guion
  * con ramas; la IA de charla queda como modo libre opcional.
  */
-export function Roleplays({ onExit, onAiCall }: { onExit: () => void; onAiCall: (script: CallScript) => void }) {
+export function Roleplays({ onExit, onAiCall, onTutor }: { onExit: () => void; onAiCall: (script: CallScript) => void; onTutor: () => void }) {
   const [view, setView] = useState<View>({ v: 'library' });
   const back = () => (view.v === 'library' ? onExit() : view.v === 'talk' ? (stopSpeaking(), setView({ v: 'brief', id: view.id })) : setView({ v: 'library' }));
   useBack(true, back, 2);
@@ -91,7 +91,7 @@ export function Roleplays({ onExit, onAiCall }: { onExit: () => void; onAiCall: 
     return <Talk e={e} s={e.script!} onBack={back} onDone={(log, turns) => setView({ v: 'done', id: view.id, log, turns })} />;
   }
   if (view.v === 'done') return <Done e={roleplayById(view.id)!} log={view.log} turns={view.turns} onAgain={() => setView({ v: 'talk', id: view.id })} onBack={() => setView({ v: 'library' })} />;
-  return <Library onBack={back} onOpen={(id) => setView({ v: 'brief', id })} />;
+  return <Library onBack={back} onOpen={(id) => setView({ v: 'brief', id })} onTutor={onTutor} />;
 }
 
 /** Una llamada de unidad con Oliver, con la misma pantalla de charla y el mismo resumen que los roleplays. */
@@ -103,7 +103,7 @@ export function ScriptedCall({ entry, onExit }: { entry: RoleplayEntry; onExit: 
   return <Talk key={round} e={entry} s={entry.script!} onBack={onExit} onDone={(log, turns) => setView({ v: 'done', log, turns })} />;
 }
 
-function Library({ onBack, onOpen }: { onBack: () => void; onOpen: (id: string) => void }) {
+function Library({ onBack, onOpen, onTutor }: { onBack: () => void; onOpen: (id: string) => void; onTutor: () => void }) {
   const s = useAppState();
   const [level, setLevel] = useState<Level | 'all'>('all');
   const list = (cat: string) => ROLEPLAYS.filter((r) => r.category === cat && r.script && (level === 'all' || r.level === level));
@@ -122,6 +122,10 @@ function Library({ onBack, onOpen }: { onBack: () => void; onOpen: (id: string) 
         Situaciones reales, del aeropuerto a una entrevista de trabajo. Hablás o escribís libre y la otra persona reacciona a lo que decís. Hiciste {doneCount} de{' '}
         {ROLEPLAYS.length}.
       </p>
+      <button className="card tutor-entry" onClick={onTutor}>
+        <b>🎓 Charla con la profe (IA online)</b>
+        <span className="small">Hablás libre solo en inglés y te corrige cada frase, explicando por qué.</span>
+      </button>
       <MeaningCard />
       <div className="chips">
         {(['all', ...LEVELS] as const).map((l) => (
@@ -243,7 +247,7 @@ function Brief({ e, onBack, onStart }: { e: RoleplayEntry; onBack: () => void; o
  * Voz para el personaje del roleplay: si es mujer, una voz de mujer; si es hombre, de hombre.
  * Primero en el paquete de voces elegido; si no tiene de ese género, una voz del teléfono. Oliver mantiene la elegida.
  */
-async function castVoice(c: CallAi, partner: { name: string; role: string }): Promise<{ speaker: number; sys?: string }> {
+export async function castVoice(c: CallAi, partner: { name: string; role: string }): Promise<{ speaker: number; sys?: string }> {
   const g = autoGender() && partner.name !== 'Oliver' ? partnerGender(partner.name, partner.role) : null;
   if (!g) return { speaker: c.speaker };
   if (c.voice) {

@@ -4,6 +4,10 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.11
+
+- **Charla con la profe (IA online):** dentro de Roleplays. Hablás libre solo en inglés con Kate, directo con la IA (Groq), sin Oliver y con tu reconocimiento de voz (Parakeet, si lo elegiste). Después de cada frase tuya aparece la corrección: qué dijiste, cómo se dice bien y por qué, en español. Tiene botón 💡 para cuando no sabés qué decir, y al terminar un resumen con tus errores y vocabulario para guardar. Muestra cuánto del tope gratis diario llevás gastado.
+
 ## Novedades de la versión 1.10
 
 - **Pocket TTS con 20 voces:** 10 de hombre y 10 de mujer, con el acento aclarado en cada una (australiano, neozelandés, británico, escocés, irlandés, estadounidense, canadiense). La mayoría son grabaciones de estudio (VCTK), más limpias que las anteriores; las australianas de LibriVox pasan por una limpieza de ruido. Si ya tenías Pocket, tocá «Actualizar» en Configuración › Voces (baja solo las voces nuevas).

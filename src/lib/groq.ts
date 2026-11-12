@@ -13,7 +13,21 @@ export const GROQ_MODELS = [
   { id: 'openai/gpt-oss-120b', title: 'GPT-OSS 120B', desc: 'La más inteligente (recomendada). Muy rápida en Groq.' },
   { id: 'openai/gpt-oss-20b', title: 'GPT-OSS 20B', desc: 'Más chica y el doble de rápida; corrige un poco peor.' },
 ];
-export const DEFAULT_GROQ = { on: false, key: '', model: GROQ_MODELS[0].id };
+export const DEFAULT_GROQ: { on: boolean; key: string; model: string; usage?: { day: string; tokens: number; requests: number } } = { on: false, key: '', model: GROQ_MODELS[0].id };
+
+/** Tope diario de tokens del plan gratis (openai/gpt-oss-120b y 20b). */
+export const GROQ_DAILY_TOKENS = 200_000;
+const today = () => new Date().toISOString().slice(0, 10);
+
+/** Lo gastado hoy (el contador arranca de nuevo cada día; Groq lo reinicia a la medianoche UTC). */
+export function groqUsageToday(): { tokens: number; requests: number } {
+  const u = groqSettings().usage;
+  return u && u.day === today() ? { tokens: u.tokens, requests: u.requests } : { tokens: 0, requests: 0 };
+}
+function addUsage(tokens: number) {
+  const u = groqUsageToday();
+  setGroq({ usage: { day: today(), tokens: u.tokens + tokens, requests: u.requests + 1 } });
+}
 
 export const groqSettings = () => ({ ...DEFAULT_GROQ, ...(getState().settings.ai.groq ?? {}) });
 export const groqReady = () => {
@@ -65,7 +79,9 @@ export async function groqChat(messages: Msg[], o: { json?: boolean; maxTokens?:
   if (status === 401) throw new Error('La clave de Groq no es válida');
   if (status === 429) throw new Error('Groq: llegaste al límite gratis por ahora; probá en un rato');
   if (status < 200 || status >= 300) throw new Error(`Groq respondió ${status}${errorText(data)}`);
-  const text = (data as { choices?: { message?: { content?: string } }[] })?.choices?.[0]?.message?.content;
+  const res = data as { choices?: { message?: { content?: string } }[]; usage?: { total_tokens?: number } };
+  addUsage(res?.usage?.total_tokens ?? 0);
+  const text = res?.choices?.[0]?.message?.content;
   if (!text) throw new Error('Groq no devolvió texto');
   return text;
 }

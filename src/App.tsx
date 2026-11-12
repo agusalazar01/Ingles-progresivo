@@ -14,6 +14,7 @@ import { BuildPractice } from './screens/BuildPractice';
 import { Phrases } from './screens/Phrases';
 import { Structures } from './screens/Structures';
 import { Roleplays, ScriptedCall } from './screens/Roleplays';
+import { Tutor } from './screens/Tutor';
 import { callById } from './content/calls';
 import { unitById } from './content/curriculum';
 import { callToRoleplay } from './lib/roleplay';
@@ -51,6 +52,7 @@ export type Route =
   | { name: 'lesson'; unitId: string; banner?: string; resume?: boolean }
   | { name: 'call'; callId?: string; unitId?: string; free?: boolean; script?: import('./content/calls').CallScript }
   | { name: 'roleplays' }
+  | { name: 'tutor' }
   | { name: 'review'; keys: string[]; title: string };
 
 const TABS: { name: 'home' | 'path' | 'vocab' | 'call' | 'progress'; label: string; icon: string }[] = [
@@ -222,7 +224,10 @@ export default function App() {
       body = <Progress go={go} />;
       break;
     case 'roleplays':
-      body = <Roleplays onExit={back} onAiCall={(script) => go({ name: 'call', script })} />;
+      body = <Roleplays onExit={back} onAiCall={(script) => go({ name: 'call', script })} onTutor={() => go({ name: 'tutor' })} />;
+      break;
+    case 'tutor':
+      body = <Tutor onExit={back} onSettings={() => go({ name: 'settings', section: 'online' })} />;
       break;
     case 'structures':
       body = <Structures onExit={back} />;

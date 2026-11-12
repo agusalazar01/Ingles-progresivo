@@ -67,7 +67,7 @@ export interface AppState {
     /** Voz elegida del teléfono (nombre); vacía = según el acento. */
     voice: string;
     /** IA sin internet para la llamada con Oliver: qué voz, oído y charla usar ('system' = la del teléfono / 'off'). */
-    ai: { voice: string; speaker: number; ear: string; brain: string; gpu?: boolean; tune?: Record<string, Partial<import('./ai').Tune>>; autoGender?: boolean; genders?: Record<string, 'f' | 'm'>; groq?: { on: boolean; key: string; model: string } };
+    ai: { voice: string; speaker: number; ear: string; brain: string; gpu?: boolean; tune?: Record<string, Partial<import('./ai').Tune>>; autoGender?: boolean; genders?: Record<string, 'f' | 'm'>; groq?: { on: boolean; key: string; model: string; usage?: { day: string; tokens: number; requests: number } } };
   };
   /** Exámenes de cierre de nivel aprobados. */
   levels: Partial<Record<Level, { date: string; score: number }>>;
