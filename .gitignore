@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 public/ort/
+
+# Claves de firma: nunca al repositorio
+*.jks
+*.keystore
+keystore.properties
+.env
