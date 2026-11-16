@@ -16,10 +16,11 @@ export function Placement({ onExit, retest }: { onExit: () => void; retest: bool
       <div className="screen">
         <h1>{retest ? 'Nuevo test de nivel' : 'Test de nivel'}</h1>
         <p>
-          Son preguntas cortas de gramática, vocabulario y lectura. El test se adapta: empieza en B1 y sube o baja
-          según tus respuestas, así que normalmente lleva entre 8 y 16 preguntas.
+          Es un test completo de gramática, vocabulario y lectura, con preguntas de todos los temas del camino. Se adapta: empieza en
+          B1 y sube o baja de nivel según tus respuestas. Son entre 16 y 32 preguntas (unos 8 a 12 minutos), así que conviene hacerlo
+          con tiempo y sin apuro.
         </p>
-        <p>No adivines: si no sabés, elegí la que te parezca y seguí. El objetivo es ubicarte bien, no sacar nota.</p>
+        <p>Sin diccionario ni traductor: el objetivo es ubicarte bien, no sacar nota. Si no sabés una, elegí la que te suene mejor y seguí.</p>
         {retest && <p className="small">Las preguntas se eligen al azar, así que pueden ser distintas a las de la vez anterior.</p>}
         <div className="row">
           <button className="secondary" onClick={onExit}>
@@ -93,7 +94,7 @@ export function Placement({ onExit, retest }: { onExit: () => void; retest: bool
       <div className="bar">
         <div className="bar-fill" style={{ width: `${(run.index / ITEMS_PER_LEVEL) * 100}%` }} />
       </div>
-      <p className="small">El test se adapta: según tus respuestas sube o baja de nivel (entre 8 y 16 preguntas en total).</p>
+      <p className="small">El test se adapta: según tus respuestas sube o baja de nivel (entre 16 y 32 preguntas en total).</p>
       {item.text && <Words text={item.text} className="reading" />}
       <Words text={item.prompt} className="prompt" />
       <div className="options">

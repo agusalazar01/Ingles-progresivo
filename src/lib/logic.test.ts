@@ -26,7 +26,7 @@ describe('contenido', () => {
         if (e.kind === 'listen') expect(matches(e.prompt, e.answers)).toBe(true);
       }
     for (const p of PLACEMENT) expect(p.options[p.answer]).toBeDefined();
-    for (const L of LEVELS) expect(PLACEMENT.filter((p) => p.level === L).length).toBeGreaterThanOrEqual(4);
+    for (const L of LEVELS) expect(PLACEMENT.filter((p) => p.level === L).length).toBeGreaterThanOrEqual(20);
   });
 });
 
@@ -73,7 +73,48 @@ describe('test de ubicación', () => {
   it('sabe hasta B2', () => {
     const r = run((l) => l !== 'C1');
     expect(r.level).toBe('B2');
-    expect(r.perLevel.B1?.total).toBe(4);
+    expect(r.perLevel.B1?.total).toBe(8);
+  });
+});
+
+describe('banco del test de ubicación', () => {
+  it('ids únicos, opciones distintas y respuesta válida', () => {
+    expect(new Set(PLACEMENT.map((p) => p.id)).size).toBe(PLACEMENT.length);
+    for (const p of PLACEMENT) {
+      expect(new Set(p.options).size, p.id).toBe(p.options.length);
+      expect(p.options[p.answer], p.id).toBeDefined();
+    }
+  });
+  it('cada nivel tiene preguntas de sobra de cada habilidad', () => {
+    for (const L of LEVELS) {
+      const pool = PLACEMENT.filter((p) => p.level === L);
+      expect(pool.filter((p) => p.skill === 'gramática').length).toBeGreaterThanOrEqual(8);
+      expect(pool.filter((p) => p.skill === 'vocabulario').length).toBeGreaterThanOrEqual(4);
+      expect(pool.filter((p) => p.skill === 'lectura').length).toBeGreaterThanOrEqual(4);
+    }
+  });
+  it('al mezclar las opciones la correcta sigue siendo la misma', () => {
+    for (let k = 0; k < 20; k++) {
+      const r = startPlacement(Math.random);
+      for (const it of r.items) {
+        const orig = PLACEMENT.find((p) => p.id === it.id)!;
+        expect(it.options[it.answer]).toBe(orig.options[orig.answer]);
+      }
+      expect(r.items).toHaveLength(8);
+      expect(r.items.filter((x) => x.skill === 'gramática')).toHaveLength(4);
+    }
+  });
+  it('el test dura entre 16 y 32 preguntas y 5 de 8 no alcanza para pasar', () => {
+    for (const ok of [() => true, () => false, (l: string) => l === 'A1' || l === 'A2']) {
+      let r = startPlacement(() => 0.5);
+      let n = 0;
+      while (!r.done) { r = answerPlacement(r, ok(r.current), () => 0.5); n++; }
+      expect(n).toBeGreaterThanOrEqual(16);
+      expect(n).toBeLessThanOrEqual(32);
+    }
+    let r = startPlacement(() => 0.5);
+    for (let i = 0; i < 8; i++) r = answerPlacement(r, i < 5, () => 0.5);
+    expect(r.tested.B1?.passed).toBe(false);
   });
 });
 

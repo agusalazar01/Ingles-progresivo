@@ -35,3 +35,8 @@
 - Restauradas todas las funciones de la 1.11: corrección con IA en «Escribir en inglés» (corrector offline Gemma + IA online), evaluación con IA al terminar los roleplays.
 - Filtro de correcciones de la IA en las charlas: coincidencia por palabras completas, tolera pequeños desvíos de reconocimiento de voz, descarta ortografía regional (colour/color), apóstrofos y puntuación.
 - Arreglos: plural en el futuro (My parents will…), explicación de respaldo en los ejercicios.
+
+## 1.13.0
+- Test de nivel completo: 8 preguntas por nivel (4 gramática, 2 vocabulario, 2 lectura), de 16 a 32 en total (~10 min), banco de ~26 preguntas por nivel con las opciones mezcladas; se pasa un nivel con 6 de 8.
+- Se quitó la insignia del logo del encabezado (el logo queda en el ícono, el arranque y la bienvenida).
+- Colores con función: títulos crema; verde = acciones; ámbar = disponible/actual; azul = completada; violeta = ubicada por el test; gris = bloqueada.

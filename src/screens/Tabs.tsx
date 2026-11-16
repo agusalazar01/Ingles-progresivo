@@ -56,7 +56,6 @@ export function Home({ go }: { go: (r: Route) => void }) {
         <p className="brand">
           Crioll<span>English</span>
         </p>
-        <p className="slogan">Learn English, a lo criollo.</p>
       </div>
       <div className="hero">
         <div className="hero-top">
@@ -517,10 +516,7 @@ export function Welcome({ go }: { go: (r: Route) => void }) {
   return (
     <div className="screen welcome">
       <div className="brand-block">
-        <p className="brand big-brand">
-          Crioll<span>English</span>
-        </p>
-        <p className="slogan">Learn English, a lo criollo.</p>
+        <img className="welcome-logo" src="/brand/logo.webp" alt="CriollEnglish" />
       </div>
       <p>
         Aprendés en orden: cada tema se apoya en el anterior. Usamos los métodos con más evidencia: recordar activamente en vez de releer, repasos espaciados en el tiempo, y corrección que te hace pensar.

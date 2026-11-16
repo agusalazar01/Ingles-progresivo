@@ -67,11 +67,12 @@ export const daysSince = (iso: string, now = new Date()) =>
   Math.floor((now.getTime() - new Date(iso).getTime()) / 86_400_000);
 
 // ───── Test de ubicación adaptativo ─────
-// Empieza en B1. Por nivel se hacen 4 preguntas; con 3 o más correctas se sube, si no se baja.
+// Empieza en B1. Por nivel se hacen 8 preguntas (4 de gramática, 2 de vocabulario y 2 de lectura); con 6 o más correctas se sube, si no se baja.
 // Termina cuando ya no hay un nivel nuevo hacia donde moverse.
 
-export const ITEMS_PER_LEVEL = 4;
-export const PASS_MARK = 3;
+export const ITEMS_PER_LEVEL = 8;
+export const PASS_MARK = 6;
+const MIX: Record<Skill, number> = { gramática: 4, vocabulario: 2, lectura: 2 };
 
 export interface PlacementRun {
   current: Level;
@@ -83,12 +84,22 @@ export interface PlacementRun {
   done: boolean;
 }
 
-function pick(level: Level, rnd: () => number): PlacementItem[] {
-  return PLACEMENT.filter((p) => p.level === level)
-    .map((p) => ({ p, k: rnd() }))
+const shuffled = <T,>(xs: T[], rnd: () => number) =>
+  xs
+    .map((x) => ({ x, k: rnd() }))
     .sort((a, b) => a.k - b.k)
-    .slice(0, ITEMS_PER_LEVEL)
-    .map((x) => x.p);
+    .map((e) => e.x);
+
+/** 8 preguntas del nivel, balanceadas por habilidad, con las opciones mezcladas (así la respuesta correcta no cae siempre en el mismo lugar). */
+function pick(level: Level, rnd: () => number): PlacementItem[] {
+  const pool = PLACEMENT.filter((p) => p.level === level);
+  const out: PlacementItem[] = [];
+  for (const k of Object.keys(MIX) as Skill[]) out.push(...shuffled(pool.filter((p) => p.skill === k), rnd).slice(0, MIX[k]));
+  if (out.length < ITEMS_PER_LEVEL) out.push(...shuffled(pool.filter((p) => !out.includes(p)), rnd).slice(0, ITEMS_PER_LEVEL - out.length));
+  return shuffled(out, rnd).map((p) => {
+    const order = shuffled(p.options.map((_, i) => i), rnd);
+    return { ...p, options: order.map((i) => p.options[i]), answer: order.indexOf(p.answer) };
+  });
 }
 
 export function startPlacement(rnd: () => number = Math.random): PlacementRun {
