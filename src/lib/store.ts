@@ -64,6 +64,8 @@ export interface AppState {
     theme: 'dark' | 'light';
     /** Sonidos de acierto, error y festejo. */
     sounds: boolean;
+    /** Vibración que acompaña las animaciones (por defecto prendida). */
+    haptics?: boolean;
     /** Voz elegida del teléfono (nombre); vacía = según el acento. */
     voice: string;
     /** IA sin internet para la llamada con Oliver: qué voz, oído y charla usar ('system' = la del teléfono / 'off'). */

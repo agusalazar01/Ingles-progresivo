@@ -1,7 +1,7 @@
 {
   "name": "ingles-progresivo",
   "private": true,
-  "version": "1.13.0",
+  "version": "1.14.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,6 +19,7 @@
     "@capacitor/android": "^8.6.0",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.6.0",
+    "@capacitor/haptics": "^8.0.2",
     "onnxruntime-web": "^1.20.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

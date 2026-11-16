@@ -40,3 +40,8 @@
 - Test de nivel completo: 8 preguntas por nivel (4 gramática, 2 vocabulario, 2 lectura), de 16 a 32 en total (~10 min), banco de ~26 preguntas por nivel con las opciones mezcladas; se pasa un nivel con 6 de 8.
 - Se quitó la insignia del logo del encabezado (el logo queda en el ícono, el arranque y la bienvenida).
 - Colores con función: títulos crema; verde = acciones; ámbar = disponible/actual; azul = completada; violeta = ubicada por el test; gris = bloqueada.
+
+## 1.14.0 (en preparación)
+- Fondo oscuro de Duolingo (#141F23) con bordes grises azulados.
+- Vibración que acompaña las animaciones (plugin @capacitor/haptics), con interruptor en Configuración.
+- Texto que aparece letra a letra en las charlas (toque suave por palabra). Se descartaron las animaciones de flor, pétalos y mate; quedan para armarlas aparte.

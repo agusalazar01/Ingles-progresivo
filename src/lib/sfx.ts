@@ -1,4 +1,5 @@
 import { getState } from './store';
+import { hapticCorrect, hapticCombo, hapticFinish, hapticSoft, hapticWrong } from './haptics';
 
 /**
  * Sonidos cortos generados en el momento con Web Audio (no hay archivos de audio que descargar).
@@ -47,31 +48,38 @@ function play(notes: Note[], force = false) {
 }
 
 /** Acierto: dos notas que suben, brillantes. */
-export const sfxCorrect = () =>
+export const sfxCorrect = () => {
+  hapticCorrect();
   play([
     { f: 784, at: 0, dur: 0.14, type: 'triangle', vol: 0.2 },
     { f: 1175, at: 0.09, dur: 0.24, type: 'triangle', vol: 0.2 },
     { f: 2350, at: 0.09, dur: 0.18, vol: 0.04 },
   ]);
+};
 
 /** Error: un tono grave y suave que baja (no es un castigo, es un aviso). */
-export const sfxWrong = () =>
+export const sfxWrong = () => {
+  hapticWrong();
   play([
     { f: 311, at: 0, dur: 0.16, type: 'triangle', vol: 0.16 },
     { f: 233, at: 0.13, dur: 0.28, type: 'triangle', vol: 0.16, slideTo: 207 },
   ]);
+};
 
 /** Racha de aciertos. */
-export const sfxCombo = () =>
+export const sfxCombo = () => {
+  hapticCombo();
   play([
     { f: 880, at: 0, dur: 0.1, type: 'triangle' },
     { f: 1109, at: 0.07, dur: 0.1, type: 'triangle' },
     { f: 1319, at: 0.14, dur: 0.1, type: 'triangle' },
     { f: 1760, at: 0.21, dur: 0.3, type: 'triangle' },
   ]);
+};
 
 /** Fin de un escalón: arpegio de festejo. */
-export const sfxFinish = () =>
+export const sfxFinish = () => {
+  hapticFinish();
   play([
     { f: 523, at: 0, dur: 0.16, type: 'triangle' },
     { f: 659, at: 0.12, dur: 0.16, type: 'triangle' },
@@ -79,20 +87,25 @@ export const sfxFinish = () =>
     { f: 1047, at: 0.36, dur: 0.45, type: 'triangle', vol: 0.22 },
     { f: 1568, at: 0.36, dur: 0.4, vol: 0.05 },
   ]);
+};
 
 /** Atiende la llamada. */
-export const sfxPickup = () =>
+export const sfxPickup = () => {
+  hapticSoft();
   play([
     { f: 660, at: 0, dur: 0.08, type: 'sine', vol: 0.15 },
     { f: 990, at: 0.08, dur: 0.14, type: 'sine', vol: 0.15 },
   ]);
+};
 
 /** Corta la llamada. */
-export const sfxHangup = () =>
+export const sfxHangup = () => {
+  hapticSoft();
   play([
     { f: 480, at: 0, dur: 0.12, type: 'sine', vol: 0.14 },
     { f: 360, at: 0.14, dur: 0.18, type: 'sine', vol: 0.14 },
   ]);
+};
 
 /**
  * Tono de llamada (doble timbre como un teléfono fijo: 440 + 480 Hz). Devuelve una función para cortarlo.

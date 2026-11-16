@@ -20,6 +20,7 @@ import { SEM_OFFTOPIC, type Embedder } from '../lib/semantic';
 import { connectorsIn, ruleHits } from '../lib/writing';
 import { proofEdits, proofread, proofState, unloadProof, type ProofEdit } from '../lib/proofread';
 import { savePhrase } from '../lib/phrases';
+import { Typed } from '../components/Criollo';
 import type { CallScript } from '../content/calls';
 
 type View = { v: 'library' } | { v: 'brief'; id: string } | { v: 'talk'; id: string } | { v: 'done'; id: string; log: Line[]; turns: Turn[] };
@@ -495,7 +496,7 @@ function Talk({ e, s, onBack, onDone }: { e: RoleplayEntry; s: RoleplayScript; o
         {log.map((l, i) => (
           <div key={i} className={`bubble ${l.who}`}>
             {l.who === 'them' && <span className="bubble-name">{s.partner.name}</span>}
-            {l.text}
+            {l.who === 'them' ? <Typed text={l.text} animate={i === log.length - 1} /> : l.text}
           </div>
         ))}
         {(listening || hearing) && <div className="bubble you ghost">{typed || (hearing ? '…' : '🎙️ …')}</div>}

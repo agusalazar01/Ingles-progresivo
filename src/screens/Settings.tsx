@@ -5,6 +5,7 @@ import { BackButton } from '../components/BackButton';
 import { resetAll, setState, useAppState } from '../lib/store';
 import { ACCENT_LABEL, listVoices, openVoiceSettings, say, SYSTEM_VOICE, type Accent } from '../lib/speech';
 import { sfxCorrect } from '../lib/sfx';
+import { hapticCorrect } from '../lib/haptics';
 import { useBack } from '../lib/nav';
 import { aiAvailable, packById } from '../lib/ai';
 import { APP_VERSION, BUILD } from '../lib/update';
@@ -29,7 +30,7 @@ export function Settings({ initial, onExit }: { initial?: SettingsSection; onExi
   const current = SECTIONS.find((x) => x.id === section);
 
   const summary = (id: SettingsSection) => {
-    if (id === 'look') return `${s.settings.theme === 'dark' ? 'Oscuro' : 'Claro'} · sonidos ${s.settings.sounds ? 'prendidos' : 'apagados'}`;
+    if (id === 'look') return `${s.settings.theme === 'dark' ? 'Oscuro' : 'Claro'} · sonidos ${s.settings.sounds ? 'prendidos' : 'apagados'} · vibración ${s.settings.haptics !== false ? 'prendida' : 'apagada'}`;
     if (id === 'voice') return s.settings.voice === SYSTEM_VOICE ? 'Voz del teléfono' : ACCENT_LABEL[s.settings.accent];
     if (id === 'ai') {
       if (!aiAvailable()) return 'Solo en la app de Android';
@@ -110,6 +111,16 @@ function LookSettings() {
         }}
       >
         {s.settings.sounds ? '🔊 Sonidos de acierto y error: prendidos' : '🔇 Sonidos de acierto y error: apagados'}
+      </button>
+      <button
+        className={`option ${s.settings.haptics !== false ? 'right' : ''}`}
+        onClick={() => {
+          const on = s.settings.haptics === false;
+          setState((st) => ({ ...st, settings: { ...st.settings, haptics: on } }));
+          if (on) setTimeout(hapticCorrect, 50);
+        }}
+      >
+        {s.settings.haptics !== false ? '📳 Vibración: prendida' : '📴 Vibración con las animaciones: apagada'}
       </button>
     </div>
   );

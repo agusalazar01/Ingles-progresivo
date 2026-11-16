@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Typed } from '../components/Criollo';
 import { Icon } from '../components/ui';
 import { BackButton } from '../components/BackButton';
 import { useBack } from '../lib/nav';
@@ -235,7 +236,7 @@ function Chat({ topic, level, onBack, onDone }: { topic: TutorTopic; level: Leve
           e.who === 'teacher' ? (
             <div key={i} className="bubble them">
               <span className="bubble-name">{TEACHER}</span>
-              {e.text}
+              <Typed text={e.text} animate={i === log.length - 1} />
               {e.tip && <p className="small">💡 {e.tip}</p>}
             </div>
           ) : (
