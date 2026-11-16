@@ -43,6 +43,11 @@ export const correctText = (e: Exercise) =>
   e.kind === 'choice' || e.kind === 'sound' ? e.options[e.answer] : e.kind === 'speak' ? e.prompt : e.kind === 'create' ? e.example : e.answers[0];
 
 const accent = () => getState().settings.accent;
+// El reconocimiento debe acompañar el acento elegido para el audio; «variado» usa AU como base.
+const recognitionLang = () => {
+  const selected = accent();
+  return selected === 'variado' ? 'en-AU' : selected;
+};
 
 /** «Ahora no puedo hablar / escuchar»: saltea esos ejercicios durante 15 minutos. */
 const SKIP_MS = 15 * 60 * 1000;
@@ -245,7 +250,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
     setListening(true);
     setMessage(null);
     try {
-      const heard = await listen('en-US');
+      const heard = await listen(recognitionLang());
       if (!heard.length) return setMessage('No te escuché. Probá de nuevo, más cerca del micrófono.');
       const acc = acceptedFor(ex);
       const full = ex.kind === 'type' ? ex.answers.map((a) => ex.prompt.replace(/\s*\([^)]*\)/g, '').replace('___', a)) : [];
@@ -268,7 +273,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
     setListening(true);
     setMessage(null);
     try {
-      const heard = await listen('en-US');
+      const heard = await listen(recognitionLang());
       const { score, best } = intelligibility(ex.prompt, heard);
       if (score >= 0.85) return finish(phase === 'retry' ? 'hard' : 'good', best);
       if (phase === 'answer') {

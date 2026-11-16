@@ -25,6 +25,7 @@ describe('charla con la profe', () => {
 
   it('no inventa correcciones para fragmentos que no dijiste', () => {
     expect(realFixes([{ wrong: 'she go', better: 'she goes', why: 'x' }], 'I like football')).toEqual([]);
+    expect(realFixes([{ wrong: 'a completely invented long fragment', better: 'a correction', why: 'x' }], 'I like football')).toEqual([]);
   });
 
   it('un turno devuelve la respuesta, las correcciones y gasta del contador', async () => {
@@ -61,5 +62,21 @@ describe('charla con la profe', () => {
     expect(s.good).toHaveLength(1);
     expect(s.patterns).toHaveLength(1);
     expect(s.vocab).toEqual([{ en: 'reckon', es: 'creer' }]);
+  });
+
+  it('filtro de correcciones: ni falsos positivos ni descarta las válidas', () => {
+    const f = (wrong: string, better: string) => ({ wrong, better, why: 'x' });
+    // válidas
+    expect(realFixes([f('he go', 'he goes')], 'yesterday he go to work')).toHaveLength(1);
+    expect(realFixes([f('I am agree', 'I agree')], 'Yes I am agree with you')).toHaveLength(1);
+    expect(realFixes([f('I have 28 years', 'I am 28 years old')], 'I have 28 years old')).toHaveLength(1); // copiada con un pequeño desvío
+    expect(realFixes([f('i go', 'i went')], 'Yesterday I go to the beach')).toHaveLength(1);
+    // falsas
+    expect(realFixes([f('he go', 'he goes')], 'she goes home')).toEqual([]); // subcadena de otra palabra
+    expect(realFixes([f('colour', 'color')], 'my favourite colour is blue')).toEqual([]);
+    expect(realFixes([f('organise', 'organize')], 'we organise it')).toEqual([]);
+    expect(realFixes([f('dont', "don't")], 'I dont know')).toEqual([]);
+    expect(realFixes([f('Hello.', 'Hello')], 'hello')).toEqual([]);
+    expect(realFixes([{ wrong: 'a b', better: 'c', why: '' }], 'a b')).toEqual([]);
   });
 });

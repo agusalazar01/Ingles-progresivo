@@ -50,12 +50,49 @@ const norm = (s: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-/** Saca las «correcciones» que no son: solo cambia la puntuación o las mayúsculas (el reconocimiento de voz no las pone). */
+/** Deja pasar solo las diferencias de ortografía regional (colour/color, organise/organize, centre/center): no son errores. */
+const regional = (w: string) =>
+  w
+    .replace(/our\b/g, 'or')
+    .replace(/(is|iz)(e|ed|es|ing|ation)\b/g, 'iz$2')
+    .replace(/re\b/g, 'er')
+    .replace(/ll(ed|ing)\b/g, 'l$1')
+    .replace(/'/g, '');
+
+const lcs = (a: string[], b: string[]) => {
+  const t = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) t[i][j] = a[i - 1] === b[j - 1] ? t[i - 1][j - 1] + 1 : Math.max(t[i - 1][j], t[i][j - 1]);
+  return t[a.length][b.length];
+};
+
+const lev1 = (a: string, b: string) => {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  return a.slice(i + 1) === b.slice(i + 1) || a.slice(i) === b.slice(i + 1) || a.slice(i + 1) === b.slice(i);
+};
+
+/** ¿El fragmento «wrong» está de verdad en lo que dijo? Exacto (palabras completas) o, si la IA lo copió con un pequeño desvío, casi igual. */
+function inSaid(wrong: string, said: string): boolean {
+  const w = wrong.split(' ').filter(Boolean);
+  const s = said.split(' ').filter(Boolean);
+  if (!w.length || !s.length) return false;
+  if (` ${said} `.includes(` ${wrong} `)) return true;
+  if (w.length === 1) return s.some((x) => x.length > 3 && lev1(x, w[0]));
+  // Varias palabras: el orden se respeta y casi todas están (tolera una palabra mal copiada o mal reconocida).
+  return lcs(w, s) / w.length >= (w.length === 2 ? 1 : 0.75);
+}
+
+/** Saca las «correcciones» que no son: cambios de puntuación o mayúsculas, ortografía regional, o fragmentos que no dijiste. */
 export function realFixes(fixes: TutorFix[] | undefined, said: string): TutorFix[] {
+  const spoken = norm(said);
   return (fixes ?? [])
-    .filter((f) => f && typeof f.wrong === 'string' && typeof f.better === 'string' && f.why)
+    .filter((f) => f && typeof f.wrong === 'string' && typeof f.better === 'string' && typeof f.why === 'string' && f.why.trim())
     .filter((f) => norm(f.wrong) !== norm(f.better))
-    .filter((f) => norm(said).includes(norm(f.wrong)) || norm(f.wrong).split(' ').length > 3)
+    .filter((f) => norm(f.wrong).replace(/'/g, '') !== norm(f.better).replace(/'/g, ''))
+    .filter((f) => norm(f.wrong).split(' ').map(regional).join(' ') !== norm(f.better).split(' ').map(regional).join(' '))
+    .filter((f) => inSaid(norm(f.wrong), spoken))
     .slice(0, 2);
 }
 
@@ -66,7 +103,7 @@ Rules for "reply" (what you say out loud):
 - React to what they said, then keep them talking with one clear question or prompt.
 - Never mention the corrections in "reply" and never correct them out loud.
 The learner's lines come from speech recognition: ignore punctuation, capitalisation and tiny recognition glitches. If a sentence is understandable and a word looks misheard, assume it is fine.
-Find the learner's real mistakes in their LAST line only (wrong tense, missing or wrong word, Spanish-style structure, unnatural wording a native would not say): at most 2, the most important ones. For each: "wrong" (the exact fragment they said), "better" (that fragment corrected), "why" (short explanation IN SPANISH, Rioplatense with "vos", max 25 words, naming the rule or the Spanish interference).
+Find only definite errors in the learner's LAST line (wrong tense, missing/wrong word, incorrect grammar or a meaning-changing word): at most 2. Never mark a grammatically valid alternative as wrong. Accept Australian/British spelling and valid regional variants. A merely less common or less natural expression is NOT a grammar error; put it in 'natural' only as an optional suggestion, never as a correction. For each: "wrong" (the exact fragment they said), "better" (that fragment corrected), "why" (short explanation IN SPANISH, Rioplatense with "vos", max 25 words, naming the rule or the Spanish interference).
 If the line is correct but a native would say it differently, put that version in "natural" and leave "fixes" empty. If the line is fine, both are empty.
 If they wrote Spanish or said they did not understand, rephrase more simply in English and give a one-line help in Spanish in "tip".
 Return ONLY JSON: {"reply":"...","fixes":[{"wrong":"","better":"","why":""}],"natural":"","tip":""}`;

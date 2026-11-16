@@ -1,5 +1,20 @@
 # CriollEnglish
 
+## Versión 1.12.0 — aprendizaje offline primero
+
+- **La app no necesita Internet para estudiar:** ejercicios, gramática, traducción, construcción de oraciones, escritura guiada, roleplays con guion, progreso y repasos siguen siendo locales.
+- **La IA queda reservada para conversar:** tutor y modos conversacionales opcionales. No se consulta Groq ni se ejecuta un corrector generativo en los ejercicios normales ni en la sección de escritura.
+- **Corrección local más prudente:** se conservan equivalencias habituales (contracciones, ortografía AU/UK y variantes realmente equivalentes), pero se evitan sustituciones indiscriminadas que podían cambiar el sentido.
+- **Futuro:** se corrigió la concordancia de `will` → `going to`; ya no se decide `is/are` por la última letra del sujeto (`Chris`, `the bus`, `my boss`).
+- **Explicaciones:** la comparación de palabras ahora respeta repeticiones y no muestra como explicación la primera regla de una unidad cuando no corresponde al error. Se añadieron explicaciones locales para errores frecuentes.
+- **Voz:** el reconocimiento de respuestas usa el acento seleccionado; si se elige «variado», toma inglés australiano como base.
+- **Tutor IA:** se endureció el filtro para no mostrar correcciones de fragmentos que el estudiante no dijo y se indicó al modelo que no marque como incorrectas las alternativas válidas ni variantes australianas/británicas.
+
+> La corrección offline es deliberadamente conservadora: cuando no puede demostrar que una respuesta está mal, es preferible pedir otro intento o mostrar una pista antes que enseñar una regla equivocada.
+
+---
+
+
 > **Learn English, a lo criollo.**
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.

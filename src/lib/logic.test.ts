@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../content/types';
 import { UNITS } from '../content/curriculum';
 import { PLACEMENT } from '../content/placement';
-import { matches, nearMiss } from './answer';
+import { matches, nearMiss, futureAlternatives } from './answer';
 import { answerPlacement, placementResult, startPlacement } from './progress';
 import { lemmaOf, lookup } from './dictionary';
 import { intelligibility } from './speech';
@@ -39,10 +39,20 @@ describe('respuestas', () => {
     expect(matches("She's going to buy a car", ['She is going to buy a car.'])).toBe(true);
     expect(matches('  WORKS ', ['works'])).toBe(true);
     expect(matches('I’ll call you tomorrow', ['I will call you tomorrow.'])).toBe(true);
+    expect(matches('Can you help me please', ['Can you help me?'])).toBe(true);
+    expect(matches('Please help me', ['Help me'])).toBe(false);
+    expect(matches('I have got to leave', ['I have to leave'])).toBe(true);
+    expect(matches('I have got a car', ['I have a car'])).toBe(true);
   });
   it('rechaza respuestas incorrectas', () => {
     expect(matches('work', ['works'])).toBe(false);
     expect(matches('I live here since 2020', ['I have lived here since 2020.'])).toBe(false);
+    expect(matches('lots of people came', ['a lot of people came'])).toBe(true);
+  });
+  it('no confunde nombres propios terminados en s con sujetos plurales al generar el futuro', () => {
+    expect(futureAlternatives(['Chris will call tomorrow'])).toContain('chris is going to call tomorrow');
+    expect(futureAlternatives(['The bus will arrive soon'])).toContain('the bus is going to arrive soon');
+    expect(futureAlternatives(['My friends will call tomorrow'])).toContain('my friends are going to call tomorrow');
   });
   it('detecta errores de tipeo', () => {
     expect(nearMiss('bougth', ['bought'])).toBe(false); // dos cambios

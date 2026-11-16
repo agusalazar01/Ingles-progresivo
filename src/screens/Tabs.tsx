@@ -56,7 +56,7 @@ export function Home({ go }: { go: (r: Route) => void }) {
         <p className="brand">
           Crioll<span>English</span>
         </p>
-        <p className="slogan">Learn English, a lo criollo</p>
+        <p className="slogan">Learn English, a lo criollo.</p>
       </div>
       <div className="hero">
         <div className="hero-top">

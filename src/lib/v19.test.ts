@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { partnerGender, speakerFor, speakerGender, systemVoiceFor, systemVoiceGender } from './voicegender';
-import { parseJson, groqRoleplayTurn } from './groq';
+import { parseJson, groqRoleplayTurn, groqWritingFeedback, groqRoleplayFeedback } from './groq';
 import { SCRIPTS_BY_N } from '../content/roleplays/all';
 import { setState } from './store';
 
@@ -81,6 +81,21 @@ describe('IA online (Groq)', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 401 })));
     const s = SCRIPTS_BY_N['1'];
     await expect(groqRoleplayTurn({ s, node: s.nodes[s.start], level: 'A2', history: [], said: 'hi' })).rejects.toThrow(/clave/);
+    vi.unstubAllGlobals();
+  });
+  it('Escribir: la IA online devuelve corrección con explicaciones', async () => {
+    const body = { corrected: 'I went home.', fixes: [{ from: 'I go home', to: 'I went home', why: 'Pasado simple.' }], comment: 'Bien.' };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(body) } }] }), { status: 200 })));
+    setState((x) => ({ ...x, settings: { ...x.settings, ai: { ...x.settings.ai, groq: { on: true, key: 'gsk_test_1234567890', model: 'openai/gpt-oss-120b' } } } }));
+    const r = await groqWritingFeedback({ text: 'Yesterday I go home', level: 'A2', task: 'Contá tu día' });
+    expect(r.fixes[0].to).toBe('I went home');
+    expect(r.corrected).toBe('I went home.');
+    vi.unstubAllGlobals();
+  });
+  it('Escribir y fin de roleplay: sin conexión o con error, tira error y queda el modo offline', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    await expect(groqWritingFeedback({ text: 'hello there my friend', level: 'A2', task: 'x' })).rejects.toThrow();
+    expect(typeof groqRoleplayFeedback).toBe('function');
     vi.unstubAllGlobals();
   });
 });

@@ -65,11 +65,57 @@ const words = (s: string) => N(s).split(' ').filter(Boolean);
 
 /** Palabras que sobran o faltan respecto de la respuesta correcta. */
 function diff(given: string, correct: string): { missing: string[]; extra: string[] } {
+  // Comparación por multiconjunto: conserva repeticiones ("very very" no equivale a "very").
   const g = words(given);
   const c = words(correct);
-  const missing = c.filter((w) => !g.includes(w));
-  const extra = g.filter((w) => !c.includes(w));
-  return { missing, extra };
+  const remaining = [...g];
+  const missing: string[] = [];
+  for (const word of c) {
+    const at = remaining.indexOf(word);
+    if (at >= 0) remaining.splice(at, 1);
+    else missing.push(word);
+  }
+  return { missing, extra: remaining };
+}
+
+/** Diagnósticos locales de errores frecuentes. No usa IA ni conexión. */
+function grammarHint(given: string, correct: string): string | null {
+  const g = N(given);
+  const c = N(correct);
+  if (!g || !c) return null;
+  if (/\b(since)\b/.test(g) && /\bfor\b/.test(c) && /\b(since)\b/.test(c) === false)
+    return 'Usá «for» para una duración (for three years) y «since» para el punto de inicio (since 2020).';
+  if (/\bsince\s+\d{4}\b/.test(g) && /\b(have|has)\b/.test(c) && !/\b(have|has)\b/.test(g))
+    return 'Si la situación empezó en el pasado y continúa ahora, normalmente usamos Present Perfect: «have/has» + participio + «since».';
+  if (/\bsince\s+(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(?:years?|months?|weeks?|days?|hours?)\b/.test(g) && /\bfor\b/.test(c))
+    return 'Usá «for» con una duración. «Since» indica cuándo empezó: «for three years», pero «since 2023».';
+  if (/\bdid\s+(?:\w+ed|went|saw|had|was|were|ate|bought|came|got|took|made|wrote|read|spoke|ran|left|found|knew|gave|did)\b/.test(g) && /\bdid\s+\w+\b/.test(c))
+    return 'Después de «did», el verbo principal va en forma base: «Did you go?», no «Did you went?».';
+  if (/\b(he|she|it)\s+\w+\b/.test(g) && /\b(he|she|it)\s+\w+s\b/.test(c))
+    return 'En Present Simple afirmativo, con «he», «she» o «it», el verbo normalmente lleva -s o -es.';
+  if (/\b(does|doesn't)\s+\w+s\b/.test(g))
+    return 'Después de «does» o «doesn’t», usá el verbo en forma base, sin -s.';
+  if (/\bi am agree\b/.test(g) && /\bi agree\b/.test(c))
+    return '«Agree» es un verbo: no lleva «am». Decí «I agree», no «I am agree».';
+  if (/\bdepend of\b/.test(g) && /\bdepend on\b/.test(c))
+    return 'El verbo «depend» se construye con la preposición «on»: «It depends on…».';
+  if (/\bmarried with\b/.test(g) && /\bmarried to\b/.test(c))
+    return 'Para decir con quién está casada una persona, la expresión es «be married to someone».';
+  if (/\blisten music\b/.test(g) && /\blisten to music\b/.test(c))
+    return 'El verbo «listen» necesita «to» antes de aquello que escuchás: «listen to music».';
+  if (/\binterested on\b/.test(g) && /\binterested in\b/.test(c))
+    return 'La expresión correcta es «interested in», no «interested on».';
+  if (/\b(much people|much friends|much students)\b/.test(g) && /\b(many people|many friends|many students)\b/.test(c))
+    return 'Usá «many» con sustantivos contables en plural; «much» se usa principalmente con incontables.';
+  if (/\bpeople is\b/.test(g) && /\bpeople are\b/.test(c))
+    return '«People» es plural: lleva «are», no «is».';
+  if (/\b(am|is|are|was|were)\b/.test(c) && !/\b(am|is|are|was|were)\b/.test(g))
+    return 'Esta estructura necesita el verbo «to be» como auxiliar o verbo principal.';
+  if (/\ba\s+(hour|honest|honour|heir)\b/.test(g) && /\ban\s+(hour|honest|honour|heir)\b/.test(c))
+    return 'Estas palabras comienzan con h muda: se usa «an» porque el primer sonido es vocálico.';
+  if (/\ban\s+(university|uniform|unicorn|user|usual|European|one)\b/i.test(g) && /\ba\s+(university|uniform|unicorn|user|usual|European|one)\b/i.test(c))
+    return 'Aunque empiezan con vocal escrita, estas palabras comienzan con sonido consonántico /j/ o /w/: se usa «a».';
+  return null;
 }
 
 const firstPoint = (unit: Unit) => unit.explanation[0]?.replace(/\*\*/g, '') ?? null;
@@ -84,6 +130,7 @@ export function explainMistake(key: string, unit: Unit, ex: Exercise, given: str
     for (let n = Math.min(3, missing.length); n >= 1 && !why; n--)
       for (let i = 0; i + n <= missing.length && !why; i++) why = ruleFor(unit.id, missing.slice(i, i + n).join(' ')) ?? null;
   }
+  // Último recurso: la idea principal de la unidad a la que pertenece el ejercicio (siempre hay algo que mostrar).
   if (!why && ex.kind !== 'speak' && ex.kind !== 'sound') why = firstPoint(unit);
 
   // Por qué no va la tuya
@@ -96,9 +143,10 @@ export function explainMistake(key: string, unit: Unit, ex: Exercise, given: str
       if (r && N(g) !== N(correct)) yours = r.startsWith('«') ? r : `«${g}»: ${r}`;
     }
     if (!yours && ex.kind !== 'choice' && ex.kind !== 'type') {
+      yours = grammarHint(g, correct);
       const { missing, extra } = diff(g, correct);
       if (ex.kind === 'order' && !missing.length && !extra.length) yours = 'Tenés todas las palabras, pero el orden no es el del inglés: sujeto + verbo + el resto (en preguntas, el auxiliar va antes del sujeto).';
-      else if (extra.length <= 3 && missing.length <= 3 && (extra.length || missing.length)) {
+      else if (!yours && extra.length <= 3 && missing.length <= 3 && (extra.length || missing.length)) {
         const r = [...extra, ...missing].map((w) => ruleFor(unit.id, w)).find(Boolean);
         const what = extra.length && missing.length ? `Pusiste «${extra.join(' ')}» donde va «${missing.join(' ')}».` : missing.length ? `Faltó «${missing.join(' ')}».` : `Sobra «${extra.join(' ')}».`;
         yours = r ? `${what} ${r}` : what;

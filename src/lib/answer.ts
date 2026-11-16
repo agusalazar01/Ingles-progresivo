@@ -67,14 +67,15 @@ export function canon(t: string): string {
     .replace(/\btill\b/g, 'until')
     .replace(/\blots of\b/g, 'a lot of')
     .replace(/\b(television|telly)\b/g, 'tv')
-    .replace(/\be-mail(s)?\b/g, 'email$1')
     .replace(/\bmovie(s)?\b/g, 'film$1')
-    .replace(/\b(have|has|had) got\b/g, '$1')
-    .replace(/\b(\d+)(st|nd|rd|th)\b/g, '$1')
+    // «have got» = «have» en posesión; «have got to» = «have to» (obligación).
+    .replace(/\b(have|has|had) got to\b/g, '$1 to')
+    .replace(/\b(have|has|had) got (?=(?:a|an|the|my|your|his|her|our|their|no|some|any|one|two|three|four|five|six|seven|eight|nine|ten)\b)/g, '$1 ')
+    .replace(/\be-mail(s)?\b/g, 'email$1')
     // «that» optativo: «She said (that) she was busy», «I think (that) it is late».
     .replace(new RegExp(`\\b(${THAT_VERBS})( me| you| him| her| us| them)? that (?=(${THAT_NEXT})\\b)`, 'g'), '$1$2 ')
-    // «please» no cambia si la oración está bien.
-    .replace(/\bplease\b/g, '')
+    // Se acepta «please» al final como cortesía añadida, pero no se borra en cualquier posición.
+    .replace(/\s+please$/, '')
     .replace(/-/g, ' ')
     .replace(/\bo'clock\b/g, '')
     .replace(/\b(\d|1[0-2])\b/g, (d) => NUM[Number(d)])
@@ -185,8 +186,8 @@ export function samePersonVariants(prompt: string, answers: string[]): string[] 
 }
 
 /**
- * Futuro: «will» y «going to» valen los dos en una oración completa («I'll call you» = «I'm going to call you»).
- * Se dejan afuera las promesas y ofrecimientos, donde «will» es lo natural.
+ * Alternativas de futuro usadas por los ejercicios cuando ambas estructuras son admisibles en el contexto.
+ * No inferir el número del sujeto por su última letra: los nombres propios pueden terminar en -s.
  */
 export function futureAlternatives(answers: string[]): string[] {
   const out = new Set<string>();
@@ -197,8 +198,13 @@ export function futureAlternatives(answers: string[]): string[] {
     if (g) out.add(`${g[1]}will${g[3]}`);
     const w = a.match(/^(.*?)\bwill\b(.*)$/i);
     if (w && w[1].trim() && !/^\s*(be|have)\b/i.test(w[2])) {
-      const subj = w[1].trim().toLowerCase();
-      const be = subj === 'i' ? 'am' : /^(you|we|they)$/.test(subj) || / and /.test(subj) || /s$/.test(subj) ? 'are' : 'is';
+      const subj = w[1].trim().toLowerCase().replace(/^(the|a|an)\s+/, '');
+      // Nunca inferir el plural por la última letra: Chris, the bus y my boss son singulares.
+      // Solo se considera plural cuando el sujeto está identificado de forma explícita.
+      const last = subj.split(/\s+/).pop() ?? '';
+      const plural = /^(you|we|they|these|those|people|children|parents|friends|kids|students)$/.test(subj) || /\band\b/.test(subj) || /^(these|those)\b/.test(subj) ||
+        (subj.split(/\s+/).length > 1 && /[^s]s$|[^su]ss?$/.test(last) && !/(ss|us|is)$/.test(last));
+      const be = subj === 'i' ? 'am' : plural ? 'are' : 'is';
       out.add(/^\s*not\b/.test(w[2]) ? `${w[1]}${be} not going to${w[2].replace(/^\s*not/, '')}` : `${w[1]}${be} going to${w[2]}`);
     }
     // Negativa con going to → will not.
