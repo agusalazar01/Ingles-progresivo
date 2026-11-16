@@ -89,14 +89,14 @@ const hash = (t: string) => [...t].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >
  * Voz para un personaje: la elegida si coincide el género; si no, una del mismo género del paquete
  * (siempre la misma para el mismo personaje). `null` = el paquete no tiene voces de ese género.
  */
-export function speakerFor(packId: string, speakers: { id: number; name: string }[], chosen: number, gender: Gender | null, who: string): number | null {
+export function speakerFor(packId: string, speakers: { id: number; name: string }[], chosen: number, gender: Gender | null, who: string, offset = 0): number | null {
   if (!gender) return chosen;
   const g = (sp: { id: number; name: string }) => speakerGender(packId, sp.id, sp.name);
   const mine = speakers.find((x) => x.id === chosen);
-  if (mine && g(mine) === gender) return chosen;
+  if (mine && g(mine) === gender && !offset) return chosen;
   const same = speakers.filter((x) => g(x) === gender);
   if (!same.length) return null;
-  return same[hash(who) % same.length].id;
+  return same[(hash(who) + offset) % same.length].id;
 }
 
 /** Si la elección automática está prendida (lo está salvo que la apagues). */
@@ -126,10 +126,10 @@ export function systemVoiceGender(id: string, name: string): Gender | null {
 }
 
 /** De la lista de voces del teléfono, una del género pedido (primero australiana); siempre la misma para el mismo personaje. */
-export function systemVoiceFor(voices: { id: string; name: string; lang: string }[], gender: Gender, who: string): string | null {
+export function systemVoiceFor(voices: { id: string; name: string; lang: string }[], gender: Gender, who: string, offset = 0): string | null {
   for (const lang of ['en-AU', 'en-GB', 'en-US', '']) {
     const same = voices.filter((v) => (!lang || v.lang === lang) && systemVoiceGender(v.id, v.name) === gender);
-    if (same.length) return same[hash(who) % same.length].id;
+    if (same.length) return same[(hash(who) + offset) % same.length].id;
   }
   return null;
 }

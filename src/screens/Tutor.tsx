@@ -4,17 +4,27 @@ import { Icon } from '../components/ui';
 import { BackButton } from '../components/BackButton';
 import { useBack } from '../lib/nav';
 import { canListen, listenManual, say, stopSpeaking, type ManualListen } from '../lib/speech';
-import { useAppState } from '../lib/store';
+import { setState, useAppState } from '../lib/store';
 import { userLevel } from '../lib/progress';
 import type { Level } from '../content/types';
-import { chosenAi, listenManualWith, loadEarOnly, loadVoicePack, releaseCallAi, speakWith, type CallAi } from '../lib/ai';
+import { chosenAi, listenManualWith, loadEarOnly, loadVoicePack, releaseCallAi, speakWith, stopPreview, tryVoice, type CallAi } from '../lib/ai';
 import { castVoice } from './Roleplays';
 import { GROQ_DAILY_TOKENS, groqReady, groqUsageToday } from '../lib/groq';
 import { TUTOR_TOPICS, tutorHelp, tutorSummary, tutorTurn, type TutorFix, type TutorMsg, type TutorSummary, type TutorTopic } from '../lib/tutor';
 import { savePhrase } from '../lib/phrases';
 
 const LEVELS: Level[] = ['A2', 'B1', 'B2', 'C1'];
-const TEACHER = 'Kate';
+/** Con quién se puede hablar: cada nombre tiene su voz (la profe de siempre es Kate). «Otra voz» cambia entre las voces de ese género. */
+const TEACHERS = [
+  { name: 'Kate', g: 'f' },
+  { name: 'Emma', g: 'f' },
+  { name: 'Jack', g: 'm' },
+  { name: 'Liam', g: 'm' },
+] as const;
+const teacherPref = (s: ReturnType<typeof useAppState>) => {
+  const t = s.settings.ai.tutor;
+  return { name: TEACHERS.some((x) => x.name === t?.name) ? t!.name : 'Kate', shift: t?.shift ?? 0 };
+};
 
 type Entry = { who: 'teacher'; text: string; tip?: string } | { who: 'you'; text: string; fixes?: TutorFix[]; natural?: string; checked?: boolean };
 
@@ -24,6 +34,8 @@ const msgs = (log: Entry[]): TutorMsg[] => log.map((e) => ({ who: e.who, text: e
 export function Tutor({ onExit, onSettings }: { onExit: () => void; onSettings: () => void }) {
   const s = useAppState();
   const [stage, setStage] = useState<{ v: 'pick' } | { v: 'chat'; topic: TutorTopic; level: Level } | { v: 'done'; topic: TutorTopic; level: Level; log: Entry[] }>({ v: 'pick' });
+  const [hearing, setHearing] = useState(false);
+  const hearId = useRef(0);
   const [level, setLevel] = useState<Level>(() => (LEVELS.includes(userLevel(s) as Level) ? (userLevel(s) as Level) : 'B1'));
   const back = () => (stage.v === 'pick' ? onExit() : (stopSpeaking(), setStage({ v: 'pick' })));
   useBack(true, back, 2);
@@ -33,6 +45,31 @@ export function Tutor({ onExit, onSettings }: { onExit: () => void; onSettings: 
 
   const ready = groqReady();
   const used = groqUsageToday();
+  const { name: teacher, shift } = teacherPref(s);
+  const setTeacher = (name: string, sh: number) => setState((x) => ({ ...x, settings: { ...x.settings, ai: { ...x.settings.ai, tutor: { name, shift: sh } } } }));
+  /** Escuchá cómo suena esta persona (corta lo que estuviera sonando). */
+  const listen = async (name: string, sh: number, force = false) => {
+    if (hearing && !force) {
+      hearId.current++;
+      stopPreview();
+      stopSpeaking();
+      setHearing(false);
+      return;
+    }
+    const mine = ++hearId.current;
+    setHearing(true);
+    const text = `Hi, I'm ${name}. Let's have a chat in English. What would you like to talk about?`;
+    try {
+      const c = await chosenAi();
+      const v = await castVoice(c, { name, role: 'profesora' }, sh);
+      if (mine !== hearId.current) return;
+      if (c.voice && !v.sys) await tryVoice(c.voice, v.speaker, undefined, text);
+      else await say(text, { lang: v.sys ? undefined : 'en-AU', voice: v.sys });
+    } catch {
+      /* sin voz para probar */
+    }
+    if (mine === hearId.current) setHearing(false);
+  };
   return (
     <div className="screen roleplays">
       <div className="top-bar">
@@ -41,7 +78,7 @@ export function Tutor({ onExit, onSettings }: { onExit: () => void; onSettings: 
       <p className="eyebrow">Con la IA online</p>
       <h1>🎓 Charla con la profe</h1>
       <p className="small">
-        Hablás con {TEACHER} solo en inglés, como en un roleplay pero libre. Después de cada frase tuya te corrige lo que dijiste mal y te explica por qué, en
+        Hablás con {teacher} solo en inglés, como en un roleplay pero libre. Después de cada frase tuya te corrige lo que dijiste mal y te explica por qué, en
         español. Se escucha con tu reconocimiento de voz (Parakeet, si lo elegiste).
       </p>
       {!ready && (
@@ -56,6 +93,34 @@ export function Tutor({ onExit, onSettings }: { onExit: () => void; onSettings: 
       <p className="small">
         Hoy usaste {used.tokens.toLocaleString('es')} de {GROQ_DAILY_TOKENS.toLocaleString('es')} del tope gratis (cada intercambio gasta unos 1.500 a 2.500).
       </p>
+      <p className="sum-head">¿Con quién hablás?</p>
+      <div className="chips">
+        {TEACHERS.map((t) => (
+          <button key={t.name} className={`chip ${teacher === t.name ? 'chosen' : ''}`} onClick={() => {
+              setTeacher(t.name, t.name === teacher ? shift : 0);
+              hearId.current++;
+              stopPreview();
+              setHearing(false);
+            }}>
+            {t.g === 'f' ? '👩' : '👨'} {t.name}
+          </button>
+        ))}
+      </div>
+      <div className="ai-row">
+        <button className="secondary" onClick={() => listen(teacher, shift)}>
+          {hearing ? '⏹ Parar' : `▶ Escuchar a ${teacher}`}
+        </button>
+        <button
+          className="secondary"
+          onClick={() => {
+            const next = shift + 1;
+            setTeacher(teacher, next);
+            listen(teacher, next, true);
+          }}
+        >
+          🔁 Otra voz
+        </button>
+      </div>
       <p className="sum-head">Tu nivel</p>
       <div className="chips">
         {LEVELS.map((l) => (
@@ -77,6 +142,7 @@ export function Tutor({ onExit, onSettings }: { onExit: () => void; onSettings: 
 }
 
 function Chat({ topic, level, onBack, onDone }: { topic: TutorTopic; level: Level; onBack: () => void; onDone: (log: Entry[]) => void }) {
+  const { name: TEACHER, shift } = teacherPref(useAppState());
   const [log, setLog] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(true);
   const [thinking, setThinking] = useState(false);
@@ -151,7 +217,7 @@ function Chat({ topic, level, onBack, onDone }: { topic: TutorTopic; level: Leve
     (async () => {
       try {
         const c = await chosenAi();
-        cast.current = await castVoice(c, { name: TEACHER, role: 'profesora' });
+        cast.current = await castVoice(c, { name: TEACHER, role: 'profesora' }, shift);
         if (c.voice && !cast.current.sys) await loadVoicePack(c.voice, cast.current.speaker);
         const ear = await loadEarOnly(c);
         voice.current = { ...c, ear, brain: null };

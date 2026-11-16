@@ -782,16 +782,40 @@ export const removePack = (id: string) => OliverAi.remove({ id });
 /** Graba la voz de referencia para Pocket TTS (queda solo en el teléfono). */
 export const recordMyVoice = (seconds = 10) => OliverAi.recordReference({ id: 'pocket', seconds });
 
-/** Prueba una voz (se carga solo mientras suena y después se libera). */
-export function tryVoice(pack: Pack, speaker: number, tune?: Tune) {
-  return serial(() => tryVoiceNow(pack, speaker, tune));
+const SAMPLE = "G'day mate! I'm Oliver. How are you going today? Reckon we'll have a good yarn.";
+
+/** Número de la última vista previa pedida: si pedís otra (o parás), la anterior se corta y las pendientes se saltean. */
+let previewToken = 0;
+
+/** Corta la vista previa que esté sonando. */
+export function stopPreview() {
+  previewToken++;
+  OliverAi.stopSpeaking().catch(() => {});
 }
-async function tryVoiceNow(pack: Pack, speaker: number, tune?: Tune) {
+
+/** Prueba una voz (se carga solo mientras suena y después se libera). Si estaba sonando otra, la corta y suena esta. */
+export function tryVoice(pack: Pack, speaker: number, tune?: Tune, text = SAMPLE) {
+  const mine = ++previewToken;
+  OliverAi.stopSpeaking().catch(() => {});
+  return serial(async () => {
+    if (mine !== previewToken) return;
+    await tryVoiceNow(pack, speaker, mine, tune, text);
+  });
+}
+async function tryVoiceNow(pack: Pack, speaker: number, mine: number, tune: Tune | undefined, text: string) {
   const t = tune ?? tuneFor(pack.id, speaker);
   await loadVoicePack(pack, speaker, t);
   try {
-    await speakWith(pack, speaker, "G'day mate! I'm Oliver. How are you going today? Reckon we'll have a good yarn.", t);
+    // Si mientras cargaba pediste otra voz o paraste, no se habla.
+    if (mine === previewToken) await speakWith(pack, speaker, text, t);
   } finally {
     await OliverAi.unloadAll().catch(() => {});
   }
 }
+
+/** Voces que no ocultaste (las ocultas no aparecen en las listas ni las usan los personajes). */
+export const isVoiceHidden = (hidden: string[] | undefined, packId: string, speaker: number) => !!hidden?.includes(tuneKey(packId, speaker));
+export const visibleSpeakers = <T extends { id: number }>(hidden: string[] | undefined, packId: string, list: T[]): T[] => {
+  const v = list.filter((x) => !isVoiceHidden(hidden, packId, x.id));
+  return v.length ? v : list;
+};

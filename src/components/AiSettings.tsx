@@ -1,5 +1,5 @@
 import { speakerGender } from '../lib/voicegender';
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { setState, useAppState } from '../lib/store';
 import {
   aiAvailable,
@@ -21,6 +21,8 @@ import {
   startDownload,
   subscribeDownloads,
   tryVoice,
+  stopPreview,
+  isVoiceHidden,
   type AiStatus,
   type AudioTest,
   type Tune,
@@ -43,6 +45,10 @@ export function AiSettings() {
   const free = st.freeBytes;
   const [speakers, setSpeakers] = useState<{ id: number; name: string }[]>([]);
   const [testing, setTesting] = useState<number | null>(null);
+  const previewId = useRef(0);
+  const hiddenPacks = ai.hiddenPacks ?? [];
+  const hiddenVoices = ai.hiddenVoices ?? [];
+  const [showHiddenVoices, setShowHiddenVoices] = useState(false);
   const [msg, setMsg] = useState('');
 
   /** Marca a mano si una voz es de mujer o de hombre (para las que el modelo no dice, como las de Piper). */
@@ -57,7 +63,7 @@ export function AiSettings() {
       return { ...x, settings: { ...x.settings, ai: { ...x.settings.ai, genders: g } } };
     });
   };
-  const set = (patch: Partial<AiChoice>) => setState((st) => ({ ...st, settings: { ...st.settings, ai: { ...st.settings.ai, ...patch } } }));
+  const set = (patch: Partial<AiChoice> & { hiddenPacks?: string[]; hiddenVoices?: string[] }) => setState((st) => ({ ...st, settings: { ...st.settings, ai: { ...st.settings.ai, ...patch } } }));
   const refresh = () => aiStatus().then(setSt);
 
   useEffect(() => {
@@ -128,15 +134,42 @@ export function AiSettings() {
     refresh();
   };
 
+  /** ▶ prueba la voz; si ya estaba sonando esa, la corta (⏹); si suena otra, la corta y suena esta. */
   const test = async (p: Pack, speaker: number) => {
+    if (testing === speaker) {
+      previewId.current++;
+      stopPreview();
+      setTesting(null);
+      return;
+    }
+    const mine = ++previewId.current;
     setTesting(speaker);
     try {
       await tryVoice(p, speaker, tuneFor(p.id, speaker));
     } catch (e) {
-      setMsg(`No pude probar la voz: ${(e as Error).message ?? e}`);
+      if (mine === previewId.current) setMsg(`No pude probar la voz: ${(e as Error).message ?? e}`);
     }
-    setTesting(null);
+    if (mine === previewId.current) setTesting(null);
   };
+
+  /** Borra los archivos de un motor (si estaban) y lo saca de la lista: ya no aparece ni para bajar. */
+  const hidePack = async (p: Pack) => {
+    const has = packReady(p, st) || p.id in installed;
+    const ok = window.confirm(`¿Quitar «${p.title}» de la lista?${has ? ' Se borran sus archivos del teléfono.' : ''} Después lo podés volver a mostrar desde «Motores quitados».`);
+    if (!ok) return;
+    if (has) await removePack(p.id);
+    const reset: Partial<AiChoice> = ai[KEY[p.kind]] === p.id ? ({ [KEY[p.kind]]: p.kind === 'brain' ? 'off' : 'system', ...(p.audio && ai.ear === 'brain' ? { ear: 'system' } : {}) } as Partial<AiChoice>) : {};
+    set({ ...reset, hiddenPacks: [...hiddenPacks, p.id] });
+    refresh();
+  };
+  const showPack = (id: string) => set({ hiddenPacks: hiddenPacks.filter((x) => x !== id) });
+
+  /** Saca una voz suelta de la lista (no se borra el motor, solo esa voz). */
+  const hideVoice = (p: Pack, id: number, visible: { id: number }[]) => {
+    const next = visible.find((x) => x.id !== id);
+    set({ hiddenVoices: [...hiddenVoices, tuneKey(p.id, id)], ...(ai.speaker === id && next ? { speaker: next.id } : {}) });
+  };
+  const showVoice = (p: Pack, id: number) => set({ hiddenVoices: hiddenVoices.filter((x) => x !== tuneKey(p.id, id)) });
 
   const packCard = (p: Pack) => {
     const has = packReady(p, st);
@@ -194,6 +227,9 @@ export function AiSettings() {
                 🗑️ Borrar
               </button>
             )}
+            <button className="secondary" onClick={() => hidePack(p)} title="Lo saca de la lista (y borra sus archivos si estaba bajado)">
+              🚫 Quitar
+            </button>
           </div>
         )}
         {d?.error && (
@@ -209,24 +245,53 @@ export function AiSettings() {
         {chosen && p.kind === 'voice' && speakers.length > 0 && (
           <div className="options">
             <p className="small">Elegí la voz de Oliver (tocá ▶ para escucharla). 👩/👨: si es de mujer o de hombre (tocalo para cambiarlo); así cada personaje de los roleplays habla con una voz de su género.</p>
-            {speakers.map((v) => (
-              <div key={v.id} className="ai-row">
-                <button className={`option ${ai.speaker === v.id ? 'right' : ''}`} style={{ flex: 3 }} onClick={() => set({ speaker: v.id })}>
-                  {v.name}
-                </button>
-                <button className="secondary" style={{ flex: 1, minWidth: 60 }} disabled={testing !== null} onClick={() => test(p, v.id)}>
-                  {testing === v.id ? '…' : '▶'}
-                </button>
-                <button
-                  className="secondary"
-                  style={{ flex: 1, minWidth: 52 }}
-                  title="Voz de mujer, de hombre o sin marcar: sirve para elegir la voz de cada personaje"
-                  onClick={() => markGender(p.id, v.id, v.name)}
-                >
-                  {({ f: '👩', m: '👨' } as Record<string, string>)[speakerGender(p.id, v.id, v.name) ?? ''] ?? '❔'}
-                </button>
-              </div>
-            ))}
+            {(() => {
+              const visible = speakers.filter((v) => !isVoiceHidden(hiddenVoices, p.id, v.id));
+              const hidden = speakers.filter((v) => isVoiceHidden(hiddenVoices, p.id, v.id));
+              return (
+                <>
+                  {visible.map((v) => (
+                    <div key={v.id} className="ai-row">
+                      <button className={`option ${ai.speaker === v.id ? 'right' : ''}`} style={{ flex: 3 }} onClick={() => set({ speaker: v.id })}>
+                        {v.name}
+                      </button>
+                      <button className="secondary" style={{ flex: 1, minWidth: 60 }} aria-label={testing === v.id ? 'Parar' : 'Escuchar'} onClick={() => test(p, v.id)}>
+                        {testing === v.id ? '⏹' : '▶'}
+                      </button>
+                      <button
+                        className="secondary"
+                        style={{ flex: 1, minWidth: 52 }}
+                        title="Voz de mujer, de hombre o sin marcar: sirve para elegir la voz de cada personaje"
+                        onClick={() => markGender(p.id, v.id, v.name)}
+                      >
+                        {({ f: '👩', m: '👨' } as Record<string, string>)[speakerGender(p.id, v.id, v.name) ?? ''] ?? '❔'}
+                      </button>
+                      <button className="secondary" style={{ flex: 1, minWidth: 48 }} disabled={visible.length <= 1} aria-label="Sacar esta voz de la lista" title="Sacar esta voz de la lista" onClick={() => hideVoice(p, v.id, visible)}>
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                  {hidden.length > 0 && (
+                    <>
+                      <button className="link" onClick={() => setShowHiddenVoices((x) => !x)}>
+                        {showHiddenVoices ? 'Ocultar' : 'Mostrar'} voces quitadas ({hidden.length})
+                      </button>
+                      {showHiddenVoices &&
+                        hidden.map((v) => (
+                          <div key={v.id} className="ai-row">
+                            <span className="small" style={{ flex: 3 }}>
+                              {v.name}
+                            </span>
+                            <button className="secondary" style={{ flex: 1 }} onClick={() => showVoice(p, v.id)}>
+                              Volver a mostrar
+                            </button>
+                          </div>
+                        ))}
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
         {chosen && p.engine === 'pocket' && (
@@ -247,7 +312,7 @@ export function AiSettings() {
           </div>
         )}
         {chosen && p.kind === 'voice' && <AudioLab pack={p} speaker={ai.speaker} />}
-        {chosen && p.kind === 'voice' && <TunePanel tune={tune} piper={p.engine === 'piper'} onChange={setTune} onReset={resetTune} onTry={() => test(p, ai.speaker)} busy={testing !== null} />}
+        {chosen && p.kind === 'voice' && <TunePanel tune={tune} piper={p.engine === 'piper'} onChange={setTune} onReset={resetTune} onTry={() => test(p, ai.speaker)} busy={testing === ai.speaker} />}
       </div>
     );
   };
@@ -278,9 +343,33 @@ export function AiSettings() {
     return p.title;
   };
   const counts = (kind: PackKind) => {
-    const list = PACKS.filter((p) => p.kind === kind);
+    const list = PACKS.filter((p) => p.kind === kind && !hiddenPacks.includes(p.id));
     const have = list.filter((p) => packReady(p, st)).length;
     return `${have} bajada${have === 1 ? '' : 's'} · ${list.length - have} para bajar`;
+  };
+  const [showHiddenPacks, setShowHiddenPacks] = useState(false);
+  /** «Motores quitados»: para volver a mostrar alguno. */
+  const hiddenList = (kind: PackKind) => {
+    const list = PACKS.filter((p) => p.kind === kind && hiddenPacks.includes(p.id));
+    if (!list.length) return null;
+    return (
+      <div className="options">
+        <button className="link" onClick={() => setShowHiddenPacks((x) => !x)}>
+          {showHiddenPacks ? 'Ocultar' : 'Mostrar'} motores quitados ({list.length})
+        </button>
+        {showHiddenPacks &&
+          list.map((p) => (
+            <div key={p.id} className="ai-row">
+              <span className="small" style={{ flex: 3 }}>
+                {p.title}
+              </span>
+              <button className="secondary" style={{ flex: 1 }} onClick={() => showPack(p.id)}>
+                Volver a mostrar
+              </button>
+            </div>
+          ))}
+      </div>
+    );
   };
   const anyDl = (kind: PackKind) => PACKS.some((p) => p.kind === kind && dl[p.id] && !dl[p.id].error);
 
@@ -301,12 +390,14 @@ export function AiSettings() {
 
       <Menu icon="🗣️" label="Voz utilizada" value={chosenTitle('voice', '📱 Voz del teléfono')} detail={counts('voice')} busy={anyDl('voice')}>
         {systemOption('voice', '📱 Voz del teléfono (Samsung en inglés de Australia)')}
-        {PACKS.filter((p) => p.kind === 'voice').map(packCard)}
+        {PACKS.filter((p) => p.kind === 'voice' && !hiddenPacks.includes(p.id)).map(packCard)}
+        {hiddenList('voice')}
       </Menu>
 
       <Menu icon="👂" label="Reconocimiento de voz" value={chosenTitle('ear', '📱 El del teléfono')} detail={counts('ear')} busy={anyDl('ear')}>
         {systemOption('ear', '📱 Reconocimiento de voz del teléfono')}
-        {PACKS.filter((p) => p.kind === 'ear').map(packCard)}
+        {PACKS.filter((p) => p.kind === 'ear' && !hiddenPacks.includes(p.id)).map(packCard)}
+        {hiddenList('ear')}
       </Menu>
       {msg && <p className="small">{msg}</p>}
     </div>
@@ -355,8 +446,8 @@ function TunePanel({ tune, piper, onChange, onReset, onTry, busy }: { tune: Tune
       {piper && slider('Expresividad (entonación)', 'noise', 0.2, 1.0, 0.01, (v) => (v < 0.5 ? `${v.toFixed(2)} · monótona` : v > 0.8 ? `${v.toFixed(2)} · muy viva` : v.toFixed(2)))}
       {piper && slider('Ritmo variado', 'noiseW', 0.2, 1.3, 0.01, (v) => v.toFixed(2))}
       <div className="ai-row">
-        <button className="primary" onClick={onTry} disabled={busy}>
-          {busy ? '…' : '▶ Escuchar'}
+        <button className="primary" onClick={onTry}>
+          {busy ? '⏹ Parar' : '▶ Escuchar'}
         </button>
         <button className="secondary" onClick={onReset}>
           Restablecer

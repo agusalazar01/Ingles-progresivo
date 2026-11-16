@@ -6,9 +6,9 @@ import callArm from '../assets/call/arm.svg?raw';
 import { BackButton } from '../components/BackButton';
 import { useBack } from '../lib/nav';
 import { canListen, listenManual, listVoices, say, stopSpeaking, type ManualListen } from '../lib/speech';
-import { useAppState } from '../lib/store';
+import { useAppState, getState } from '../lib/store';
 import type { Level } from '../content/types';
-import { chosenAi, listenManualWith, loadEarOnly, loadVoicePack, packSpeakers, releaseCallAi, speakWith, tuneFor, type CallAi } from '../lib/ai';
+import { chosenAi, listenManualWith, loadEarOnly, loadVoicePack, packSpeakers, releaseCallAi, speakWith, tuneFor, visibleSpeakers, type CallAi } from '../lib/ai';
 import { autoGender, partnerGender, speakerFor, systemVoiceFor } from '../lib/voicegender';
 import { RP_CATEGORIES, ROLEPLAYS } from '../content/roleplays/catalog';
 import type { RFix, RoleplayEntry, RoleplayScript } from '../content/roleplays/types';
@@ -248,19 +248,20 @@ function Brief({ e, onBack, onStart }: { e: RoleplayEntry; onBack: () => void; o
  * Voz para el personaje del roleplay: si es mujer, una voz de mujer; si es hombre, de hombre.
  * Primero en el paquete de voces elegido; si no tiene de ese género, una voz del teléfono. Oliver mantiene la elegida.
  */
-export async function castVoice(c: CallAi, partner: { name: string; role: string }): Promise<{ speaker: number; sys?: string }> {
+export async function castVoice(c: CallAi, partner: { name: string; role: string }, offset = 0): Promise<{ speaker: number; sys?: string }> {
   const g = autoGender() && partner.name !== 'Oliver' ? partnerGender(partner.name, partner.role) : null;
   if (!g) return { speaker: c.speaker };
   if (c.voice) {
     try {
-      const pick = speakerFor(c.voice.id, await packSpeakers(c.voice), c.speaker, g, partner.name);
+      const hidden = getState().settings.ai.hiddenVoices;
+      const pick = speakerFor(c.voice.id, visibleSpeakers(hidden, c.voice.id, await packSpeakers(c.voice)), c.speaker, g, partner.name, offset);
       if (pick !== null) return { speaker: pick };
     } catch {
       return { speaker: c.speaker };
     }
   }
   try {
-    const sys = systemVoiceFor(await listVoices(), g, partner.name);
+    const sys = systemVoiceFor(await listVoices(), g, partner.name, offset);
     if (sys) return { speaker: c.speaker, sys };
   } catch {
     /* sin lista de voces */
