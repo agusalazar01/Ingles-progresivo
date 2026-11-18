@@ -1,6 +1,6 @@
 import type { Exercise } from '../content/types';
 import { NGSL } from '../content/ngsl';
-import { ingOf, sentenceEn, TENSE_LABEL, third, verbPhrase, type Pol, type Tense } from './english';
+import { ingOf, sentenceEn, sentenceEs, TENSE_LABEL, third, verbPhrase, type Pol, type Tense } from './english';
 import { ALL_TENSES, _TIMES as TIMES, _verbOk as verbOk, verbSentence } from './generate';
 import { SUBJECTS, VERBS, type Verb } from './lexicon';
 
@@ -151,3 +151,134 @@ export function stageItems(v: Verb, stage: VStage['id'], n = 8): Exercise[] {
 
 export const workshopVerb = (id: string) => WORKSHOP.find((v) => v.id === id);
 export { ALL_TENSES };
+
+/** Un ejemplo de la ficha del verbo: la oración, la parte que es el verbo (para resaltarla) y la traducción. */
+export interface VerbExample {
+  en: string;
+  /** La forma del verbo dentro de `en` («has eaten», «didn't eat»). */
+  hl: string;
+  es: string;
+}
+
+/** Cada forma del verbo: para qué sirve y ejemplos con complementos propios del verbo (nunca un complemento suelto). */
+export interface VerbFormGuide {
+  label: string;
+  form: string;
+  use: string;
+  examples: VerbExample[];
+}
+
+const SUBJ = (en: string) => SUBJECTS.find((s) => s.en === en)!;
+const lowerFirst = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+
+/** En negativa, «something / some» pasan a «anything / any» (y «algo» a «nada»). */
+function negWords(e: VerbExample): VerbExample {
+  return { en: e.en.replace(/\bsomething\b/g, 'anything').replace(/\bsome\b/g, 'any'), hl: e.hl, es: e.es.replace(/\balgo\b/g, 'nada') };
+}
+
+function example(v: Verb, t: Tense, subj: string, pol: Exclude<Pol, 'q'>, ci: number): VerbExample {
+  const s = SUBJ(subj);
+  const c = v.comps[ci % v.comps.length];
+  const e = { en: sentenceEn(t, s, v, pol, c.en), hl: verbPhrase(t, s, v, pol), es: sentenceEs(t, s, c.esVerb ?? v.es, pol, c.es) };
+  return pol === 'neg' ? negWords(e) : e;
+}
+
+/** Presente perfecto de experiencia: «I've never…» / «Have you ever…?». En español rioplatense va en pretérito: «Nunca tuve…», «¿Alguna vez tuviste…?». */
+function experience(v: Verb, ci: number, q: boolean): VerbExample {
+  const c = v.comps[ci % v.comps.length];
+  if (q) {
+    const es = sentenceEs('pastSimple', SUBJ('you'), c.esVerb ?? v.es, 'q', c.es);
+    return { en: `Have you ever ${v.pp} ${c.en}?`, hl: `ever ${v.pp}`, es: `¿Alguna vez ${lowerFirst(es.slice(1))}` };
+  }
+  const es = sentenceEs('pastSimple', SUBJ('I'), c.esVerb ?? v.es, 'aff', c.es);
+  return negWords({ en: `I have never ${v.pp} ${c.en}.`, hl: `have never ${v.pp}`, es: `Nunca ${lowerFirst(es)}` });
+}
+
+/** Verbos que no siguen la regla general en continuo o en presente perfecto: ejemplos escritos a mano. */
+const SPECIAL: Record<string, { ing?: { use: string; examples: VerbExample[] }; pp?: VerbExample[] }> = {
+  have: {
+    ing: {
+      use: 'Con el significado «tener» (algo tuyo) no va en -ing: ✗ I\'m having a dog. Pero sí en expresiones donde have es «hacer» algo: have lunch (almorzar), have a shower (bañarse), have a good time (pasarla bien).',
+      examples: [
+        { en: "I'm having lunch.", hl: 'having', es: 'Estoy almorzando.' },
+        { en: "We're having a great time.", hl: 'having', es: 'La estamos pasando bárbaro.' },
+      ],
+    },
+    pp: [
+      { en: "I've had this job for a year.", hl: 'had', es: 'Tengo este trabajo hace un año.' },
+      { en: 'Have you ever had a dog?', hl: 'ever had', es: '¿Alguna vez tuviste un perro?' },
+    ],
+  },
+  know: {
+    ing: {
+      use: 'No va en -ing: ✗ I\'m knowing the answer → ✓ I know the answer. Saber o conocer es un estado, no una acción que está pasando.',
+      examples: [{ en: 'I know the answer.', hl: 'know', es: 'Sé la respuesta.' }],
+    },
+    pp: [
+      { en: "I've known my best friend for ten years.", hl: 'known', es: 'Conozco a mi mejor amigo hace diez años.' },
+      { en: "She hasn't known the truth for long.", hl: "hasn't known", es: 'Ella no sabe la verdad hace mucho.' },
+    ],
+  },
+  understand: {
+    ing: {
+      use: 'No va en -ing: ✗ I\'m understanding → ✓ I understand. Entender es un estado.',
+      examples: [{ en: "Now I understand the problem.", hl: 'understand', es: 'Ahora entiendo el problema.' }],
+    },
+  },
+  want: {
+    ing: {
+      use: 'No va en -ing: ✗ I\'m wanting a coffee → ✓ I want a coffee. Querer es un estado.',
+      examples: [{ en: 'I want a coffee.', hl: 'want', es: 'Quiero un café.' }],
+    },
+  },
+  live: {
+    ing: {
+      use: 'En -ing (am / is / are living) es para algo temporal, por ahora. Para algo permanente se usa el presente simple: I live in Montevideo.',
+      examples: [{ en: "I'm living with my parents for now.", hl: 'living', es: 'Por ahora estoy viviendo con mis padres.' }],
+    },
+  },
+  see: {
+    ing: {
+      use: 'Con el significado «ver con los ojos» no va en -ing: ✗ I\'m seeing the sea → ✓ I can see the sea. En -ing significa «ver a alguien, encontrarse», sobre todo para planes.',
+      examples: [{ en: "I'm seeing my friends tonight.", hl: 'seeing', es: 'Esta noche me veo con mis amigos.' }],
+    },
+  },
+};
+
+export function verbGuide(v: Verb): VerbFormGuide[] {
+  const irr = isIrregular(v);
+  const ing = ingOf(v);
+  const sp = SPECIAL[v.base];
+  return [
+    {
+      label: 'Base',
+      form: v.base,
+      use: "Presente con I, you, we, they. También después de to, can, will y en negativas y preguntas (don't, didn't).",
+      examples: [example(v, 'presSimple', 'I', 'aff', 0), example(v, 'presSimple', 'they', 'neg', 1)],
+    },
+    {
+      label: 'he / she / it',
+      form: third(v.base),
+      use: `En presente, con he, she, it (o una persona: Ana, my brother) se agrega -s: ${v.base} → ${third(v.base)}. En negativa vuelve a la base: doesn't ${v.base}, no «doesn't ${third(v.base)}».`,
+      examples: [example(v, 'presSimple', 'she', 'aff', 1), example(v, 'presSimple', 'my brother', 'neg', 0)],
+    },
+    {
+      label: 'Pasado',
+      form: v.past,
+      use: `Algo que pasó y terminó (yesterday, last week, in 2020). ${irr ? `Es irregular: ${v.base} → ${v.past}, hay que aprenderlo de memoria.` : 'Es regular: termina en -ed.'} En negativa y pregunta se usa did + la base: didn't ${v.base}, no «didn't ${v.past}».`,
+      examples: [example(v, 'pastSimple', 'we', 'aff', 2), example(v, 'pastSimple', 'I', 'neg', 0)],
+    },
+    {
+      label: 'Participio',
+      form: v.pp,
+      use: `Va después de have / has (presente perfecto): lo que hiciste alguna vez en tu vida, o algo que empezó antes y sigue. ${v.pp === v.past ? `Acá es igual al pasado (${v.pp}).` : `Ojo: no es igual al pasado (${v.past} ≠ ${v.pp}).`}`,
+      examples: sp?.pp ?? [experience(v, 1, true), experience(v, 0, false)],
+    },
+    {
+      label: '-ing',
+      form: ing,
+      use: sp?.ing?.use ?? 'Con am / is / are (presente continuo: lo que está pasando ahora) y con was / were (lo que estaba pasando en un momento del pasado).',
+      examples: sp?.ing?.examples ?? [example(v, 'presCont', 'he', 'aff', 1), example(v, 'pastCont', 'we', 'aff', 2)],
+    },
+  ];
+}

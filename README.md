@@ -19,6 +19,11 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.17
+
+- **Taller de verbos mejor explicado:** cada forma (base, he/she/it, pasado, participio, -ing) dice para qué sirve y trae dos oraciones de ejemplo con la forma resaltada, su traducción y ▶ para escucharlas. Se acabó el «Ejemplo: a dog = un perro» suelto. Los verbos de estado (have, know, want, understand, see, live) explican cuándo sí y cuándo no van en -ing.
+- **Cada personaje con su voz en los diálogos de las unidades:** Mia habla con voz de mujer y Leo con voz de hombre, tanto en ▶ como en «Escuchar todo», y dos personajes nunca comparten voz. Usa tu paquete de voces (Pocket); si no tiene de ese género, una voz del teléfono; y si tampoco, cambia el tono.
+
 ## Novedades de la versión 1.11
 
 - **Charla con la profe (IA online):** dentro de Roleplays. Hablás libre solo en inglés con Kate, directo con la IA (Groq), sin Oliver y con tu reconocimiento de voz (Parakeet, si lo elegiste). Después de cada frase tuya aparece la corrección: qué dijiste, cómo se dice bien y por qué, en español. Tiene botón 💡 para cuando no sabés qué decir, y al terminar un resumen con tus errores y vocabulario para guardar. Muestra cuánto del tope gratis diario llevás gastado.

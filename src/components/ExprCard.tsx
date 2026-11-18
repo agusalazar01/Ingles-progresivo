@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EXPR_TYPE_LABEL, exprById, unitsOfExpr, type Expression } from '../content/context';
 import type { DialogueLine, Unit } from '../content/types';
-import { say, stopSpeaking } from '../lib/speech';
+import { say } from '../lib/speech';
+import { DialogueVoices } from '../lib/dialogueVoice';
 import { getState } from '../lib/store';
 import { Words } from './Words';
 
@@ -65,7 +66,7 @@ export function ExprCard({ e, open: start = false, onPractice }: { e: Expression
 }
 
 /** Una línea del diálogo: se escucha y se desglosa (partes, gramática y cómo cambia con otros tiempos). */
-function Line({ l }: { l: DialogueLine }) {
+function Line({ l, speak }: { l: DialogueLine; speak: (who: string, text: string) => void }) {
   const [open, setOpen] = useState(false);
   const more = (l.parts?.length ?? 0) + (l.swap?.length ?? 0) > 0;
   return (
@@ -74,7 +75,7 @@ function Line({ l }: { l: DialogueLine }) {
         <p>
           <b className="dlg-who">{l.who}:</b> <Words text={l.en} className="en" />
         </p>
-        <button className="icon" onClick={() => say(l.en, { accent: accent() })} aria-label="Escuchar">
+        <button className="icon" onClick={() => speak(l.who, l.en)} aria-label="Escuchar">
           ▶
         </button>
       </div>
@@ -97,7 +98,7 @@ function Line({ l }: { l: DialogueLine }) {
               <span className="form-label">{what}</span>
               <div className="example-row">
                 <Words text={en} className="en" />
-                <button className="icon" onClick={() => say(en, { accent: accent() })} aria-label="Escuchar">
+                <button className="icon" onClick={() => speak(l.who, en)} aria-label="Escuchar">
                   ▶
                 </button>
               </div>
@@ -115,10 +116,23 @@ export function ContextExplanation({ unit }: { unit: Unit }) {
   const c = unit.context!;
   const [playing, setPlaying] = useState(false);
   const stop = useRef(false);
+  // Cada personaje con su voz (de su género, distinta de la del otro), igual en ▶ y en «Escuchar todo».
+  const voices = useRef<DialogueVoices | null>(null);
+  voices.current ??= new DialogueVoices(
+    c.dialogue.map((l) => l.who),
+    accent,
+  );
+  useEffect(() => () => voices.current?.release(), []);
+  const speak = (who: string, text: string) => {
+    stop.current = true;
+    setPlaying(false);
+    voices.current!.stop();
+    voices.current!.say(who, text).catch(() => {});
+  };
   const playAll = async () => {
     if (playing) {
       stop.current = true;
-      stopSpeaking();
+      voices.current!.stop();
       setPlaying(false);
       return;
     }
@@ -127,7 +141,7 @@ export function ContextExplanation({ unit }: { unit: Unit }) {
     for (const l of c.dialogue) {
       if (stop.current) break;
       try {
-        await say(l.en, { accent: accent() });
+        await voices.current!.say(l.who, l.en);
       } catch {
         break;
       }
@@ -148,7 +162,7 @@ export function ContextExplanation({ unit }: { unit: Unit }) {
       <p className="small">Tocá «Desglosar» para ver qué es cada parte y cómo cambia con otros tiempos. Tocá una palabra para ver qué significa.</p>
       <div className="dialogue">
         {c.dialogue.map((l, i) => (
-          <Line key={i} l={l} />
+          <Line key={i} l={l} speak={speak} />
         ))}
       </div>
       <p className="ex-head">Expresiones de esta unidad ({exprs.length})</p>
