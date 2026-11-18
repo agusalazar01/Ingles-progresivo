@@ -86,7 +86,7 @@ export const ADVANCED_UNITS: Unit[] = [
     title: 'Escucha: habla conectada',
     prereqs: ['future', 'sounds-endings'],
     explanation: [
-      'En el habla real las palabras se unen y las chicas se reducen: going to → "gonna", want to → "wanna", what do you → "whaddaya".',
+      'En el habla real las palabras se unen y las sílabas se reducen: going to → "gonna", want to → "wanna", what do you → "whaddaya".',
       'Las palabras de función (to, for, of, and, can) casi desaparecen: "a cup of tea" suena "a cuppa tea".',
       'No hace falta hablar así, pero sí entenderlo. El dictado con frases reales entrena exactamente eso.',
     ],

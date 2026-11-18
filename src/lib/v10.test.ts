@@ -62,7 +62,7 @@ describe('v1.0 — Roleplays', () => {
     const { ROLEPLAYS, RP_CATEGORIES } = await import('../content/roleplays/catalog');
     const { SCRIPTS } = await import('../content/roleplays/scripts');
     expect(ROLEPLAYS.length).toBeGreaterThanOrEqual(190);
-    expect(RP_CATEGORIES.length).toBe(13);
+    expect(RP_CATEGORIES.length).toBe(14);
     expect(new Set(ROLEPLAYS.map((r) => r.id)).size).toBe(ROLEPLAYS.length);
     for (const id of Object.keys(SCRIPTS)) expect(ROLEPLAYS.find((r) => r.id === id)?.script, id).toBeDefined();
   });

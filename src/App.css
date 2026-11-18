@@ -1120,3 +1120,34 @@ h1, h2, .card-title, .unit-title, .theme-head h2 { color: var(--head); }
 /* Texto que aparece letra a letra (con un toque suave por palabra) */
 .typed-hide { visibility: hidden; }
 .typed { cursor: pointer; }
+
+/* ───── v1.16: unidades de situaciones y catálogo de expresiones ───── */
+.context-ex { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.context-ex .row { align-items: center; }
+.context-ex .grow { flex: 1; margin: 0; }
+.small-btn { padding: 6px 12px; font-size: 14px; min-height: 0; width: auto; }
+.dialogue { display: flex; flex-direction: column; gap: 8px; }
+.dlg-line { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--sky); border-radius: 12px; padding: 10px 14px; }
+.dlg-line p { margin: 0; }
+.dlg-line .es { color: var(--muted); font-size: 15px; margin-top: 2px; }
+.dlg-line .link { padding: 4px 0 0; font-size: 14px; }
+.dlg-who { color: var(--sky); }
+.dlg-line .en { font-weight: 600; }
+.dlg-break { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 15px; }
+.expr-list { display: flex; flex-direction: column; gap: 8px; }
+.expr-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.expr-head { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; background: none; border: 0; padding: 10px 14px; color: inherit; font: inherit; cursor: pointer; }
+.expr-en { font-weight: 700; font-size: 17px; }
+.expr-es { color: var(--muted); font-size: 15px; }
+.expr-tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
+.expr-tags .tag { margin-left: 0; }
+.tag.soft { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.freq { color: var(--brand); font-size: 12px; letter-spacing: 1px; }
+.expr-body { display: flex; flex-direction: column; gap: 8px; padding: 0 14px 12px; }
+.expr-body p { margin: 0; }
+.expr-forms { display: flex; flex-direction: column; gap: 6px; }
+.expr-form { border-left: 2px solid var(--line); padding-left: 10px; }
+.expr-form .en { font-weight: 600; }
+.expr-form .es { color: var(--muted); font-size: 14px; margin: 0; }
+.form-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
+.expressions .answer { margin: 4px 0; }

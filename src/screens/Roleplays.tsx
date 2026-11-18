@@ -9,7 +9,7 @@ import { canListen, listenManual, listVoices, say, stopSpeaking, type ManualList
 import { useAppState, getState } from '../lib/store';
 import type { Level } from '../content/types';
 import { chosenAi, listenManualWith, loadEarOnly, loadVoicePack, packSpeakers, releaseCallAi, speakWith, tuneFor, visibleSpeakers, type CallAi } from '../lib/ai';
-import { autoGender, partnerGender, speakerFor, systemVoiceFor } from '../lib/voicegender';
+import { autoGender, castGender, speakerFor, systemVoiceFor } from '../lib/voicegender';
 import { RP_CATEGORIES, ROLEPLAYS } from '../content/roleplays/catalog';
 import type { RFix, RoleplayEntry, RoleplayScript } from '../content/roleplays/types';
 import { fixesFor, isRepeatRequest, matchOption, pickLine, roleplayById, saveRoleplay, understand } from '../lib/roleplay';
@@ -249,7 +249,7 @@ function Brief({ e, onBack, onStart }: { e: RoleplayEntry; onBack: () => void; o
  * Primero en el paquete de voces elegido; si no tiene de ese género, una voz del teléfono. Oliver mantiene la elegida.
  */
 export async function castVoice(c: CallAi, partner: { name: string; role: string }, offset = 0): Promise<{ speaker: number; sys?: string }> {
-  const g = autoGender() && partner.name !== 'Oliver' ? partnerGender(partner.name, partner.role) : null;
+  const g = autoGender() && partner.name !== 'Oliver' ? castGender(partner.name, partner.role) : null;
   if (!g) return { speaker: c.speaker };
   if (c.voice) {
     try {

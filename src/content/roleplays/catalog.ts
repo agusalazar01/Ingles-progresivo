@@ -17,6 +17,7 @@ export const RP_CATEGORIES: { id: string; title: string }[] = [
   { id: '11', title: 'Salud, emergencias e imprevistos' },
   { id: '12', title: 'Situaciones avanzadas y vida independiente' },
   { id: '13', title: 'Situaciones inesperadas y charlas espontáneas' },
+  { id: '14', title: 'Cafés, estaciones de servicio y naturaleza' },
 ];
 
 const e = (n: string, category: string, title: string, titleEs: string, level: RoleplayEntry['level']): RoleplayEntry => {
@@ -218,4 +219,9 @@ export const ROLEPLAYS: RoleplayEntry[] = [
   e('153', '13', 'You meet someone from another country', 'Conocer a alguien de otro país', 'B2'),
   e('154', '13', 'You have to explain something complicated', 'Explicar una situación complicada', 'B2'),
   e('155', '13', 'You need to defend your opinion', 'Expresar y defender tu opinión respetuosamente', 'B2'),
+  e('156', '14', 'Talking to an attendant at a servo', 'Pedir un monto en el surtidor, que te lo habiliten y pagar', 'A2'),
+  e('157', '14', 'Understanding the Australian coffee menu', 'Entender los tipos de café de Australia y sus ingredientes', 'A2'),
+  e('158', '14', 'Visiting a national park information centre', 'Consultar en el centro de visitantes de un parque nacional', 'A2'),
+  e('159', '14', 'Checking in at a campground', 'Llegar a un camping y consultar por las instalaciones', 'A2'),
+  e('160', '14', 'Getting ready for a bushwalk', 'Prepararse para caminar por un parque natural', 'B1'),
 ];

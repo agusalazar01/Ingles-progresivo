@@ -5,6 +5,7 @@ import { FOUNDATION_UNITS } from './units-foundation';
 import { ADVANCED_UNITS } from './units-advanced';
 import { EXTRA_FIX } from './fix-bank';
 import { TENSE_UNITS } from './units-tenses';
+import { CONTEXT_UNITS } from './context';
 
 /**
  * Orden del programa: qué conviene saber primero y qué viene después.
@@ -14,18 +15,18 @@ import { TENSE_UNITS } from './units-tenses';
 const ORDER = [
   // A1 — lo mínimo para armar oraciones
   'to-be', 'pronouns', 'articles-plurals', 'sounds-vowels', 'pres-simple', 'there-is', 'questions',
-  'prep-time-place', 'pres-cont', 'can', 'vocab-daily',
+  'prep-time-place', 'pres-cont', 'ctx-greetings', 'can', 'vocab-daily',
   // A2 — contar el pasado y planes, describir y comparar
-  'past-simple', 'countables', 'sounds-endings', 'future', 'comparatives', 'past-cont', 'collocations',
+  'past-simple', 'countables', 'sounds-endings', 'future', 'ctx-food', 'ctx-plans', 'comparatives', 'past-cont', 'ctx-beach', 'ctx-transport', 'collocations',
   // B1 — experiencias, hipótesis y conectar ideas
-  'pres-perfect', 'future-cont', 'phrasal-1', 'relatives', 'cond-1-2', 'passive', 'connectors', 'aussie', 'connected-speech',
+  'pres-perfect', 'ctx-house', 'ctx-feelings', 'future-cont', 'phrasal-1', 'ctx-problems', 'ctx-health', 'ctx-work', 'relatives', 'cond-1-2', 'ctx-money', 'passive', 'connectors', 'aussie', 'connected-speech',
   // B2 — precisión y naturalidad (romper el techo de B2)
-  'pres-perf-cont', 'past-perfect', 'past-perf-cont', 'false-friends', 'gerund-inf', 'reported', 'register',
+  'pres-perf-cont', 'past-perfect', 'ctx-stories', 'past-perf-cont', 'false-friends', 'gerund-inf', 'reported', 'register',
   // C1
   'cond-3', 'past-modals', 'future-perf', 'future-perf-cont', 'inversion',
 ];
 
-const ALL = [...VERB_UNITS, ...FOUNDATION_UNITS, ...ADVANCED_UNITS, ...TENSE_UNITS];
+const ALL = [...VERB_UNITS, ...FOUNDATION_UNITS, ...ADVANCED_UNITS, ...TENSE_UNITS, ...CONTEXT_UNITS];
 
 export const UNITS: Unit[] = ORDER.map((id) => {
   const u = ALL.find((x) => x.id === id);

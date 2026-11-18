@@ -45,7 +45,8 @@ export function applyPlacement(result: TestResult) {
       const max = LEVELS.indexOf(result.level);
       let day = 1;
       for (const u of UNITS) {
-        if (LEVELS.indexOf(u.level) > max || next.units[u.id]) continue;
+        // Las temáticas no se dan por sabidas con el test: son vocabulario y expresiones nuevas.
+        if (u.context || LEVELS.indexOf(u.level) > max || next.units[u.id]) continue;
         next.units[u.id] = { status: 'placed', date: result.date };
         next = seedPlacedCards(next, u.id, day);
         day = Math.min(day + 1, 14);
@@ -72,7 +73,8 @@ export function syncPlacedUnits() {
         changed = true;
       }
     for (const u of UNITS) {
-      if (LEVELS.indexOf(u.level) > max || next.units[u.id]) continue;
+      // Las temáticas no se dan por sabidas con el test: son vocabulario y expresiones nuevas.
+        if (u.context || LEVELS.indexOf(u.level) > max || next.units[u.id]) continue;
       next.units[u.id] = { status: 'placed', date: new Date().toISOString() };
       next = seedPlacedCards(next, u.id, day);
       day = Math.min(day + 1, 14);

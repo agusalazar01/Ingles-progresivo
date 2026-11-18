@@ -326,7 +326,7 @@ export const VERB_UNITS: Unit[] = [
       { kind: 'type', prompt: '"I will help you." → He said he ___ help me.', answers: ['would'] },
       { kind: 'fix', prompt: 'She said me that she was busy.', answers: ['She told me that she was busy.', 'She told me she was busy.'] },
       { kind: 'fix', prompt: 'He asked me where did I live.', answers: ['He asked me where I lived.'] },
-      { kind: 'type', prompt: '"I lost my keys." → She said she ___ her keys.', answers: ['had lost'] },
+      { kind: 'type', prompt: '"I lost my keys." → She said she ___ her keys. (Use backshift.)', answers: ['had lost'], explain: 'Con backshift, el pasado simple pasa a pasado perfecto. En conversaciones reales también puede mantenerse lost si el contexto deja claro cuándo ocurrió o si no hace falta marcar el orden temporal.' },
       { kind: 'choice', prompt: 'They ___ us they were coming.', options: ['said', 'told', 'asked'], answer: 1 },
       { kind: 'translate', prompt: 'Me preguntó si quería ir.', answers: ['He asked me if I wanted to go.', 'She asked me if I wanted to go.', 'He asked me whether I wanted to go.', 'She asked me whether I wanted to go.'] },
     ],
@@ -404,7 +404,7 @@ export const VERB_UNITS: Unit[] = [
       { kind: 'choice', prompt: 'By 2030, they ___ the new bridge.', options: ['will build', 'will have built', 'will be building'], answer: 1 },
       { kind: 'choice', prompt: 'By six I ___ dinner, so we can go out.', options: ['will have had', 'will be having', 'have'], answer: 0 },
       { kind: 'translate', prompt: 'Para el viernes ya lo habré terminado.', answers: ['I will have finished it by Friday.', 'By Friday I will have finished it.', 'I will have already finished it by Friday.'] },
-      { kind: 'type', prompt: 'Next year she ___ (work) here for ten years.', answers: ['will have worked', 'will have been working'] },
+      { kind: 'type', prompt: 'Next year she ___ (work) here for ten years. Use the future perfect simple.', answers: ['will have worked'], explain: 'El futuro perfecto simple destaca el tiempo acumulado como un hecho completado en ese momento futuro. Will have been working también es gramatical, pero enfoca la duración o continuidad; sería la respuesta esperada si la consigna pidiera el futuro perfecto continuo.' },
     ],
   },
 ];

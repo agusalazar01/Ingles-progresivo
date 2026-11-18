@@ -99,6 +99,14 @@ export function speakerFor(packId: string, speakers: { id: number; name: string 
   return same[(hash(who) + offset) % same.length].id;
 }
 
+/**
+ * Género para la voz de un personaje. Si el nombre y el rol no lo dicen (Agente, Officer Brown, guardaparques),
+ * se elige uno fijo a partir del nombre: así el personaje no habla con la voz de Oliver y siempre suena igual.
+ */
+export function castGender(name: string, role = ''): Gender {
+  return partnerGender(name, role) ?? (hash(`${name}|${role}`) % 2 ? 'f' : 'm');
+}
+
 /** Si la elección automática está prendida (lo está salvo que la apagues). */
 export const autoGender = () => getState().settings.ai.autoGender !== false;
 

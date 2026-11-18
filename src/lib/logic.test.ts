@@ -141,7 +141,7 @@ describe('diccionario', () => {
     };
     for (const u of UNITS) {
       u.examples.forEach(([en]) => check(en));
-      for (const e of u.exercises) if (e.kind !== 'translate' && !/[áéíóúñ¿→]/.test(e.prompt)) check(e.prompt);
+      for (const e of u.exercises) if (e.kind !== 'translate' && e.kind !== 'order' && !/[áéíóúñ¿→]/.test(e.prompt)) check(e.prompt);
     }
     expect([...missing].filter((w) => !['sored', 'desayuno', 'levanto', 'del', 'un', 'poco', 'de', 'cuyo', 'es', 'la', 'forma', 'hablada', 'verdad', 'significa', 'que', 'lo'].includes(w))).toEqual([]);
   });

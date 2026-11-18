@@ -89,7 +89,8 @@ export function Mixed({ family, onExit }: { family: string; onExit: () => void }
 export const GOOD_SCORE = 0.8;
 
 function examItems(level: Level): RunnerItem[] {
-  const units = UNITS.filter((u) => u.level === level);
+  // Las unidades de situaciones no entran: la prueba mide la gramática del nivel.
+  const units = UNITS.filter((u) => u.level === level && !u.context);
   const production: Pattern[] = ['recognize', 'complete', 'transform', 'translate', 'order'];
   const out: RunnerItem[] = [];
   for (const unit of units) {

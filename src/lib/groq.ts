@@ -222,3 +222,32 @@ Max 10 fixes; only real errors or clearly unnatural phrasing.`;
   if (!out?.corrected) throw new Error('Respuesta de Groq sin formato');
   return { corrected: out.corrected, fixes: (out.fixes ?? []).filter((f) => f?.from || f?.to).slice(0, 10), comment: out.comment ?? '' };
 }
+
+export interface GroqJudge {
+  /** ¿Responde a la pregunta (aunque tenga errores)? */
+  answers: boolean;
+  /** Errores reales: fragmento que escribiste → corrección → por qué (en español). */
+  fixes: { wrong: string; better: string; why: string }[];
+  /** Cómo lo diría un nativo, si la tuya está bien pero suena rara. */
+  natural: string;
+  comment: string;
+}
+
+/** «Respondé con tus palabras»: corrige una respuesta libre a una pregunta, sin exigir una estructura fija. */
+export async function groqJudgeAnswer(o: { question: string; answer: string; level: string; focus: string[] }): Promise<GroqJudge> {
+  const sys = `You are an expert English teacher for Spanish speakers (Rioplatense Spanish, use "vos"). Level ${o.level}. Someone in Australia asked the learner a question and the learner answered freely. Any grammatical structure or tense that fits the question is valid: never require a specific one. Australian slang and British/Australian spelling are valid.
+Useful expressions of this lesson (optional, never required): ${o.focus.join(', ') || 'none'}.
+Return ONLY JSON: {"answers":true|false,"fixes":[{"wrong":"<exact fragment the learner wrote>","better":"<that fragment corrected>","why":"<short explanation in Spanish, max 25 words>"}],"natural":"<how a native would say it, only if theirs is correct but unnatural, else empty>","comment":"<one short encouraging sentence in Spanish>"}
+"answers" is false only if the reply ignores the question or is not English. Only definite errors (max 3). A less common but correct wording is NOT an error.`;
+  const out = parseJson<Partial<GroqJudge>>(
+    await groqChat(
+      [
+        { role: 'system', content: sys },
+        { role: 'user', content: `Question: ${o.question}\nLearner: ${o.answer}` },
+      ],
+      { json: true, maxTokens: 500, timeoutMs: 12000, temperature: 0.1 },
+    ),
+  );
+  if (!out) throw new Error('Respuesta de Groq sin formato');
+  return { answers: out.answers !== false, fixes: Array.isArray(out.fixes) ? out.fixes : [], natural: (out.natural ?? '').trim(), comment: (out.comment ?? '').trim() };
+}

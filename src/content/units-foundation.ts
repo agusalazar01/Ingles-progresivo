@@ -83,7 +83,7 @@ export const FOUNDATION_UNITS: Unit[] = [
       { kind: 'fix', prompt: 'The life is beautiful.', answers: ['Life is beautiful.'], hint: 'Hablás en general.' },
       { kind: 'type', prompt: 'One child, two ___.', answers: ['children'] },
       { kind: 'type', prompt: 'One city, three ___.', answers: ['cities'] },
-      { kind: 'choice', prompt: 'There are many ___ here.', options: ['persons', 'people', 'peoples'], answer: 1 },
+      { kind: 'choice', prompt: 'There are many ___ waiting for the bus.', options: ['person', 'people', 'peoples'], answer: 1, explain: 'People es el plural habitual de person. Peoples existe, pero se refiere a distintos pueblos o grupos humanos, no a personas esperando el bus.' },
       { kind: 'translate', prompt: 'Me gustan los perros.', answers: ['I like dogs.'] },
       { kind: 'listen', prompt: 'An apple a day.', answers: ['An apple a day.'] },
     ],

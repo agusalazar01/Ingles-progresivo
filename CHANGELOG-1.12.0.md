@@ -41,7 +41,26 @@
 - Se quitó la insignia del logo del encabezado (el logo queda en el ícono, el arranque y la bienvenida).
 - Colores con función: títulos crema; verde = acciones; ámbar = disponible/actual; azul = completada; violeta = ubicada por el test; gris = bloqueada.
 
-## 1.14.0 (en preparación)
+## 1.14.0
 - Fondo oscuro de Duolingo (#141F23) con bordes grises azulados.
 - Vibración que acompaña las animaciones (plugin @capacitor/haptics), con interruptor en Configuración.
 - Texto que aparece letra a letra en las charlas (toque suave por palabra). Se descartaron las animaciones de flor, pétalos y mate; quedan para armarlas aparte.
+
+## 1.15.0
+- Voces: quitar motores y voces sueltas (con opción de volver a mostrarlos); el ▶ corta la voz que suena y arranca la nueva.
+- Charla libre: elegir con quién hablar (Kate, Emma, Jack, Liam) y cambiar de voz.
+
+## 1.16.0 — inglés en situaciones reales
+- 12 unidades temáticas mezcladas en el camino (A1–B2): saludos, café, planes, playa (el diálogo de Jack y Tom), transporte, casa compartida, cómo te sentís, resolver problemas, salud, el laburo en la viña, plata y contar historias. Combinan gramática y vocabulario; no reemplazan ni bloquean las unidades de gramática.
+- Cada unidad: diálogo real desglosado frase por frase (partes, gramática y cómo cambia con otros tiempos), unas 15–19 expresiones, ~50 ejercicios de 11 tipos y 2 llamadas con Oliver.
+- Escalón nuevo «Charla»: «Respondé con tus palabras» (preguntas sin pista de qué estructura usar; con IA online se corrige libre, sin internet se compara con respuestas modelo y se revisan errores típicos) y «Armá tu propia pregunta».
+- Catálogo de 194 expresiones (phrasal verbs, modales, coloquiales, Australia, combinaciones, inglés hablado): significado, registro, frecuencia, pronunciación, la expresión en varios tiempos y estructuras, diferencias con expresiones parecidas y «Practicar esta expresión».
+- Repaso intercalado: la fluidez de cada unidad trae expresiones de las unidades de situaciones anteriores, primero las que te costaron. Las tarjetas entran al repaso espaciado de siempre.
+- Las unidades temáticas no se dan por sabidas con el test de ubicación (son vocabulario nuevo) y no bloquean el nivel siguiente.
+
+## 1.16.1
+- 5 roleplays nuevos (categoría 14: cafés, estaciones de servicio y naturaleza): estación de servicio, menú de cafés australianos, centro de visitantes de un parque nacional, camping y caminata.
+- Estación de servicio más realista: pedir un monto fijo en el surtidor («Can I put fifty dollars on pump six?»), que te lo habiliten, o llenar el tanque; precios como se dicen («two oh five a litre»).
+- Camping y parque nacional: sin preguntas repetidas y con respuestas concretas (pase del parque, prohibición de fuego). Caminata: qué hacer si alguien se lastima y el 000 (triple zero).
+- Voces: todo personaje de roleplay tiene voz de hombre o de mujer; si el nombre no lo dice (Agente, Officer Brown), se elige una fija por personaje en vez de usar la voz de Oliver.
+- Correcciones de contenido: «sílabas», people/persons, consignas de backshift y futuro perfecto. Numeración de roleplays sin huecos.

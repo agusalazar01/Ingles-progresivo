@@ -2,7 +2,7 @@ export type Level = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
 export const LEVELS: Level[] = ['A1', 'A2', 'B1', 'B2', 'C1'];
 
 /** Ejes del programa. Avanzan en paralelo, con prerrequisitos entre ellos. */
-export type Axis = 'Estructura' | 'Verbos' | 'Vocabulario' | 'Sonidos' | 'Escucha';
+export type Axis = 'Estructura' | 'Verbos' | 'Vocabulario' | 'Sonidos' | 'Escucha' | 'Situaciones';
 
 /**
  * Explicación de cada error: `why` = por qué va la respuesta correcta en este ejercicio;
@@ -35,7 +35,34 @@ export type Exercise = WhyInfo & (
   /** Armá la frase: con las palabras clave `cues` (en orden y forma base) y el tiempo `task`, escribís la oración entera. */
   | { kind: 'build'; prompt: string; cues: string[]; task: string; es?: string; answers: string[]; hint?: string; explain?: string }
   /** Crear una oración propia: tiene que incluir alguna de las formas `accept`. `example` = oración modelo. */
-  | { kind: 'create'; prompt: string; accept: string[]; example: string; hint?: string; explain?: string });
+  | { kind: 'create'; prompt: string; accept: string[]; example: string; hint?: string; explain?: string; question?: boolean }
+  /**
+   * Respondé con tus palabras: alguien te hace una pregunta en inglés y contestás como quieras, sin pista de qué
+   * estructura usar. Con IA online se corrige libre; sin internet ves respuestas modelo y te autoevaluás.
+   * `examples` = respuestas modelo (con estructuras distintas); `accept` = palabras que muestran que respondiste al tema.
+   */
+  | { kind: 'respond'; prompt: string; es: string; examples: string[]; accept?: string[]; who?: string; explain?: string });
+
+/** Una línea de un diálogo real, desglosada. */
+export interface DialogueLine {
+  who: string;
+  en: string;
+  es: string;
+  /** Desglose: [fragmento, qué es y por qué va]. */
+  parts?: [string, string][];
+  /** Cómo cambia: [qué cambia, oración nueva, traducción]. */
+  swap?: [string, string, string][];
+}
+
+/** Unidades temáticas (situaciones reales): diálogo, expresiones del catálogo y la gramática que mezclan. */
+export interface UnitContext {
+  scene: string;
+  dialogue: DialogueLine[];
+  /** Ids del catálogo de expresiones que se aprenden acá. */
+  expressions: string[];
+  /** Gramática que se combina, en palabras (para la explicación). */
+  grammar: string[];
+}
 
 export interface Unit {
   id: string;
@@ -51,6 +78,8 @@ export interface Unit {
   /** Trampa típica para hispanohablantes. */
   trap: string;
   exercises: Exercise[];
+  /** Solo en las unidades temáticas. No bloquean el nivel siguiente: complementan la gramática. */
+  context?: UnitContext;
 }
 
 export type Skill = 'gramática' | 'vocabulario' | 'lectura';

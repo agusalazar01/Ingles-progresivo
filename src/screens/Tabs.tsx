@@ -14,7 +14,7 @@ import { BackButton } from '../components/BackButton';
 import { availableFamilies } from './Practice';
 import { nextVerb } from './Verbs';
 import { WORKSHOP } from '../gen/verbs';
-import { levelUnitsDone } from '../lib/progress';
+import { coreUnits, levelUnitsDone } from '../lib/progress';
 import { nextLesson } from '../lib/writing';
 import { BAND_NAME, BANDS, bandProgress, defaultBand, nextNewWords } from '../lib/vocab';
 import { Icon, Ring, TaskRow, Tile, WeekBars, WeekDots } from '../components/ui';
@@ -164,6 +164,7 @@ export function Home({ go }: { go: (r: Route) => void }) {
         )}
         <Tile icon="blocks" tone="sky" title="Armá la frase" detail="Como en clase: palabras clave y el tiempo" onClick={() => go({ name: 'build' })} />
         <Tile icon="blocks" tone="violet" title="Frases por estructura" detail="Patrones para armar oraciones largas" onClick={() => go({ name: 'structures' })} />
+        <Tile icon="words" tone="sun" title="Expresiones" detail="Phrasal verbs, modales, Australia y charla, en todos los tiempos" onClick={() => go({ name: 'expressions' })} />
         <Tile
           icon="chat"
           tone="good"
@@ -229,6 +230,10 @@ export function Path({ go }: { go: (r: Route) => void }) {
       <p className="small">
         {doneAll} de {total} unidades completadas. Dentro de cada tema van de fácil a difícil y se abren a medida que dominás lo anterior.
       </p>
+      <button className="practice-test" onClick={() => go({ name: 'expressions' })}>
+        <span className="unit-title">Catálogo de expresiones</span>
+        <span className="unit-status">Phrasal verbs, modales, inglés de Australia y del habla: cada una en varios tiempos, con su desglose</span>
+      </button>
       <button className="practice-test" onClick={() => go({ name: 'verbs' })}>
         <span className="unit-title">Taller de verbos</span>
         <span className="unit-status">
@@ -264,7 +269,7 @@ export function Path({ go }: { go: (r: Route) => void }) {
                   const needs = u.prereqs.filter((p) => !isDone(s, p)).map((p) => UNITS.find((x) => x.id === p)!.title);
                   if (!previousLevelDone(s, u.level)) {
                     const prev = LEVELS[LEVELS.indexOf(u.level) - 1];
-                    const left = UNITS.filter((x) => x.level === prev && !isDone(s, x.id)).length;
+                    const left = coreUnits(prev).filter((x) => !isDone(s, x.id)).length;
                     needs.push(`${left} ${left === 1 ? 'unidad más básica' : 'unidades más básicas'}`);
                   }
                   const p = unitPercent(s, u.id);
@@ -311,7 +316,7 @@ export function Path({ go }: { go: (r: Route) => void }) {
         <h2>Pruebas de nivel</h2>
         <p className="small">Para saber en qué nivel estás (A1 a C1). Cada prueba se habilita al terminar todas las unidades de ese nivel; no bloquea nada y se repite cuando quieras.</p>
         {LEVELS.map((L) => {
-          const units = UNITS.filter((u) => u.level === L);
+          const units = coreUnits(L);
           const done = units.filter((u) => isDone(s, u.id)).length;
           const open = levelUnitsDone(s, L);
           return (

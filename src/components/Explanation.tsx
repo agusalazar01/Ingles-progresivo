@@ -6,6 +6,7 @@ import { say } from '../lib/speech';
 import { getState } from '../lib/store';
 import { Words } from './Words';
 import { lemmaOf } from '../lib/dictionary';
+import { ContextExplanation } from './ExprCard';
 
 /** Palabras que existen en los dos idiomas: no se marcan como inglés si aparecen solas. */
 const SPANISH = new Set(
@@ -97,6 +98,7 @@ const AXIS_CLASS: Record<Unit['axis'], string> = {
   Vocabulario: 'ax-vocab',
   Sonidos: 'ax-sounds',
   Escucha: 'ax-listen',
+  Situaciones: 'ax-vocab',
 };
 
 export const axisClass = (u: Unit) => AXIS_CLASS[u.axis];
@@ -106,6 +108,7 @@ export function Explanation({ unit }: { unit: Unit }) {
   const accent = getState().settings.accent;
   return (
     <div className={`explanation ${AXIS_CLASS[unit.axis]}`}>
+      {unit.context && <ContextExplanation unit={unit} />}
       <p className="ex-head">Cómo funciona</p>
       <ol className="ex-points">
         {unit.explanation.map((p, i) => (

@@ -33,8 +33,11 @@ export function unitPercent(s: AppState, unitId: string): number {
 /** Avance de un grupo de unidades (promedio). */
 export const groupPercent = (s: AppState, ids: string[]) => (ids.length ? ids.reduce((a, id) => a + unitPercent(s, id), 0) / ids.length : 0);
 
-/** ¿Están todas las unidades del nivel dominadas o ubicadas? */
-export const levelUnitsDone = (s: AppState, level: Level) => UNITS.filter((u) => u.level === level).every((u) => isDone(s, u.id));
+/** Unidades que marcan el nivel (la gramática). Las temáticas complementan y no bloquean el nivel siguiente. */
+export const coreUnits = (level?: Level) => UNITS.filter((u) => !u.context && (!level || u.level === level));
+
+/** ¿Están todas las unidades (de gramática) del nivel dominadas o ubicadas? */
+export const levelUnitsDone = (s: AppState, level: Level) => coreUnits(level).every((u) => isDone(s, u.id));
 
 /** Un nivel se abre cuando el anterior está completo. */
 export function previousLevelDone(s: AppState, level: Level): boolean {
@@ -51,13 +54,13 @@ export function nextUnit(s: AppState) {
 export function pathLevel(s: AppState): { level: Level | null; next: Level | null; progress: number } {
   let level: Level | null = null;
   for (const L of LEVELS) {
-    const units = UNITS.filter((u) => u.level === L);
+    const units = coreUnits(L);
     if (units.every((u) => isDone(s, u.id))) level = L;
     else break;
   }
   const next = level ? (LEVELS[LEVELS.indexOf(level) + 1] ?? null) : 'A1';
   if (!next) return { level, next: null, progress: 1 };
-  const units = UNITS.filter((u) => u.level === next);
+  const units = coreUnits(next);
   return { level, next, progress: units.filter((u) => isDone(s, u.id)).length / units.length };
 }
 

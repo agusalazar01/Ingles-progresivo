@@ -9,6 +9,9 @@ import { getState, type Outcome } from '../lib/store';
 import { Words } from './Words';
 import { explainMistake } from '../lib/why';
 import { themeOf } from '../content/themes';
+import { groqJudgeAnswer, groqReady } from '../lib/groq';
+import { realFixes } from '../lib/tutor';
+import { ruleHits } from '../lib/writing';
 
 export interface RunnerItem {
   key: string;
@@ -30,6 +33,7 @@ const KIND_LABEL: Record<Exercise['kind'], string> = {
   create: 'Creá tu propia oración',
   transform: 'Transformá la oración',
   build: 'Armá la frase',
+  respond: 'Respondé con tus palabras',
 };
 
 /** Respuestas aceptadas: las del ejercicio y las equivalentes (otra persona en transformar, will ↔ going to…). */
@@ -40,7 +44,7 @@ function acceptedFor(ex: Exercise): string[] {
 }
 
 export const correctText = (e: Exercise) =>
-  e.kind === 'choice' || e.kind === 'sound' ? e.options[e.answer] : e.kind === 'speak' ? e.prompt : e.kind === 'create' ? e.example : e.answers[0];
+  e.kind === 'choice' || e.kind === 'sound' ? e.options[e.answer] : e.kind === 'speak' ? e.prompt : e.kind === 'create' ? e.example : e.kind === 'respond' ? e.examples[0] : e.answers[0];
 
 const accent = () => getState().settings.accent;
 // El reconocimiento debe acompañar el acento elegido para el audio; «variado» usa AU como base.
@@ -114,6 +118,9 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   const [tiles, setTiles] = useState(false);
   const [micAvail, setMicAvail] = useState(false);
   const [showEs, setShowEs] = useState(false);
+  /** Corrección de «Respondé con tus palabras» (IA online o reglas offline). */
+  const [judge, setJudge] = useState<{ fixes: { wrong: string; better: string; why: string }[]; natural?: string; comment?: string; online: boolean } | null>(null);
+  const [judging, setJudging] = useState(false);
   const started = useRef(Date.now());
   useEffect(() => {
     canListen().then(setMicAvail).catch(() => setMicAvail(false));
@@ -191,6 +198,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
     setSlow(false);
     setTiles(false);
     setShowEs(false);
+    setJudge(null);
   };
 
   const choose = (i: number) => {
@@ -205,6 +213,11 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   const checkCreate = () => {
     if (ex.kind !== 'create' || !input.trim()) return;
     const n = ` ${normalize(input)} `;
+    if (ex.question && !/\?\s*$/.test(input.trim()) && !/^(do|does|did|are|is|am|was|were|have|has|can|could|would|will|should|shall|may|might|what|where|when|who|why|how|which|whose|reckon|fancy|keen)\b/i.test(input.trim())) {
+      setMessage('Tiene que ser una pregunta: empezá con el auxiliar o con una palabra interrogativa (Do…? Are…? What…?).');
+      if (phase === 'answer') return setPhase('retry');
+      return finish('again', input);
+    }
     const ok = normalize(input).split(' ').length >= 3 && ex.accept.some((a) => n.includes(` ${normalize(a)} `));
     if (ok) return finish(phase === 'retry' ? 'hard' : 'good', input);
     if (phase === 'answer') {
@@ -214,8 +227,42 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
     finish('again', input);
   };
 
+  /** Respuesta libre: no se exige ninguna estructura; se corrige lo que escribiste. */
+  const checkRespond = async () => {
+    if (ex.kind !== 'respond') return;
+    const text = input.trim();
+    const words = normalize(text).split(' ').filter(Boolean);
+    if (words.length < 2) return setMessage('Contestá con una frase (por lo menos dos palabras).');
+    if (normalize(text) === normalize(ex.prompt)) return setMessage('Eso es la pregunta: ahora contestala.');
+    if (groqReady()) {
+      setJudging(true);
+      try {
+        const j = await groqJudgeAnswer({ question: ex.prompt, answer: text, level: item.unit.level, focus: ex.accept ?? [] });
+        if (!j.answers) {
+          if (phase === 'answer') {
+            setMessage('Eso no responde lo que te preguntaron. Leé la pregunta de nuevo (podés verla en español).');
+            return setPhase('retry');
+          }
+          setJudge({ fixes: [], comment: j.comment, online: true });
+          return finish('again', text);
+        }
+        const fixes = realFixes(j.fixes.map((f) => ({ wrong: f.wrong, better: f.better, why: f.why })), text);
+        setJudge({ fixes, natural: j.natural, comment: j.comment, online: true });
+        return finish(fixes.length ? 'hard' : 'good', text);
+      } catch {
+        /* sin conexión o error: sigue la corrección offline */
+      } finally {
+        setJudging(false);
+      }
+    }
+    const hits = ruleHits(text).filter((h) => !h.soft && h.id !== 'lowercase-i');
+    setJudge({ fixes: hits.map((h) => ({ wrong: h.found, better: h.fix ?? '', why: h.msg })), online: false });
+    setPhase('selfcheck');
+  };
+
   const check = () => {
     if (ex.kind === 'create') return checkCreate();
+    if (ex.kind === 'respond') return void checkRespond();
     if (!('answers' in ex) || !given.trim()) return;
     if (matches(given, acceptedFor(ex))) return finish(phase === 'retry' ? 'hard' : 'good', given);
     if (ex.kind === 'translate' && phase === 'answer' && !tiles) return setPhase('selfcheck');
@@ -246,6 +293,19 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
 
   /** Decir la respuesta en vez de escribirla (en completar, podés decir la oración entera). */
   const micAnswer = async () => {
+    if (ex.kind === 'respond') {
+      setListening(true);
+      try {
+        const heard = await listen(recognitionLang());
+        if (heard.length) setInput(heard[0]);
+        else setMessage('No te escuché. Probá de nuevo, más cerca del micrófono.');
+      } catch {
+        setMessage('No pude usar el micrófono. Revisá el permiso o escribilo.');
+      } finally {
+        setListening(false);
+      }
+      return;
+    }
     if (!('answers' in ex)) return;
     setListening(true);
     setMessage(null);
@@ -289,7 +349,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
   };
 
   const isAudio = ex.kind === 'listen' || ex.kind === 'sound';
-  const showPromptText = !isAudio && ex.kind !== 'translate' && ex.kind !== 'order' && ex.kind !== 'build';
+  const showPromptText = !isAudio && ex.kind !== 'translate' && ex.kind !== 'order' && ex.kind !== 'build' && ex.kind !== 'respond';
 
   return (
     <div className="runner">
@@ -309,7 +369,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
         </p>
       )}
       {isNewWord && <p className="new-word">✦ Palabra nueva</p>}
-      <p className="kind">{ex.kind === 'speak' ? 'Repetí lo que dice Oliver' : KIND_LABEL[ex.kind]}</p>
+      <p className="kind">{ex.kind === 'speak' ? 'Repetí lo que dice Oliver' : ex.kind === 'create' && ex.question ? 'Armá tu propia pregunta' : KIND_LABEL[ex.kind]}</p>
 
       {timed && phase !== 'feedback' && (
         <div className="timer" key={`t${pos}`}>
@@ -337,6 +397,15 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
               {showEs ? ex.es : '🇪🇸 Ver qué significa'}
             </button>
           )}
+        </>
+      )}
+      {ex.kind === 'respond' && (
+        <>
+          <Speaker text={`${ex.who ? `${ex.who}: ` : ''}${ex.prompt}`} onPlay={() => say(ex.prompt, { accent: accent() })} />
+          <button className="link" onClick={() => setShowEs(!showEs)}>
+            {showEs ? ex.es : '🇪🇸 Ver la pregunta en español'}
+          </button>
+          {phase !== 'feedback' && <p className="small">Respondé como te salga: no hay una estructura fija. {groqReady() ? 'La IA corrige tu respuesta.' : 'Sin internet, después comparás con respuestas modelo.'}</p>}
         </>
       )}
       {ex.kind === 'order' && ex.prompt && <p className="prompt-es">{ex.prompt}</p>}
@@ -454,7 +523,7 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
         </button>
       )}
 
-      {('answers' in ex || ex.kind === 'create') && ex.kind !== 'order' && !(ex.kind === 'translate' && tiles) && (
+      {('answers' in ex || ex.kind === 'create' || ex.kind === 'respond') && ex.kind !== 'order' && !(ex.kind === 'translate' && tiles) && (
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -479,8 +548,8 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
                   {listening ? '👂…' : '🎤 Decirlo'}
                 </button>
               )}
-              <button className="primary" type="submit" disabled={!input.trim()}>
-                Comprobar
+              <button className="primary" type="submit" disabled={!input.trim() || judging}>
+                {judging ? 'Corrigiendo…' : 'Comprobar'}
               </button>
             </div>
           )}
@@ -510,6 +579,34 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
 
       {phase === 'retry' && message && <p className="hint">{message}</p>}
       {phase === 'answer' && message && <p className="hint">{message}</p>}
+
+      {phase === 'selfcheck' && ex.kind === 'respond' && (
+        <div className="feedback neutral">
+          <p>Algunas formas de responder:</p>
+          {ex.examples.map((x) => (
+            <Words key={x} text={x} className="model" />
+          ))}
+          {judge && judge.fixes.length > 0 && (
+            <div className="why">
+              <p className="why-title">Ojo con esto en la tuya:</p>
+              {judge.fixes.map((f, i) => (
+                <p key={i}>
+                  «{f.wrong}»{f.better ? ` → «${f.better}»` : ''}: {f.why}
+                </p>
+              ))}
+            </div>
+          )}
+          <p>¿La tuya responde la pregunta y está bien escrita? (no tiene que ser igual a las modelo)</p>
+          <div className="row">
+            <button className="secondary" onClick={() => finish('again', input)}>
+              No
+            </button>
+            <button className="primary" onClick={() => finish(judge?.fixes.length ? 'hard' : 'good', input)}>
+              Sí, estaba bien
+            </button>
+          </div>
+        </div>
+      )}
 
       {phase === 'selfcheck' && 'answers' in ex && (
         <div className="feedback neutral">
@@ -543,10 +640,33 @@ export function ExerciseRunner({ items, requeue = false, onItem, onDone, showUni
                     ? `✓ ¡Perfecto! ${combo} seguidas`
                     : '✓ ¡Bien!'}
           </p>
+          {ex.kind === 'respond' && judge?.online && (
+            <div className="why">
+              {judge.fixes.map((f, i) => (
+                <p key={i}>
+                  <b>«{f.wrong}» → «{f.better}»</b>: {f.why}
+                </p>
+              ))}
+              {judge.natural && (
+                <p>
+                  <b>Más natural:</b> {judge.natural}
+                </p>
+              )}
+              {judge.comment && <p>{judge.comment}</p>}
+            </div>
+          )}
+          {ex.kind === 'respond' && verdict !== 'skip' && (
+            <>
+              <p className="small">{verdict === 'again' ? 'Podías responder, por ejemplo:' : 'Otras formas de responder:'}</p>
+              {ex.examples.slice(0, 3).map((x) => (
+                <Words key={x} text={x} className="model" />
+              ))}
+            </>
+          )}
           {ex.kind === 'create' && verdict !== 'skip' && <p className="small">Ejemplo:</p>}
-          {(verdict === 'again' || isAudio || ex.kind === 'translate' || ex.kind === 'transform' || ex.kind === 'build' || ex.kind === 'create') && <Words text={correctText(ex)} className="model" />}
+          {ex.kind !== 'respond' && (verdict === 'again' || isAudio || ex.kind === 'translate' || ex.kind === 'transform' || ex.kind === 'build' || ex.kind === 'create') && <Words text={correctText(ex)} className="model" />}
           {ex.explain && verdict !== 'again' && <p>{ex.explain}</p>}
-          {(verdict === 'again' || verdict === 'hard') &&
+          {(verdict === 'again' || verdict === 'hard') && ex.kind !== 'respond' &&
             (() => {
               const m = explainMistake(item.key, item.unit, ex, verdict === 'again' ? givenText : '', correctText(ex));
               if (!m.why && !m.yours) return null;

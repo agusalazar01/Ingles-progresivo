@@ -1,3 +1,5 @@
+import { CTX_CALLS } from './context/calls-ctx';
+
 /**
  * Llamadas con Oliver: charlas cortas de roleplay (como hablar con alguien de Australia) que usan
  * la gramática y el vocabulario de cada unidad. Son guiones precargados con ramas: la app compara lo
@@ -808,6 +810,9 @@ call('connected-speech', 'Planes rápidos', 'Mensaje de voz', 'Respondé rápido
   o("Let's meet at nine, alright?"),
   u('Alright, see you at nine.', [b(['alright|ok|okay|sure|nine|good'], 'Too easy.', 'Bien.')], '«Alright, see you at nine».'),
 ]);
+
+// ───────────── Unidades temáticas (v1.16): al final, para que los ids anteriores no cambien ─────────────
+for (const c of CTX_CALLS) call(c.unitId, c.title, c.scene, c.goal, c.turns);
 
 export const CALLS: CallScript[] = scripts;
 export const callsForUnit = (unitId: string) => CALLS.filter((c) => c.unitId === unitId);

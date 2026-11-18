@@ -13,6 +13,7 @@ import { Writing } from './screens/Writing';
 import { BuildPractice } from './screens/BuildPractice';
 import { Phrases } from './screens/Phrases';
 import { Structures } from './screens/Structures';
+import { Expressions } from './screens/Expressions';
 import { Roleplays, ScriptedCall } from './screens/Roleplays';
 import { Tutor } from './screens/Tutor';
 import { callById } from './content/calls';
@@ -42,6 +43,7 @@ export type Route =
   | { name: 'writing' }
   | { name: 'build' }
   | { name: 'structures' }
+  | { name: 'expressions' }
   | { name: 'verbs' }
   | { name: 'verb'; verbId: string; banner?: string }
   | { name: 'mixed'; family: string }
@@ -231,6 +233,9 @@ export default function App() {
       break;
     case 'structures':
       body = <Structures onExit={back} />;
+      break;
+    case 'expressions':
+      body = <Expressions onExit={back} onPractice={(keys, title) => go({ name: 'review', keys, title })} />;
       break;
     case 'phrases':
       body = <Phrases onExit={back} />;

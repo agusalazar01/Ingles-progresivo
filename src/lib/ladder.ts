@@ -2,14 +2,14 @@ import type { Exercise, Unit } from '../content/types';
 import { UNITS } from '../content/curriculum';
 import { generate, supports, type Pattern } from '../gen/generate';
 import type { RunnerItem } from '../components/ExerciseRunner';
-import { recentlySeen } from './store';
+import { getState, recentlySeen } from './store';
 
 /**
  * Escalera de cada unidad: de muy fácil a difícil. Cada escalón se desbloquea al dominar el anterior.
  * 1 Explicación · 2 Reconocer · 3 Completar · 4 Transformar · 5 Construir · 6 Fluidez (contra reloj)
  */
 export interface Step {
-  id: 'explain' | 'recognize' | 'complete' | 'transform' | 'build' | 'fluency';
+  id: 'explain' | 'recognize' | 'complete' | 'transform' | 'build' | 'talk' | 'fluency';
   title: string;
   desc: string;
 }
@@ -20,6 +20,7 @@ export const STEPS: Step[] = [
   { id: 'complete', title: 'Completar', desc: 'Escribí solo la parte que falta' },
   { id: 'transform', title: 'Transformar', desc: 'Corregí o cambiá la oración' },
   { id: 'build', title: 'Construir', desc: 'Ordená y traducí oraciones completas' },
+  { id: 'talk', title: 'Charla', desc: 'Respondé y preguntá con tus palabras, sin pista de qué estructura usar' },
   { id: 'fluency', title: 'Fluidez', desc: 'Todo mezclado, contra reloj' },
 ];
 
@@ -84,8 +85,47 @@ const orders = (unit: Unit, n: number): RunnerItem[] =>
     .slice(0, n)
     .map(({ s, j }) => ({ key: `${unit.id}#o${j}`, unit, exercise: orderExercise(s) }));
 
+/**
+ * Unidades temáticas: todo sale del banco fijo (no hay generador), con más tipos por escalón y, en fluidez,
+ * expresiones de las unidades temáticas anteriores mezcladas (repaso intercalado, primero las que te costaron).
+ */
+const CONTEXT_KINDS: Record<Exclude<Step['id'], 'explain' | 'fluency'>, Exercise['kind'][]> = {
+  recognize: ['choice', 'sound'],
+  complete: ['type', 'listen'],
+  transform: ['transform', 'fix'],
+  build: ['order', 'build', 'translate'],
+  talk: ['respond', 'create', 'speak'],
+};
+
+function earlierContext(unit: Unit, n: number): RunnerItem[] {
+  const st = getState();
+  const i = UNITS.findIndex((u) => u.id === unit.id);
+  const before = UNITS.slice(0, i).filter((u) => u.context && st.units[u.id]?.status);
+  if (!before.length) return [];
+  const all = before.flatMap((u) =>
+    u.exercises
+      .map((exercise, j) => ({ key: `${u.id}#${j}`, unit: u, exercise }))
+      .filter((x) => x.exercise.kind !== 'respond' && x.exercise.kind !== 'speak' && x.exercise.kind !== 'sound'),
+  );
+  const missed = new Set(before.flatMap((u) => (st.missed?.[u.id] ?? []).map((m) => m.key)));
+  const lapsed = (k: string) => (st.cards[k]?.lapses ?? 0) > 0;
+  const weak = shuffle(all.filter((x) => missed.has(x.key) || lapsed(x.key)));
+  return [...weak, ...shuffle(all.filter((x) => !missed.has(x.key) && !lapsed(x.key)))].slice(0, n);
+}
+
+function contextItems(unit: Unit, step: Step['id']): RunnerItem[] {
+  if (step === 'explain') return [];
+  if (step === 'fluency') {
+    const own = curated(unit, ['choice', 'type', 'fix', 'transform', 'translate', 'build', 'order', 'listen']).slice(0, FLUENCY_ITEMS);
+    const old = earlierContext(unit, 3);
+    return shuffle([...own.slice(0, FLUENCY_ITEMS - old.length), ...old]);
+  }
+  return curated(unit, CONTEXT_KINDS[step]).slice(0, PER_STEP);
+}
+
 /** Ejercicios de un escalón. Con generador o banco, cada vez trae oraciones nuevas. */
 export function stepItems(unit: Unit, step: Step['id']): RunnerItem[] {
+  if (unit.context) return contextItems(unit, step);
   const take = (items: RunnerItem[], n = PER_STEP) => shuffle(items).slice(0, n);
   switch (step) {
     case 'explain':
@@ -116,6 +156,8 @@ export function stepItems(unit: Unit, step: Step['id']): RunnerItem[] {
         ],
         FLUENCY_ITEMS,
       );
+    case 'talk':
+      return [];
   }
 }
 
@@ -124,11 +166,14 @@ const KINDS: Record<Exclude<Step['id'], 'explain' | 'fluency'>, { kinds: Exercis
   complete: { kinds: ['type', 'listen'], patterns: ['complete'] },
   transform: { kinds: ['fix'], patterns: ['transform'] },
   build: { kinds: ['translate', 'speak'], patterns: ['order', 'translate'] },
+  talk: { kinds: ['respond'], patterns: [] },
 };
 
 /** Escalones con ejercicios en esta unidad (los vacíos se saltean). Se calcula sin generar. */
 export function activeSteps(unit: Unit): Step[] {
+  if (unit.context) return STEPS.filter((s) => s.id === 'explain' || s.id === 'fluency' || unit.exercises.filter((e) => CONTEXT_KINDS[s.id as keyof typeof CONTEXT_KINDS].includes(e.kind)).length >= 2);
   return STEPS.filter((s) => {
+    if (s.id === 'talk') return false;
     if (s.id === 'explain' || s.id === 'fluency') return true;
     const k = KINDS[s.id];
     const curatedCount = unit.exercises.filter((e) => k.kinds.includes(e.kind)).length + (s.id === 'build' ? unitSentences(unit).length : 0);
@@ -149,6 +194,7 @@ export const TIME_LIMIT: Record<Exercise['kind'], number> = {
   speak: 15,
   create: 40,
   build: 40,
+  respond: 60,
 };
 
 export const unitOf = (id: string) => UNITS.find((u) => u.id === id);
