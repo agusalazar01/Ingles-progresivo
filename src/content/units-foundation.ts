@@ -69,7 +69,7 @@ export const FOUNDATION_UNITS: Unit[] = [
       'a / an = un, una (an antes de sonido vocal: an apple, an hour). the = el, la, los, las.',
       'Las profesiones llevan a: She is a nurse.',
       'Al hablar en general NO va the: I like dogs. Life is short.',
-      'Plural: + s (books), + es (boxes, watches), y → ies (cities). Irregulares: man → men, child → children, person → people.',
+      'Plural: + s (books), + es (boxes, watches), consonante + y → -ies (city → cities); vocal + y → -s (day → days). Irregulares: man → men, child → children, person → people.',
     ],
     examples: [
       ['She is a teacher.', 'Ella es maestra.'],
@@ -165,7 +165,7 @@ export const FOUNDATION_UNITS: Unit[] = [
       { kind: 'fix', prompt: 'What time it starts?', answers: ['What time does it start?'] },
       { kind: 'choice', prompt: '___ apples do you want?', options: ['How much', 'How many', 'What'], answer: 1, explain: 'Contables → how many.' },
       { kind: 'type', prompt: '___ is your birthday? — In December.', answers: ['When'] },
-      { kind: 'translate', prompt: '¿Cuánto cuesta?', answers: ['How much is it?', 'How much does it cost?'] },
+      { kind: 'translate', prompt: '¿Cuánto cuesta?', answers: ['How much is it?', 'How much does it cost?', 'How much is this?', 'How much does this cost?'] },
       { kind: 'speak', prompt: 'Where is the bus station?', es: '¿Dónde está la terminal de ómnibus?' },
     ],
   },
@@ -192,7 +192,7 @@ export const FOUNDATION_UNITS: Unit[] = [
       { kind: 'choice', prompt: 'The keys are ___ the table.', options: ['in', 'on', 'at'], answer: 1 },
       { kind: 'fix', prompt: 'I am in home.', answers: ['I am at home.'] },
       { kind: 'type', prompt: 'I study English ___ the evening.', answers: ['in'] },
-      { kind: 'translate', prompt: 'Nos vemos el viernes.', answers: ['See you on Friday.', 'I will see you on Friday.'] },
+      { kind: 'translate', prompt: 'Nos vemos el viernes.', answers: ['See you on Friday.', 'I will see you on Friday.', 'See you Friday.'] },
     ],
   },
   {
@@ -210,13 +210,13 @@ export const FOUNDATION_UNITS: Unit[] = [
       ['I usually get up at seven.', 'Normalmente me levanto a las siete.'],
       ['She never has breakfast.', 'Ella nunca desayuna.'],
     ],
-    trap: '"Desayunar" no es un verbo propio: have breakfast. Y "almorzar" = have lunch. El adverbio de frecuencia va antes del verbo, no al final como en español.',
+    trap: '"Desayunar" no es un verbo propio: have breakfast. Y "almorzar" = have lunch. El adverbio de frecuencia va antes del verbo, no después como en «voy siempre».',
     exercises: [
       { kind: 'type', prompt: 'I ___ breakfast at 8. (desayuno)', answers: ['have'] },
       { kind: 'fix', prompt: 'I go always to work by bus.', answers: ['I always go to work by bus.'] },
       { kind: 'choice', prompt: 'She is ___ late.', options: ['never', 'nothing', 'none'], answer: 0 },
       { kind: 'type', prompt: 'I ___ up at 7 every day. (me levanto)', answers: ['get'] },
-      { kind: 'translate', prompt: 'A veces almuerzo en casa.', answers: ['Sometimes I have lunch at home.', 'I sometimes have lunch at home.'] },
+      { kind: 'translate', prompt: 'A veces almuerzo en casa.', answers: ['Sometimes I have lunch at home.', 'I sometimes have lunch at home.', 'Sometimes I eat lunch at home.', 'I sometimes eat lunch at home.'] },
       { kind: 'listen', prompt: 'I usually go to bed at eleven.', answers: ['I usually go to bed at eleven.', 'I usually go to bed at 11.'] },
       { kind: 'speak', prompt: 'I usually get up at seven.', es: 'Normalmente me levanto a las siete.' },
     ],
@@ -232,6 +232,7 @@ export const FOUNDATION_UNITS: Unit[] = [
     explanation: [
       'Contables: se pueden contar (an apple, two apples). Incontables: no tienen plural (water, money, information, advice, furniture).',
       'some en afirmaciones, any en preguntas y negaciones: I have some money. Do you have any questions?',
+      'En ofrecimientos y pedidos va some: Would you like some coffee? Can I have some water?',
       'many + contables, much + incontables (en preguntas y negaciones). a lot of sirve para ambos.',
     ],
     examples: [
@@ -273,7 +274,7 @@ export const FOUNDATION_UNITS: Unit[] = [
       { kind: 'type', prompt: 'Today is ___ (hot) than yesterday.', answers: ['hotter'] },
       { kind: 'choice', prompt: 'Sydney is ___ than Montevideo.', options: ['more expensive', 'expensiver', 'most expensive'], answer: 0 },
       { kind: 'type', prompt: 'My English is ___ (bad) than my French.', answers: ['worse'] },
-      { kind: 'translate', prompt: 'Es tan alto como su padre.', answers: ['He is as tall as his father.'] },
+      { kind: 'translate', prompt: 'Es tan alto como su padre.', answers: ['He is as tall as his father.', 'He is as tall as his dad.', "He's as tall as his father.", "He's as tall as his dad."] },
     ],
   },
   {
@@ -325,7 +326,7 @@ export const FOUNDATION_UNITS: Unit[] = [
       { kind: 'choice', prompt: 'Let\'s ___ a photo!', options: ['take', 'make', 'do'], answer: 0 },
       { kind: 'fix', prompt: 'I did a mistake.', answers: ['I made a mistake.'] },
       { kind: 'choice', prompt: 'We ___ a great time at the party.', options: ['did', 'made', 'had'], answer: 2 },
-      { kind: 'type', prompt: 'I go to the gym to ___ exercise.', answers: ['do'] },
+      { kind: 'type', prompt: 'I go to the gym to ___ exercise.', answers: ['do', 'get'] },
       { kind: 'translate', prompt: '¿Me hacés un favor?', answers: ['Can you do me a favour?', 'Can you do me a favor?', 'Could you do me a favour?', 'Could you do me a favor?'] },
     ],
   },

@@ -9,6 +9,8 @@ export interface Cloze {
   es: string;
   cue?: string;
   tr?: [string, string];
+  /** Otras respuestas correctas al completar. */
+  ok?: string[];
 }
 
 import { LOCAL_CLOZE } from './banks-local';
@@ -103,7 +105,7 @@ export const CLOZE: Record<string, Cloze[]> = {
     c('I get up {at} 7 o\'clock.', ['in', 'on'], 'Me levanto a las 7.'),
     c('My birthday is {in} December.', ['on', 'at'], 'Mi cumpleaños es en diciembre.'),
     c('My birthday is {on} 26 December.', ['in', 'at'], 'Mi cumpleaños es el 26 de diciembre.'),
-    c('I study {in} the evening.', ['on', 'at'], 'Estudio a la noche.'),
+    c('I study {at} night.', ['on', 'in'], 'Estudio a la noche.'),
     c('We go to the beach {in} summer.', ['on', 'at'], 'Vamos a la playa en verano.'),
     c('I was born {in} 1998.', ['on', 'at'], 'Nací en 1998.'),
     c('She is {at} home.', ['in', 'on'], 'Ella está en casa.'),
@@ -113,7 +115,7 @@ export const CLOZE: Record<string, Cloze[]> = {
     c('He lives {in} Montevideo.', ['at', 'on'], 'Él vive en Montevideo.'),
     c('There is a picture {on} the wall.', ['in', 'at'], 'Hay un cuadro en la pared.'),
     c('I work {at} night.', ['in', 'on'], 'Trabajo de noche.'),
-    c('We met {at} the weekend.', ['in', 'on'], 'Nos vimos el fin de semana.'),
+    c('We met {on} the weekend.', ['in', 'by'], 'Nos vimos el fin de semana.', { ok: ['at'] }),
   ],
   'vocab-daily': [
     c('I {usually} get up at seven.', ['usual', 'use'], 'Normalmente me levanto a las siete.'),
@@ -127,7 +129,7 @@ export const CLOZE: Record<string, Cloze[]> = {
     c('She {sometimes} works on Saturdays.', ['some times', 'somewhat'], 'A veces ella trabaja los sábados.'),
     c('I {get} home at six.', ['arrive', 'go'], 'Llego a casa a las seis.'),
     c('They {rarely} eat meat.', ['rare', 'really'], 'Rara vez comen carne.'),
-    c('I {take} a shower every morning.', ['make', 'do'], 'Me ducho todas las mañanas.'),
+    c('I {take} a shower every morning.', ['make', 'do'], 'Me ducho todas las mañanas.', { ok: ['have'] }),
   ],
   countables: [
     c('I need some {information}.', ['informations', 'an information'], 'Necesito información.'),
@@ -171,7 +173,7 @@ export const CLOZE: Record<string, Cloze[]> = {
     c('I {do} exercise every day.', ['make', 'take'], 'Hago ejercicio todos los días.'),
     c('He {took} the bus to work.', ['made', 'had'], 'Tomó el ómnibus al trabajo.'),
     c("Don't {make} noise.", ['do', 'have'], 'No hagas ruido.'),
-    c('I {have} a shower every morning.', ['do', 'make'], 'Me ducho todas las mañanas.'),
+    c('I {have} a shower every morning.', ['do', 'make'], 'Me ducho todas las mañanas.', { ok: ['take'] }),
     c('We need to {make} a plan.', ['do', 'take'], 'Tenemos que hacer un plan.'),
     c('It {takes} two hours to get there.', ['makes', 'does'], 'Se tarda dos horas en llegar.'),
   ],

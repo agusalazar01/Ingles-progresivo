@@ -53,7 +53,7 @@ export const BUILD: BuildItem[] = [
   B('B2', 'perfect', ['it', 'rain', 'all day', 'so', 'the roads', 'be', 'flooded'], 'Presente perfecto continuo + presente simple', 'Llovió todo el día, así que las calles están inundadas.', 'It has been raining all day, so the roads are flooded.'),
   B('B1', 'perfect', ['this', 'be', 'the best coffee', 'I', 'ever', 'have'], 'Presente simple + presente perfecto', 'Es el mejor café que tomé en mi vida.', 'This is the best coffee I have ever had.'),
   B('B2', 'perfect', ['I', 'read', 'that book', 'three times', 'but', 'I', 'still', 'not', 'understand', 'the ending'], 'Presente perfecto + presente simple', 'Leí ese libro tres veces pero todavía no entiendo el final.', "I have read that book three times but I still don't understand the ending.", "I've read that book three times, but I still don't understand the ending."),
-  B('B1', 'perfect', ['it', 'be', 'two years', 'since', 'I', 'last', 'see', 'my cousin'], 'Presente simple + pasado simple', 'Hace dos años que no veo a mi primo.', "It's been two years since I last saw my cousin.", 'It is two years since I last saw my cousin.'),
+  B('B1', 'perfect', ['it', 'be', 'two years', 'since', 'I', 'last', 'see', 'my cousin'], 'Presente perfecto (it\'s been) + pasado simple', 'Hace dos años que no veo a mi primo.', "It's been two years since I last saw my cousin.", 'It is two years since I last saw my cousin.'),
 
   // ───────── Futuro ─────────
   B('B1', 'future', ['look at those clouds', '—', 'it', 'rain'], 'Futuro con going to (hay evidencia)', 'Mirá esas nubes: va a llover.', "Look at those clouds. It's going to rain."),
@@ -118,7 +118,7 @@ export const BUILD: BuildItem[] = [
 
   // ───────── Costumbres ─────────
   B('B1', 'habits', ['I', 'use to', 'play', 'football', 'every Saturday'], 'used to (costumbre pasada)', 'Antes jugaba al fútbol todos los sábados.', 'I used to play football every Saturday.'),
-  B('B1', 'habits', ['she', 'not', 'use to', 'like', 'vegetables'], 'used to (negativo)', 'Antes no le gustaban las verduras.', "She didn't use to like vegetables.", "She didn't used to like vegetables.", 'She never used to like vegetables.'),
+  B('B1', 'habits', ['she', 'not', 'use to', 'like', 'vegetables'], 'used to (negativo)', 'Antes no le gustaban las verduras.', "She didn't use to like vegetables.", 'She never used to like vegetables.'),
   B('B2', 'habits', ['I', 'be', 'used to', 'get up', 'early'], 'be used to + -ing', 'Estoy acostumbrado a levantarme temprano.', "I'm used to getting up early."),
   B('B2', 'habits', ['it', 'take', 'me', 'months', 'to', 'get used to', 'drive', 'on the left'], 'get used to + -ing', 'Me llevó meses acostumbrarme a manejar por la izquierda.', 'It took me months to get used to driving on the left.'),
   B('C1', 'habits', ['every summer', 'my grandfather', 'would', 'take', 'us', 'fishing'], 'would (costumbre pasada)', 'Todos los veranos mi abuelo nos llevaba a pescar.', 'Every summer my grandfather would take us fishing.'),
@@ -127,10 +127,10 @@ export const BUILD: BuildItem[] = [
   B('C1', 'c1', ['never', 'I', 'see', 'such a beautiful place'], 'Inversión con never (presente perfecto)', 'Nunca vi un lugar tan lindo.', 'Never have I seen such a beautiful place.'),
   B('C1', 'c1', ['not only', 'he', 'arrive', 'late', 'but', 'he', 'also', 'forget', 'the tickets'], 'Inversión con not only… but also', 'No solo llegó tarde, sino que también se olvidó las entradas.', 'Not only did he arrive late, but he also forgot the tickets.'),
   B('C1', 'c1', ['hardly', 'we', 'sit down', 'when', 'the phone', 'ring'], 'Inversión con hardly… when (pasado perfecto)', 'Apenas nos habíamos sentado cuando sonó el teléfono.', 'Hardly had we sat down when the phone rang.'),
-  B('C1', 'c1', ['what', 'I', 'need', 'be', 'a long holiday'], 'Oración cleft con what', 'Lo que necesito es unas vacaciones largas.', 'What I need is a long holiday.'),
+  B('C1', 'c1', ['what', 'I', 'need', 'be', 'a long holiday'], 'Oración cleft con what', 'Lo que necesito son unas vacaciones largas.', 'What I need is a long holiday.'),
   B('C1', 'c1', ['it', 'be', 'my sister', 'who', 'find', 'the keys'], 'Oración cleft con it was… who', 'Fue mi hermana la que encontró las llaves.', 'It was my sister who found the keys.', 'It was my sister that found the keys.'),
   B('C1', 'c1', ['have', 'finish', 'the work', 'we', 'go', 'for a drink'], 'Participio perfecto (having + participio)', 'Después de terminar el trabajo, fuimos a tomar algo.', 'Having finished the work, we went for a drink.'),
-  B('C1', 'c1', ['had', 'I', 'know', 'about the traffic', 'I', 'take', 'the train'], 'Condicional con inversión (had I known…)', 'Si hubiera sabido del tráfico, habría tomado el tren.', 'Had I known about the traffic, I would have taken the train.'),
+  B('C1', 'c1', ['had', 'I', 'know', 'about the traffic', 'I', 'take', 'the train'], 'Condicional con inversión (had I known…)', 'Si hubiera sabido del tránsito, habría tomado el tren.', 'Had I known about the traffic, I would have taken the train.'),
   B('C1', 'c1', ['the more', 'you', 'practise', 'the easier', 'it', 'get'], 'the more… the easier', 'Cuanto más practicás, más fácil se vuelve.', 'The more you practise, the easier it gets.', 'The more you practice, the easier it gets.', 'The more you practise, the easier it becomes.'),
   B('C1', 'c1', ['no sooner', 'I', 'arrive', 'than', 'it', 'start', 'to rain'], 'Inversión con no sooner… than', 'Ni bien llegué, empezó a llover.', 'No sooner had I arrived than it started to rain.', 'No sooner had I arrived than it began to rain.'),
   B('C1', 'c1', ['despite', 'feel', 'sick', 'she', 'go', 'to work'], 'despite + -ing', 'A pesar de sentirse mal, fue a trabajar.', 'Despite feeling sick, she went to work.', 'She went to work despite feeling sick.'),

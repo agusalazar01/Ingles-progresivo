@@ -5,7 +5,7 @@
 import type { Branch, CallScript, Turn } from '../content/calls';
 import type { RFix, RNode, ROption, RoleplayEntry, RoleplayScript } from '../content/roleplays/types';
 import { ROLEPLAYS } from '../content/roleplays/catalog';
-import { branchMatches } from './call';
+import { branchMatches, pickBranch, saidNo } from './call';
 import { patternExamples, pickByMeaning, type Candidate, type Embedder } from './semantic';
 import { synonymForms } from './understand';
 import { setState } from './store';
@@ -17,7 +17,8 @@ export const roleplayById = (id: string): RoleplayEntry | undefined => ROLEPLAYS
 /** ¿Qué opción del nodo coincide con lo que dijiste? (por palabras, aceptando sinónimos: «yeah» = «yes»). */
 export function matchOption(node: RNode, heard: string[]) {
   const all = [...heard, ...heard.flatMap((h) => synonymForms(h))];
-  return node.options.find((o) => branchMatches({ match: o.match, praise: '' } as Branch, all)) ?? null;
+  // El sí o el no se decide por lo que dijiste de verdad, no por los sinónimos.
+  return pickBranch(node.options, all, saidNo(heard));
 }
 
 /** Frases de ejemplo de cada opción (para comparar por significado): sus patrones y, si corresponde, la pista. */

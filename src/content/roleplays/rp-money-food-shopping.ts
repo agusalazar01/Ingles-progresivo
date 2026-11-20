@@ -52,7 +52,7 @@ export const MONEY_FOOD_SHOPPING = [
     s: 'Tu tarjeta fue rechazada en el súper y no sabés por qué.',
     g: 'Explicar qué pasó, confirmar tus datos y resolverlo.',
     v: [['declined', 'rechazada', 'dikláind', 'My card was declined.'], ['to block / unblock', 'bloquear / desbloquear', 'tu blok / anblók', 'Can you unblock it?'], ['suspicious', 'sospechoso', 'saspíshos', 'It looked suspicious.'], ['date of birth', 'fecha de nacimiento', 'deit ov berz', 'My date of birth is…']],
-    c: ['Thanks for your patience.', 'Sorry for the trouble. Have a good day!'],
+    c: ['Thanks for your help.', 'Cheers, have a good day!'],
   }, {
     start: { s: 'Thanks for calling. What can I help you with?', h: 'Hi, my card was declined at the supermarket.', a: 'Contá el problema.', o: [['declined|rejected|card|work|working|problem', 'id', 'Sorry about that, let me check.']], f: ['id', 'Is there a problem with your card?'] },
     id: { s: 'Can you confirm your date of birth, please?', h: 'Sure. It’s the twenty-sixth of December, nineteen ninety-eight.', o: [['[0-9]|january|february|march|april|may|june|july|august|september|october|november|december|sure', 'why', 'Thank you.']], f: ['why'] },
@@ -77,7 +77,7 @@ export const MONEY_FOOD_SHOPPING = [
     c: ['Thanks for calling the ATO.', 'Good luck with the new job!'],
   }, {
     start: { s: 'Australian Taxation Office, Karen speaking.', h: 'Hi, I need a Tax File Number. How do I apply?', a: 'Decí qué necesitás.', o: [['tax|tfn|file|number|apply', 'how', 'You can apply online with your passport.']], f: ['how', 'Are you calling about a Tax File Number? You can apply online.'] },
-    how: { s: 'Do you have your passport and an Australian address?', h: 'Yes, I have both. How long does it take?', o: [['how long|time|weeks|days|when', 'job', 'Usually around two weeks, by post.'], ['yes|have|both', 'job', 'Great, then you can apply today.'], ['no|address', 'job', 'You can use your hostel address.']], f: ['job'] },
+    how: { s: 'Do you have your passport and an Australian address?', h: 'Yes, I have both. How long does it take?', o: [['how long|time|weeks|days|when', 'job', 'It can take up to 28 days, by post.'], ['yes|have|both', 'job', 'Great, then you can apply today.'], ['no|address', 'job', 'You can use your hostel address.']], f: ['job'] },
     job: { s: 'Do you have a job already?', h: 'Yes, I start next week. What should I tell my employer?', o: [['yes|start|job|employer|tell', 'end', "Tell them you've applied. You have twenty-eight days to give them the number."], ['no|not yet|looking', 'end', 'Then apply now, so you have it ready.']], f: ['end', 'Just tell your employer you applied.'] },
   }),
   rp('31', {
@@ -89,7 +89,7 @@ export const MONEY_FOOD_SHOPPING = [
   }, {
     start: { s: 'Hi, how can I help?', h: 'Hi, I have a question about my payslip.', a: 'Decí que tenés una duda con el recibo.', o: [['payslip|pay|salary|wage|question|money', 'what', 'Sure, what is it?']], f: ['what', 'Is it about your pay?'] },
     what: { s: "What don't you understand?", h: "What's the difference between gross and net?", o: [['gross|net|difference', 'tax', 'Gross is before tax, net is what you actually get.'], ['tax|why|taken|deduct', 'tax', 'That is the tax we take out for the government.'], ['hours|missing|wrong', 'tax', "Let me check… you're right, two hours are missing. I'll fix it."]], f: ['tax'] },
-    tax: { s: 'Anything else on the payslip?', h: 'Do I get penalty rates on Sundays?', o: [['penalty|sunday|weekend|holiday|extra', 'end', 'Yes, Sundays are paid at time and a half.'], ['super|superannuation', 'end', "That's your retirement money, we pay it into your super fund."], [ALL, 'end', 'No worries.']], f: ['end', "Come and see me if you have more questions."] },
+    tax: { s: 'Anything else on the payslip?', h: 'Do I get penalty rates on Sundays?', o: [['penalty|sunday|weekend|holiday|extra', 'end', 'It depends on your award. Often time and a half, and more for casuals.'], ['super|superannuation', 'end', "That's your retirement money, we pay it into your super fund."], [ALL, 'end', 'No worries.']], f: ['end', "Come and see me if you have more questions."] },
   }),
   rp('32', {
     p: 'Oficina de recursos humanos del trabajo', w: ['Lisa', 'encargada de sueldos'],
@@ -100,7 +100,7 @@ export const MONEY_FOOD_SHOPPING = [
   }, {
     start: { s: 'I need your super fund details for the paperwork.', h: "Sorry, what is super? I don't understand.", a: 'Preguntá qué es.', o: [['what|super|understand|mean|explain|sorry', 'fund', "It's money we pay for your retirement, about twelve per cent on top of your wage."]], f: ['fund', "It's money for your retirement."] },
     fund: { s: 'Do you have a super fund?', h: "No, I don't. Can you choose one for me?", o: [['no|not|choose|recommend|help|which', 'leave', 'Sure, we can use our default fund.'], ['yes|have', 'leave', 'Great, just send me the details.']], f: ['leave'] },
-    leave: { s: 'Any other questions?', h: 'Can I get the money back when I leave Australia?', o: [['back|leave|claim|money|go home|when', 'end', 'Yes, backpackers can claim it after they leave. There is some tax.'], [ALL, 'end', 'No worries.']], f: ['end', "Check the ATO website, it explains everything."] },
+    leave: { s: 'Any other questions?', h: 'Can I get the money back when I leave Australia?', o: [['back|leave|claim|money|go home|when', 'end', "Yes, it's called DASP. You claim it after you leave, but working holiday makers pay 65% tax on it."], [ALL, 'end', 'No worries.']], f: ['end', "Check the ATO website, it explains everything."] },
   }),
   // 4. Cafeterías, restaurantes y comida
   rp('34', {
@@ -154,7 +154,7 @@ export const MONEY_FOOD_SHOPPING = [
     s: 'No entendés algunos platos del menú y querés saber qué llevan.',
     g: 'Preguntar qué lleva un plato, si tiene algo que no comés y qué te recomienda.',
     v: [['ingredients', 'ingredientes', 'ingrídients', 'What are the ingredients?'], ['to come with', 'venir con, traer', 'tu kam uiz', 'What does it come with?'], ['vegetarian', 'vegetariano', 'vechetérian', 'Is it vegetarian?'], ['to recommend', 'recomendar', 'tu rekoménd', 'What do you recommend?']],
-    c: ["I'll put that through.", 'Enjoy your meal!'],
+    c: ['Thanks, that sounds great.', 'Lovely, cheers.'],
   }, {
     start: { s: 'Have you had a look at the menu?', h: "Yes. What's in the Aussie pizza?", a: 'Preguntá qué lleva un plato.', o: [['what|in|ingredients|come with|has|have', 'veg', 'It has ham, bacon, egg and cheese.']], f: ['veg', 'Any questions about the menu?'] },
     veg: { s: 'Anything else you want to know?', h: 'Is the pumpkin pizza vegetarian?', o: [['vegetarian|vegan|meat|gluten|cheese|onion|garlic', 'rec', "Yes, it's vegetarian."], ['recommend|best|popular|favourite|favorite', 'rec', 'The pumpkin one is our most popular.'], ["no|that's all|that is all", 'rec', 'No worries.']], f: ['rec'] },
@@ -168,7 +168,7 @@ export const MONEY_FOOD_SHOPPING = [
     c: ['Thanks for letting us know.', "We'll be careful with your order."],
   }, {
     start: { s: 'Hi, what can I get you?', h: "Hi. Before I order, I'm allergic to peanuts.", a: 'Avisá tu alergia antes de pedir.', o: [['allergic|allergy|peanut|peanuts|nuts|gluten|celiac|coeliac', 'safe', 'Thanks for telling me.']], f: ['safe', 'Do you have any allergies?'], x: [['\\bi have allergy\\b', "I'm allergic to… / I have an allergy to…", 'Se dice «I’m allergic to…» o «I have an allergy to…».']] },
-    safe: { s: 'What would you like to order?', h: 'Does the chicken burger contain peanuts?', o: [['contain|have|peanut|nuts|burger|safe|chicken|gluten', 'order', "No, it doesn't. It's safe for you."]], f: ['order', 'The chicken burger has no nuts.'] },
+    safe: { s: 'What would you like to order?', h: 'Does the chicken burger contain peanuts?', o: [['contain|have|peanut|nuts|burger|safe|chicken|gluten', 'order', "It doesn't contain peanuts, but we use nuts in the kitchen, so I can't guarantee there are no traces."]], f: ['order', 'The chicken burger has no nuts.'] },
     order: { s: 'So, the chicken burger?', h: 'Yes, the chicken burger and some chips, please.', o: [['yes|burger|chips|fries|please', 'end', 'No worries, I told the kitchen about your allergy.'], ['no|else|something', 'end', 'Sure, let me know when you are ready.']], f: ['end', "I'll tell the kitchen about your allergy."] },
   }),
   rp('40', {
@@ -187,7 +187,7 @@ export const MONEY_FOOD_SHOPPING = [
     s: 'Te trajeron un plato que no pediste y además está frío.',
     g: 'Reclamar con educación y pedir una solución.',
     v: [["this isn't what I ordered", 'esto no es lo que pedí', 'dis ísent uót ai órderd', "Sorry, this isn't what I ordered."], ['cold', 'frío', 'kould', 'My food is cold.'], ['to replace', 'cambiar, reponer', 'tu ripléis', 'Could you replace it?'], ['to apologise', 'disculparse', 'tu apólochais', "We apologise for that."]],
-    c: ['Sorry again. Enjoy your meal.', 'Thanks for your patience.'],
+    c: ['Thanks for sorting it out.', 'No worries, cheers.'],
   }, {
     start: { s: 'Is everything OK with your meal?', h: "Sorry, this isn't what I ordered. I ordered the fish.", a: 'Decí con amabilidad que no es lo que pediste.', o: [['ordered|wrong|not|mistake|fish|order', 'cold', "Oh, I'm so sorry about that."]], f: ['cold', 'Is there a problem with your meal?'], x: [['\\bi ordered? the fish and (you|they) (bring|bringed|brought) me\\b', 'I ordered the fish, but this is the steak.', 'Más simple y amable: «I ordered the fish, but this is the steak.»']] },
     cold: { s: "I'll get you the fish. Is there anything else?", h: 'Also, the chips are cold.', o: [['cold|chips|fries|warm|also', 'end', "I'll bring fresh chips too, and the drinks are on us."], ["no|that's all|that is all|thanks|fine", 'end', 'Your fish will be out in five minutes.']], f: ['end', 'It will be out shortly.'] },

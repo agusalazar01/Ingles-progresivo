@@ -21,6 +21,9 @@ interface Props {
   banner?: string;
   /** Entrar directo al escalón que quedó a medias. */
   resume?: boolean;
+  /** Desde el camino: arrancar directo en este escalón y volver al camino al terminarlo. */
+  step?: number;
+  fromPath?: boolean;
   onExit: () => void;
   /** Al dominar la unidad se pasa sola a la siguiente. */
   onNextUnit: (unitId: string, banner: string) => void;
@@ -30,7 +33,7 @@ interface Props {
 
 const toSaved = (q: RunnerQueue): SavedRun['queue'] => q.map(({ item, first }) => ({ key: item.key, exercise: item.exercise, first }));
 
-export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: Props) {
+export function Lesson({ unitId, banner, resume, step: startAt, fromPath, onExit, onNextUnit, onCall }: Props) {
   const unit = unitById(unitId);
   const s = useAppState();
   const steps = activeSteps(unit);
@@ -46,6 +49,13 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
   // index -1 = repaso de lo que te costó (ids = ejercicio anotado de cada ítem).
   const [running, setRunning] = useState<{ index: number; items: RunnerItem[]; initial?: { queue: RunnerQueue; pos: number }; ids?: string[] } | null>(() => {
     const r = getState().resume[unitId];
+    // Desde el camino: si quedó a medias ese mismo escalón, se retoma; si no, arranca de cero.
+    if (startAt !== undefined && steps[startAt] && steps[startAt].id !== 'explain') {
+      if (r && r.stepIndex === startAt && r.pos < r.queue.length) return fromSaved(r);
+      const items = stepItems(unit, steps[startAt].id);
+      saveRun(unit.id, { stepIndex: startAt, queue: toSaved(items.map((item) => ({ item, first: true }))), pos: 0, firstTry: [] });
+      return { index: startAt, items };
+    }
     if (!resume || !r || r.pos >= r.queue.length) return null;
     return fromSaved(r);
   });
@@ -55,7 +65,7 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
   const [sheet, setSheet] = useState(false);
   const startedAt = useRef(Date.now());
   const [summary, setSummary] = useState<{ index: number; score: number; passed: boolean; good: number; total: number; secs: number; words: number; best: number; early?: boolean } | null>(null);
-  const firstTry = useRef<ItemResult[]>(resume ? (getState().resume[unitId]?.firstTry ?? []) : []);
+  const firstTry = useRef<ItemResult[]>(resume || startAt !== undefined ? (getState().resume[unitId]?.firstTry ?? []) : []);
   // Si acertás las primeras 4 seguidas (bien y sin pista), el escalón termina antes: no hace falta hacer las 8.
   const ended = useRef(false);
   const EARLY = 4;
@@ -108,6 +118,7 @@ export function Lesson({ unitId, banner, resume, onExit, onNextUnit, onCall }: P
 
   /** Después de aprobar: siguiente escalón, siguiente unidad o examen de nivel, sin volver al menú. */
   const advance = (index: number, score: number) => {
+    if (fromPath) return onExit();
     if (index < steps.length - 1) {
       setNotice(`✓ Escalón «${steps[index].title}» superado (${Math.round(score * 100)}%). Seguimos con «${steps[index + 1].title}».`);
       start(index + 1);

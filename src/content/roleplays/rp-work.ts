@@ -198,7 +198,7 @@ export const TRADES = [
   rp('R1', {
     p: 'Un café', w: ['Cliente', 'una clienta'], s: 'Sos el mozo. Una clienta se sienta.', g: 'Saludar, tomar el pedido y repetirlo para confirmar.',
     v: [['Are you ready to order?', '¿Ya decidieron?', 'ar iu rédi tu órder', 'Are you ready to order?'], ['anything else?', '¿algo más?', 'énizing els', 'Anything else?'], ['coming right up', 'ya sale', 'káming rait ap', 'Coming right up.']],
-    c: ["I'll bring it out shortly.", 'Enjoy!'],
+    c: ["Thanks, that's great.", 'Lovely, thanks.'],
   }, {
     start: { s: '…', h: 'Hi, are you ready to order?', a: 'Empezá vos.', o: [['ready|order|hi|hello|what|get', 'order', "Yes, a flat white and a ham toastie."]], f: ['order', "A flat white and a ham toastie."] },
     order: { s: '…', h: 'Anything else?', a: 'Preguntá si quiere algo más.', o: [['else|anything|more', 'confirm', "No, that's it."]], f: ['confirm', "That's it."] },
@@ -207,7 +207,7 @@ export const TRADES = [
   rp('R2', {
     p: 'Un restaurante', w: ['Cliente', 'un cliente'], s: 'Llevás los platos a la mesa.', g: 'Anunciar los platos, preguntar quién pidió qué y si necesitan algo.',
     v: [['Who had the…?', '¿Quién pidió el…?', 'ju jad de', 'Who had the steak?'], ['Enjoy your meal', 'buen provecho', 'enyói ior mil', 'Enjoy your meal.'], ['Can I get you anything else?', '¿les traigo algo más?', 'kan ai get iu énizing els', 'Can I get you anything else?']],
-    c: ['Enjoy your meal!', "Just call me if you need anything."],
+    c: ['Lovely, thanks.', 'This looks great, cheers.'],
   }, {
     start: { s: '…', h: 'Here we are. Who had the steak?', a: 'Llegás con los platos.', o: [['who|had|steak|here|fish|pasta', 'more', 'That’s me.']], f: ['more', 'Me, thanks.'] },
     more: { s: 'Thanks, looks great.', h: 'Can I get you anything else?', o: [['anything|else|get|need|drinks', 'end', 'Some more water, please.']], f: ['end', "We're fine."] },
@@ -215,7 +215,7 @@ export const TRADES = [
   rp('R3', {
     p: 'Un restaurante', w: ['Cliente', 'una clienta'], s: 'Una clienta pregunta por un plato.', g: 'Explicar el plato (qué tiene, cómo viene) y recomendar.',
     v: [['It comes with', 'viene con', 'it kams uiz', 'It comes with chips and salad.'], ['grilled', 'a la plancha / parrilla', 'grild', "It's grilled fish."], ['I recommend', 'te recomiendo', 'ai rekoménd', 'I recommend the lamb.'], ['gluten-free', 'sin gluten', 'glúten fri', 'Is it gluten-free?']],
-    c: ['Great choice.', "I'll put that in for you."],
+    c: ['Thanks.', 'Cheers, that sounds good.'],
   }, {
     start: { s: "What's the barramundi like?", h: "It's grilled fish, and it comes with chips and salad.", a: 'Explicá el plato.', o: [['fish|grilled|comes with|chips|salad|served', 'gf', 'Sounds nice.']], f: ['gf'] },
     gf: { s: 'Is it gluten-free?', h: 'Yes, it is, but the chips are not. We can change them for salad.', o: [['yes|no|gluten|change|salad|not|can', 'rec', 'Good.']], f: ['rec'] },
@@ -224,7 +224,7 @@ export const TRADES = [
   rp('R4', {
     p: 'Un restaurante', w: ['Cliente', 'un cliente molesto'], s: 'El cliente dice que su comida está fría.', g: 'Disculparte, ofrecer una solución y avisar en cocina.',
     v: [['I do apologise', 'le pido disculpas', 'ai du apóloyais', 'I do apologise.'], ['to replace', 'reemplazar', 'tu ripléis', "I'll replace it."], ['on the house', 'invita la casa', 'on de jaus', 'The drink is on the house.']],
-    c: ['Sorry again, enjoy.', "Thanks for your patience."],
+    c: ["Thanks, that's much better.", 'Cheers for sorting it out.'],
   }, {
     start: { s: "Excuse me, my food is cold.", h: "I'm so sorry. I'll get you a new one right away.", a: 'Disculpate y ofrecé algo.', o: [['sorry|apologise|apologize|new|replace|change|right away|heat', 'wait', 'OK, thanks.']], f: ['wait', 'Can you fix it?'] },
     wait: { s: 'How long will it take?', h: 'About ten minutes. Can I get you a drink on the house?', o: [['minutes|soon|quick|drink|house|free', 'end', "That's nice, thanks."]], f: ['end', 'OK.'] },
@@ -275,8 +275,8 @@ export const TRADES = [
     v: [['millimetres', 'milímetros', 'milimíters', 'Cut it at 450 millimetres.'], ['to measure twice', 'medir dos veces', 'tu méyer tuáis', 'Measure twice, cut once.'], ['tape measure', 'cinta métrica', 'teip méyer', 'Where is the tape measure?']],
     c: ['Spot on.', 'Good, nice work.'],
   }, {
-    start: { s: 'Cut these boards at one point two metres.', h: 'One point two metres. How many?', a: 'Repetí la medida y preguntá cuántas.', o: [['one point two|metres|meters|how many|1 2|ok|okay', 'many', 'Six.']], f: ['many'] },
-    many: { s: 'Six boards.', h: 'OK, six boards at one point two metres.', o: [['six|6|ok|okay|boards|got it', 'end', 'Spot on.']], f: ['end', 'Good.'] },
+    start: { s: 'Cut these boards at twelve hundred.', h: 'Twelve hundred mil. How many?', a: 'Repetí la medida (en Australia se dice en milímetros) y preguntá cuántas.', o: [['twelve hundred|1200|mil|millimetres|how many|ok|okay', 'many', 'OK.']], f: ['many'] },
+    many: { s: 'Six boards.', h: 'OK, six boards at twelve hundred.', o: [['six|6|ok|okay|boards|got it', 'end', 'Spot on.']], f: ['end', 'Good.'] },
   }),
   rp('R11', {
     p: 'Una obra', w: ['Linda', 'responsable de seguridad'], s: 'Revisión de seguridad antes de subir a un andamio.', g: 'Confirmar el equipo de seguridad y las reglas.',
@@ -324,7 +324,7 @@ export const TRADES = [
     v: [['per bin', 'por contenedor', 'per bin', 'Is it per bin?'], ['hourly rate', 'pago por hora', 'áuerli reit', "What's the hourly rate?"], ['payday', 'día de pago', 'péidei', 'When is payday?']],
     c: ['Any other questions, just ask.', 'All clear?'],
   }, {
-    start: { s: 'Any questions about pay?', h: 'Yes. Is it per bin or hourly?', a: 'Preguntá cómo te pagan.', o: [['per bin|hourly|hour|bin|how|paid', 'day', "It's per bin, sixty dollars a bin."]], f: ['day'] },
+    start: { s: 'Any questions about pay?', h: 'Yes. Is it per bin or hourly?', a: 'Preguntá cómo te pagan.', o: [['per bin|hourly|hour|bin|how|paid', 'day', "It's per bin, sixty dollars a bin, but you're guaranteed at least the minimum hourly rate."]], f: ['day'] },
     day: { s: 'Anything else?', h: 'When is payday?', o: [['payday|when|paid|weekly|friday|day', 'end', 'Every Thursday into your account.'], ["no|that's all|that is all", 'end', 'Good.']], f: ['end', 'Every week.'] },
   }),
   rp('R17', {
@@ -485,7 +485,7 @@ export const TRADES = [
   rp('R36', {
     p: 'El pasillo de un hotel', w: ['Huésped', 'un huésped'], s: 'Un huésped te pregunta cosas mientras limpiás.', g: 'Responder con amabilidad y derivar lo que no sabés.',
     v: [['reception', 'recepción', 'risépshon', 'Ask at reception.'], ['fresh towels', 'toallas limpias', 'fresh táuels', "I'll bring fresh towels."], ['Is there anything else?', '¿algo más?', 'is der énizing els', 'Is there anything else?']],
-    c: ['Enjoy your stay!', 'Have a lovely day.'],
+    c: ['Thanks, see you later.', 'Cheers, bye.'],
   }, {
     start: { s: 'Excuse me, could I get some fresh towels?', h: "Of course. I'll bring them in five minutes.", a: 'Respondé con amabilidad.', o: [['of course|sure|bring|towels|minutes|yes', 'wifi', 'Thanks.']], f: ['wifi'] },
     wifi: { s: "And what's the wifi password?", h: "I'm not sure, but reception can help you.", o: [['not sure|reception|desk|ask|password|do not know', 'end', 'OK, thanks.']], f: ['end', 'OK.'] },

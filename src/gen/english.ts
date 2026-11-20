@@ -136,13 +136,14 @@ const ES_TENSE: Record<Tense, EsTense> = {
   couldHave: 'condPerf',
 };
 
-export function sentenceEs(t: Tense, s: Subject, esVerb: string, pol: Pol, tailEs: string): string {
+/** `clitic` = le / les cuando hay objeto indirecto («le doy un regalo a mi mamá»). */
+export function sentenceEs(t: Tense, s: Subject, esVerb: string, pol: Pol, tailEs: string, clitic = ''): string {
   let vp: string;
   if (t === 'can') vp = `${conjugateEs('poder', 'pres', s.p)} ${esVerb}`;
   else if (t === 'shouldHave') vp = `${conjugateEs('deber', 'cond', s.p)} haber ${conjugateEs(esVerb, 'perf', 0).split(' ').slice(1).join(' ')}`;
   else if (t === 'couldHave') vp = `${conjugateEs('poder', 'cond', s.p)} haber ${conjugateEs(esVerb, 'perf', 0).split(' ').slice(1).join(' ')}`;
   else vp = conjugateEs(esVerb, ES_TENSE[t], s.p);
-  const body = [s.es, pol === 'neg' ? 'no' : '', vp, tailEs].filter(Boolean).join(' ');
+  const body = [s.es, pol === 'neg' ? 'no' : '', clitic, vp, tailEs].filter(Boolean).join(' ');
   const t2 = body.replace(/\s+/g, ' ').trim();
   const c = t2.charAt(0).toUpperCase() + t2.slice(1);
   return pol === 'q' ? `¿${c}?` : `${c}.`;

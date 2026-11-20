@@ -50,7 +50,7 @@ export const DEEP_1 = [
       f: ['transport', 'If you’re going to the city, you’ve got a few options.'] },
     transport: { s: "The train's the quickest, about fifteen minutes to Central, but it's a bit pricey, around twenty bucks. The bus is cheaper but takes an hour. What do you reckon?", h: "I'll take the train. How do I pay for it?", a: 'Elegí cómo ir y preguntá cómo pagar.',
       o: [['train', 'pay', 'Good choice.', 'Decidiste con «I’ll…»: justo lo que se usa para decidir en el momento.'],
-        ['bus', 'pay', 'Smart, the 420 is good value.'],
+        ['bus', 'pay', 'Smart. Take the 420 bus to Mascot and the train from there: you skip the airport station fee.'],
         ['taxi|uber|car|cab', 'end', 'The taxi rank is outside door B. It’ll be around sixty dollars.']],
       f: ['pay', 'Most people take the train.'], x: [['\\bi take the (train|bus)\\b', "I'll take the train.", 'Para decidir en el momento se usa will: I’ll take the train.']] },
     pay: { s: 'You can just tap your bank card at the gates, or grab an Opal card at the station shop.', h: 'Great, I’ll just tap my card. Thanks so much for your help!', a: 'Agradecé y despedite (o preguntá algo más).',

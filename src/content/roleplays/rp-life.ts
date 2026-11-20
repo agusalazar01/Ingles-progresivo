@@ -59,13 +59,13 @@ export const TRANSPORT = [
     quote: { s: "Probably the brake pads.", h: 'Can you give me a quote first?', o: [['quote|how much|cost|price|first', 'end', 'About two hundred and fifty.']], f: ['end', 'Around two fifty.'] },
   }),
   rp('120', {
-    p: 'Llamada a asistencia en ruta', w: ['Operador', 'asistencia RAC'], s: 'Pinchaste una goma en la ruta.', g: 'Explicar el problema y dar tu ubicación.',
+    p: 'Llamada a asistencia en ruta', w: ['Operador', 'asistencia NRMA'], s: 'Pinchaste una goma en la ruta.', g: 'Explicar el problema y dar tu ubicación.',
     v: [['flat tyre', 'goma pinchada', 'flat táier', 'I have a flat tyre.'], ['spare tyre', 'rueda de auxilio', 'sper táier', "I don't have a spare."], ['roadside assistance', 'asistencia en ruta', 'róudsaid asístans', "I'm calling roadside assistance."]],
     c: ['Help is on the way.', 'Stay safe until we arrive.'],
   }, {
     start: { s: 'Roadside assistance, how can I help?', h: 'Hi, I have a flat tyre and no spare.', a: 'Explicá el problema.', o: [['flat|tyre|tire|spare|puncture|wheel', 'where', 'OK.']], f: ['where'] },
     where: { s: 'Where are you?', h: "I'm on the Princes Highway, near the Kiama exit.", o: [['highway|road|near|exit|on|kilometre|km|street', 'safe', 'Got it.']], f: ['safe'] },
-    safe: { s: 'Are you in a safe spot?', h: 'Yes, I am off the road with my hazard lights on.', o: [['yes|safe|off|lights|hazard|no', 'end', 'Someone will be there in forty minutes.']], f: ['end', 'We are coming.'] },
+    safe: { s: 'Are you in a safe spot?', h: 'Yes, I am off the road with my hazard lights on.', o: [['no|not', 'end', "Get out on the passenger side and stand behind the barrier. If you're in danger, call triple zero."], ['yes|safe|off|lights|hazard', 'end', "Someone will be there in forty minutes."]], f: ['end', "We're on our way."] },
   }),
   rp('121', {
     p: 'La calle', w: ['Peatón', 'una señora'], s: 'Estás perdido buscando la estación.', g: 'Pedir indicaciones, entenderlas y repetirlas.',
@@ -98,8 +98,8 @@ export const TRANSPORT = [
     v: [['one-way / return', 'ida / ida y vuelta', 'uan uei / ritérn', 'A return ticket, please.'], ['concession', 'tarifa reducida', 'konséshon', 'Is there a concession?'], ['platform', 'andén', 'plátform', 'Which platform?']],
     c: ['Have a good trip.', 'Enjoy your trip!'],
   }, {
-    start: { s: 'Where to?', h: 'A return ticket to Newcastle, please.', a: 'Pedí el pasaje.', o: [['return|one way|ticket|to|please', 'when', 'When are you travelling?']], f: ['when'] },
-    when: { s: 'When are you travelling?', h: 'Tomorrow morning, and back on Sunday.', o: [['tomorrow|morning|today|sunday|monday|back|next', 'plat', "Thirty-four dollars."]], f: ['plat'] },
+    start: { s: 'Where to?', h: 'A return ticket to Coffs Harbour, please.', a: 'Pedí el pasaje.', o: [['return|one way|ticket|to|please', 'when', 'When are you travelling?']], f: ['when'] },
+    when: { s: 'When are you travelling?', h: 'Tomorrow morning, and back on Sunday.', o: [['tomorrow|morning|today|sunday|monday|back|next', 'plat', "That's a booked seat on NSW TrainLink. Your return is eighty-two dollars."]], f: ['plat'] },
     plat: { s: 'Anything else?', h: 'Which platform does it leave from?', o: [['platform|where|leave|time|which', 'end', 'Platform three.'], [ALL, 'end', 'Have a good trip.']], f: ['end', 'Platform three.'] },
   }),
 ];
@@ -204,7 +204,7 @@ export const FORMAL = [
   }, {
     start: { s: 'Next, please. How can I help?', h: "I'd like to convert my overseas licence.", a: 'Explicá el trámite.', o: [['convert|licence|license|change|transfer|overseas', 'docs', 'OK.']], f: ['docs'] },
     docs: { s: 'Do you have your documents?', h: 'What documents do I need?', o: [['documents|what|need|bring', 'test', 'Passport, licence and proof of address.'], ['yes|have|here', 'test', 'Great.']], f: ['test'] },
-    test: { s: 'Any other questions?', h: 'Do I need to do a test?', o: [['test|exam|eye|eyesight|drive', 'end', 'Only an eyesight test.'], [ALL, 'end', 'OK.']], f: ['end', 'Just an eyesight test.'] },
+    test: { s: 'Any other questions?', h: 'Do I need to do a test?', o: [['test|exam|eye|eyesight|drive', 'end', "Yes. Uruguay isn't on the recognised list, so you need a knowledge test, a driving test and an eyesight test."], [ALL, 'end', 'OK.']], f: ['end', 'You need a knowledge test, a driving test and an eyesight test.'] },
   }),
   rp('136', {
     p: 'Una oficina', w: ['Funcionaria', 'empleada'], s: 'Recibiste una carta oficial y no entendés una parte.', g: 'Pedir que te expliquen qué significa y qué tenés que hacer.',

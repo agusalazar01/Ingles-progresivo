@@ -99,6 +99,8 @@ export interface AppState {
   writing?: Record<string, import('./writing').WritingProgress>;
   /** Roleplays hechos: cuándo y cuántas correcciones hubo. */
   roleplays?: Record<string, { date: string; fixes: number; turns: number }>;
+  /** Nodos del camino hechos (escucha, cuento, práctica, postal, repaso): id → fecha. */
+  path?: Record<string, string>;
 }
 
 export interface MissedItem {

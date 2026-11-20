@@ -77,7 +77,7 @@ const IRREGULAR: Record<string, Partial<Record<'pres' | 'pret' | 'imp' | 'fut' |
     cond: ['pondría', 'pondrías', 'pondría', 'pondríamos', 'pondrían'],
     pp: 'puesto',
   },
-  traer: { pres: ['traigo', 'traés', 'trae', 'traemos', 'traen'], pret: ['traje', 'trajiste', 'trajo', 'trajimos', 'trajeron'], ger: 'trayendo' },
+  traer: { pres: ['traigo', 'traés', 'trae', 'traemos', 'traen'], pret: ['traje', 'trajiste', 'trajo', 'trajimos', 'trajeron'], ger: 'trayendo', pp: 'traído' },
   conocer: { pres: ['conozco', 'conocés', 'conoce', 'conocemos', 'conocen'] },
   salir: { pres: ['salgo', 'salís', 'sale', 'salimos', 'salen'], fut: ['saldré', 'saldrás', 'saldrá', 'saldremos', 'saldrán'], cond: ['saldría', 'saldrías', 'saldría', 'saldríamos', 'saldrían'] },
   pedir: { pres: ['pido', 'pedís', 'pide', 'pedimos', 'piden'], pret: ['pedí', 'pediste', 'pidió', 'pedimos', 'pidieron'], ger: 'pidiendo' },

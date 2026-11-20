@@ -91,7 +91,7 @@ export const ARRIVAL_HOUSING = [
   }, {
     start: { s: 'Hi, need a hand?', h: 'Yes, please. How do I get to Manly?', a: 'Preguntá cómo llegar a Manly.', o: [['how|get|go|manly|way', 'train', 'Easy. Take the train to Circular Quay and then the ferry.']], f: ['train', 'If you want to go to Manly, take the train to Circular Quay and then the ferry.'] },
     train: { s: 'Do you know which train to take?', h: 'No. Which platform is it?', o: [['which|what|platform|no|do not know', 'time', 'Platform twenty, any train to Circular Quay.'], ['yes|know', 'time', 'Great.']], f: ['time', "It's platform twenty."] },
-    time: { s: 'Any other questions?', h: 'How long does it take?', o: [['how long|time|minutes|far', 'end', 'About forty minutes in total, the ferry is twenty of that.'], ['ticket|card|pay|opal|tap', 'end', 'You can just tap your bank card on the reader.'], ["no|that's all|that is all|thanks", 'end', 'No worries.']], f: ['end', 'You can also check it in the app.'] },
+    time: { s: 'Any other questions?', h: 'How long does it take?', o: [['how long|time|minutes|far', 'end', "About forty-five minutes; the ferry's about half an hour."], ['ticket|card|pay|opal|tap', 'end', 'You can just tap your bank card on the reader.'], ["no|that's all|that is all|thanks", 'end', 'No worries.']], f: ['end', 'You can also check it in the app.'] },
   }),
   rp('8', {
     p: 'Kiosco de una estación de Melbourne', w: ['Josh', 'vendedor'],
@@ -227,8 +227,8 @@ export const ARRIVAL_HOUSING = [
     c: ['Thanks for coming in.', 'All good. Any questions, just call us.'],
   }, {
     start: { s: "Here's the lease. Have a read and let me know if you have questions.", h: 'Thanks. How long is the lease?', o: [['how long|length|months|year|lease', 'early', "It's a twelve-month lease."]], f: ['early', "It's for twelve months."] },
-    early: { s: 'Anything else?', h: 'What if I need to break the lease early?', o: [['break|early|leave|before', 'pets', "You'd pay the rent until we find a new tenant, plus a small fee."], ["no|that's all|that is all", 'pets', 'OK.']], f: ['pets'] },
-    pets: { s: 'Any other questions before you sign?', h: 'Are pets allowed?', o: [['pet|pets|dog|cat', 'sign', 'Only with written permission.'], ["no|that's all|that is all|ready", 'sign', 'Great.']], f: ['sign'] },
+    early: { s: 'Anything else?', h: 'What if I need to break the lease early?', o: [['break|early|leave|before', 'pets', "In New South Wales there's a set break fee: from one to four weeks' rent, depending on how early you leave."], ["no|that's all|that is all", 'pets', 'OK.']], f: ['pets'] },
+    pets: { s: 'Any other questions before you sign?', h: 'Are pets allowed?', o: [['pet|pets|dog|cat', 'sign', 'You apply in writing, and we can only say no for specific reasons.'], ["no|that's all|that is all|ready", 'sign', 'Great.']], f: ['sign'] },
     sign: { s: 'OK, are you happy to sign?', h: 'Yes. Where do I sign?', o: [['no|think|later|tomorrow', 'end', 'No problem, take it home and bring it back tomorrow.'], ['yes|sign|where|ready|ok|okay', 'end', 'Just here and here. And here are your keys!']], f: ['end', 'Take your time.'] },
   }),
   rp('20', {

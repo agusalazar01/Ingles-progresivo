@@ -64,3 +64,25 @@
 - Camping y parque nacional: sin preguntas repetidas y con respuestas concretas (pase del parque, prohibición de fuego). Caminata: qué hacer si alguien se lastima y el 000 (triple zero).
 - Voces: todo personaje de roleplay tiene voz de hombre o de mujer; si el nombre no lo dice (Agente, Officer Brown), se elige una fija por personaje en vez de usar la voz de Oliver.
 - Correcciones de contenido: «sílabas», people/persons, consignas de backshift y futuro perfecto. Numeración de roleplays sin huecos.
+
+## 1.17.0 — el camino, los cuentos y la gran revisión
+**Camino**
+- Camino nuevo con nodos (diseño provisorio: círculos y línea): 33 secciones de A1 a C1, cada una con una meta comunicativa, que reúnen las 57 unidades. Los ejercicios de siempre son los nodos de lección: no se perdió ninguno.
+- Intermedio para afianzar sin repetir: cada unidad tiene su Escucha a mitad de camino (dictados) y su Práctica al final (lo que te costó, con otro tipo de ejercicio). Cada sección cierra con un Repaso final, y cada nivel con un **Repaso de etapa 🏆** con todo el nivel (75 % para aprobar).
+- Nodos: guía, lecciones, escucha, práctica, roleplay, cuento, postal de Australia 💌, repaso final y repaso de etapa.
+- Bloqueos: dentro de cada sección las lecciones se abren en orden; la sección siguiente se abre al terminar la gramática de la anterior. Al empezar cada nivel bloqueado, «Saltar con una prueba».
+- La vista anterior por temas sigue en «Ver por temas».
+
+**Unidades nuevas (situaciones)**
+- Tu familia y tu gente (A1), De compras (A2), El clima y el aire libre (A2), Buscar trabajo (B1), Noticias y chismes (B2), Opinar y debatir (C1). Cada una con diálogo desglosado, unas 12 expresiones nuevas al catálogo, más de 50 ejercicios y 2 llamadas con Oliver.
+
+**Cuentos**
+- 33 cuentos, uno por sección, sin «motor de cuentos»: texto original sin tocar. De A1 a B1, cuentos ilustrados de Global Storybooks (CC BY) y fábulas de Esopo (dominio público). En B2 y C1, clásicos en dominio público: O. Henry («After Twenty Years», «Hearts and Hands», «The Gift of the Magi»), Saki («The Open Window», «The Story-Teller», «The Lumber-Room»), Oscar Wilde («The Selfish Giant»), Frank Stockton («The Lady, or the Tiger?») y Edgar Allan Poe («The Tell-Tale Heart»).
+- Cada cuento tiene traducción por página, desglose de frases, preguntas de comprensión, vocabulario y ejercicios. Audio grabado si existe; si no, lectura con la voz del teléfono.
+
+**Revisión de contenido (todo el inglés)**
+- Ejercicios generados de tiempos verbales: las opciones falsas ahora son errores de forma del mismo tiempo (antes a veces había 2 o 3 respuestas válidas); se muestra la oración en español; se evitan combinaciones absurdas («gets a new job every day»), «we» con «my», modales con verbos de estado; will y going to se aceptan los dos; le/les en español («le doy un regalo a mi mamá»).
+- Respuestas válidas que antes se rechazaban (which/that, although/even though, take/have a shower, at/on the weekend, y muchas más en gramática, corregí el error y escritura).
+- Traducciones al español que empujaban a otra respuesta (tengo que → necesito), explicaciones corregidas (condicional cero, say/tell, falsos amigos, «too» vs «very»), inglés poco natural reemplazado.
+- Llamadas y roleplays: el motor ya no manda «OK» o «Yes» a la rama del «no», y si decís que no, gana la respuesta del no. Patrones que nunca coincidían por las contracciones ahora funcionan. Respuestas que suponían un sí, corregidas.
+- Datos de Australia actualizados: impuesto del DASP (65 %), salario mínimo casual, garantía mínima por hora en la cosecha, NRMA en NSW, Opal/TrainLink, licencia de conducir para Uruguay, reglas de alquiler y mascotas en NSW, alergias en restaurantes, medidas en milímetros en obra.

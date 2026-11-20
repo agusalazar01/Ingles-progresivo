@@ -68,9 +68,9 @@ export function releaseMeaning() {
 
 /** Palabras que en una charla valen lo mismo. La primera es la «canónica». */
 const SYN: string[][] = [
-  ['yes', 'yeah', 'yep', 'yup', 'sure', 'of course', 'definitely', 'absolutely', 'sounds good', 'that would be great', 'please do', 'why not'],
-  ['no', 'nah', 'nope', 'not really', 'no thanks', "i'm good", "i'm fine", 'all good'],
-  ['ok', 'okay', 'alright', 'all right', 'no worries', 'no problem', 'fine', 'got it', 'righto'],
+  ['yes', 'yeah', 'yep', 'yup', 'sure', 'of course', 'definitely', 'absolutely', 'sounds good', 'that would be great', 'please do'],
+  ['no', 'nah', 'nope', 'not really', 'no thanks'],
+  ['ok', 'okay', 'alright', 'all right', 'fine', 'got it', 'righto', 'all good'],
   ['thanks', 'thank you', 'cheers', 'ta', 'much appreciated', 'appreciate it'],
   ['hello', 'hi', 'hey', "g'day", 'good morning', 'good afternoon', 'good evening'],
   ['bye', 'goodbye', 'see you', 'see ya', 'catch you later', 'have a good one'],

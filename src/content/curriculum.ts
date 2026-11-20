@@ -15,15 +15,15 @@ import { CONTEXT_UNITS } from './context';
 const ORDER = [
   // A1 — lo mínimo para armar oraciones
   'to-be', 'pronouns', 'articles-plurals', 'sounds-vowels', 'pres-simple', 'there-is', 'questions',
-  'prep-time-place', 'pres-cont', 'ctx-greetings', 'can', 'vocab-daily',
+  'prep-time-place', 'pres-cont', 'ctx-greetings', 'ctx-family', 'can', 'vocab-daily',
   // A2 — contar el pasado y planes, describir y comparar
-  'past-simple', 'countables', 'sounds-endings', 'future', 'ctx-food', 'ctx-plans', 'comparatives', 'past-cont', 'ctx-beach', 'ctx-transport', 'collocations',
+  'past-simple', 'countables', 'sounds-endings', 'future', 'ctx-food', 'ctx-shopping', 'ctx-plans', 'comparatives', 'ctx-weather', 'past-cont', 'ctx-beach', 'ctx-transport', 'collocations',
   // B1 — experiencias, hipótesis y conectar ideas
-  'pres-perfect', 'ctx-house', 'ctx-feelings', 'future-cont', 'phrasal-1', 'ctx-problems', 'ctx-health', 'ctx-work', 'relatives', 'cond-1-2', 'ctx-money', 'passive', 'connectors', 'aussie', 'connected-speech',
+  'pres-perfect', 'ctx-house', 'ctx-feelings', 'future-cont', 'phrasal-1', 'ctx-problems', 'ctx-health', 'ctx-work', 'ctx-jobhunt', 'relatives', 'cond-1-2', 'ctx-money', 'passive', 'connectors', 'aussie', 'connected-speech',
   // B2 — precisión y naturalidad (romper el techo de B2)
-  'pres-perf-cont', 'past-perfect', 'ctx-stories', 'past-perf-cont', 'false-friends', 'gerund-inf', 'reported', 'register',
+  'pres-perf-cont', 'past-perfect', 'ctx-stories', 'past-perf-cont', 'false-friends', 'gerund-inf', 'reported', 'ctx-news', 'register',
   // C1
-  'cond-3', 'past-modals', 'future-perf', 'future-perf-cont', 'inversion',
+  'cond-3', 'past-modals', 'future-perf', 'future-perf-cont', 'inversion', 'ctx-debate',
 ];
 
 const ALL = [...VERB_UNITS, ...FOUNDATION_UNITS, ...ADVANCED_UNITS, ...TENSE_UNITS, ...CONTEXT_UNITS];

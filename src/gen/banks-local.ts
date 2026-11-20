@@ -54,7 +54,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
     c('{How much} is a flat white here?', ['How many', 'What'], '¿Cuánto sale un café con leche acá?'),
     c('{Who} brought the esky?', ['Which', 'Whose'], '¿Quién trajo la conservadora?'),
     c('{Are} you coming to the barbie this arvo?', ['Do', 'Is'], '¿Venís al asado esta tarde?'),
-    c('{Do} you want a mate?', ['Are', 'Does'], '¿Querés un mate?'),
+    c('{Do} you fancy a mate? (the drink)', ['Are', 'Does'], '¿Querés un mate?'),
     c('{Why} is everything so exy in Sydney?', ['What', 'How'], '¿Por qué está todo tan salado en Sídney?'),
   ],
   'prep-time-place': [
@@ -62,7 +62,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
     c("Let's meet {at} the rambla at five.", ['in', 'on'], 'Nos vemos en la rambla a las cinco.'),
     c('I drink mate {in} the morning.', ['on', 'at'], 'Tomo mate a la mañana.'),
     c('The footy season starts {in} March.', ['on', 'at'], 'La temporada de footy empieza en marzo.'),
-    c('We have a barbie {on} Saturday arvo.', ['in', 'at'], 'Hacemos un asado el sábado de tarde.'),
+    c("We're having a barbie {on} Saturday arvo.", ['in', 'at'], 'Hacemos un asado el sábado de tarde.'),
     c("He's {at} the servo getting petrol.", ['in', 'on'], 'Está en la estación de servicio cargando nafta.'),
     c('My thongs are {in} the car.', ['on', 'at'], 'Mis chancletas están en el auto.'),
     c("I'll see you {at} brekkie.", ['in', 'on'], 'Te veo en el desayuno.'),
@@ -192,7 +192,7 @@ export const LOCAL_CLOZE: Record<string, Cloze[]> = {
     c('The {tradie} is coming at two.', ['trader', 'trademan'], 'El técnico viene a las dos.'),
     c("I'm going to the {bottle-o} to buy some wine.", ['servo', 'bottle shop-o'], 'Voy a la licorería a comprar vino.'),
     c("That's {heaps} good, mate!", ['many', 'much'], '¡Eso está re bueno, bo!'),
-    c("We finish at three for {smoko}.", ['smoke', 'snack-o'], 'Paramos a las tres para el descanso.'),
+    c("We stop for {smoko} at three.", ['smoke', 'snack-o'], 'Paramos a las tres para el descanso.'),
     c('Rent in Sydney is so {exy}.', ['expen', 'exxy-o'], 'El alquiler en Sídney es re salado.'),
   ],
 };

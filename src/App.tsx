@@ -6,6 +6,9 @@ import { Lesson } from './screens/Lesson';
 import { Placement } from './screens/Placement';
 import { Review } from './screens/Review';
 import { Errors, Home, Path, Progress, Welcome } from './screens/Tabs';
+import { PathMap } from './screens/PathMap';
+import { NodeSession } from './screens/NodeSession';
+import { StoryReader } from './screens/StoryReader';
 import { Exam, Mixed, Remedial } from './screens/Practice';
 import { Vocab } from './screens/Vocab';
 import { Call } from './screens/Call';
@@ -35,6 +38,9 @@ import './App.css';
 export type Route =
   | { name: 'home'; skipWelcome?: boolean }
   | { name: 'path' }
+  | { name: 'themes' }
+  | { name: 'node'; nodeId: string }
+  | { name: 'story'; storyId: string; nodeId?: string }
   | { name: 'errors' }
   | { name: 'progress' }
   | { name: 'settings'; section?: SettingsSection }
@@ -51,9 +57,9 @@ export type Route =
   | { name: 'exam'; level: Level }
   | { name: 'remedial'; unitIds: string[]; level: Level }
   | { name: 'placement'; retest: boolean }
-  | { name: 'lesson'; unitId: string; banner?: string; resume?: boolean }
+  | { name: 'lesson'; unitId: string; banner?: string; resume?: boolean; step?: number; fromPath?: boolean }
   | { name: 'call'; callId?: string; unitId?: string; free?: boolean; script?: import('./content/calls').CallScript }
-  | { name: 'roleplays' }
+  | { name: 'roleplays'; startId?: string }
   | { name: 'tutor' }
   | { name: 'review'; keys: string[]; title: string };
 
@@ -146,10 +152,12 @@ export default function App() {
     case 'lesson':
       body = (
         <Lesson
-          key={route.unitId}
+          key={`${route.unitId}:${route.step ?? ''}`}
           unitId={route.unitId}
           banner={route.banner}
           resume={route.resume}
+          step={route.step}
+          fromPath={route.fromPath}
           onExit={back}
           onNextUnit={(unitId, banner) => replace({ name: 'lesson', unitId, banner })}
           onCall={(callId) => go({ name: 'call', callId })}
@@ -181,7 +189,16 @@ export default function App() {
       body = <Review keys={route.keys} title={route.title} onExit={back} />;
       break;
     case 'path':
+      body = <PathMap go={go} />;
+      break;
+    case 'themes':
       body = <Path go={go} />;
+      break;
+    case 'node':
+      body = <NodeSession key={route.nodeId} nodeId={route.nodeId} onExit={back} />;
+      break;
+    case 'story':
+      body = <StoryReader key={route.storyId} storyId={route.storyId} nodeId={route.nodeId} onExit={back} />;
       break;
     case 'vocab':
       body = <Vocab go={go} />;
@@ -226,7 +243,7 @@ export default function App() {
       body = <Progress go={go} />;
       break;
     case 'roleplays':
-      body = <Roleplays onExit={back} onAiCall={(script) => go({ name: 'call', script })} onTutor={() => go({ name: 'tutor' })} />;
+      body = <Roleplays key={route.startId ?? 'all'} startId={route.startId} onExit={back} onAiCall={(script) => go({ name: 'call', script })} onTutor={() => go({ name: 'tutor' })} />;
       break;
     case 'tutor':
       body = <Tutor onExit={back} onSettings={() => go({ name: 'settings', section: 'online' })} />;

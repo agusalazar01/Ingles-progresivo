@@ -55,7 +55,7 @@ export const EXPRESSIONS: ExpressionGroup[] = [
     situations: [
       ['Después de un turno de 12 horas, un compañero te pregunta cómo estás.', 2, 'Entre compañeros, informal y fuerte: knackered.'],
       ['El médico te pregunta cómo te sentís últimamente.', 0, 'Con el médico, neutro y claro: tired.'],
-      ['Corriste una media maratón y apenas podés hablar.', 1, 'Cansancio extremo: exhausted.'],
+      ['Después de correr una media maratón, se lo contás a tu jefe.', 1, 'Cansancio extremo, en un registro neutro: exhausted.'],
     ],
   },
   {
@@ -65,7 +65,7 @@ export const EXPRESSIONS: ExpressionGroup[] = [
     ways: [
       { en: "Sorry, I didn't catch that.", es: 'Perdón, no te escuché / no lo agarré.', when: 'Cuando no oíste o no entendiste una palabra o frase. Muy natural.' },
       { en: 'Could you say that again, please?', es: '¿Podrías repetirlo, por favor?', when: 'Amable, sirve con cualquiera (jefe, banco, cliente).' },
-      { en: "I'm not following you.", es: 'No te estoy siguiendo.', when: 'Cuando la explicación se te perdió, no una palabra suelta.' },
+      { en: "I'm not following you.", es: 'No te sigo.', when: 'Cuando la explicación se te perdió, no una palabra suelta.' },
       { en: "It's all Greek to me.", es: 'No entiendo nada (es chino para mí).', when: 'Frase hecha, con humor: cuando algo te resulta totalmente incomprensible.' },
     ],
     situations: [
@@ -80,13 +80,13 @@ export const EXPRESSIONS: ExpressionGroup[] = [
     idea: 'Es fácil / no es tan fácil',
     ways: [
       { en: "It's a piece of cake.", es: 'Es pan comido.', when: 'Informal: algo muy fácil.' },
-      { en: "It's not rocket science.", es: 'No es nada del otro mundo.', when: 'Informal: para tranquilizar a alguien, «no es tan complicado».' },
+      { en: "It's not rocket science.", es: 'No es tan complicado.', when: 'Informal: para tranquilizar a alguien, «no es tan complicado».' },
       { en: "It's easier said than done.", es: 'Es fácil decirlo, pero hacerlo no.', when: 'Cuando alguien da un consejo que en la práctica cuesta.' },
       { en: 'Too easy!', es: '¡Fácil! / ¡Dale!', when: 'Muy australiano: para aceptar algo sin problema.' },
     ],
     situations: [
       ['Un amigo te dice «solo tenés que dejar de gastar plata» y vos sabés que no es tan simple.', 2, 'Fácil decirlo, difícil hacerlo.'],
-      ['Tu jefe te pide que cierres la caja y te parece facilísimo.', 3, 'Aceptar algo sin problema, en Australia: too easy.'],
+      ['Tu jefe te pide que cierres la caja y le contestás que sí, sin problema.', 3, 'Aceptar algo sin problema, en Australia: too easy.'],
       ['Un compañero nuevo tiene miedo de usar la máquina de lavar copas; le decís que es simple.', 1, 'Para tranquilizar: not rocket science.'],
     ],
   },
@@ -209,7 +209,7 @@ export const EXPRESSIONS: ExpressionGroup[] = [
     ways: [
       { en: "I'm not so sure about that.", es: 'No estoy tan seguro de eso.', when: 'Suave, para empezar a discrepar.' },
       { en: 'I see your point, but…', es: 'Entiendo tu punto, pero…', when: 'Reconocés lo del otro y das tu opinión.' },
-      { en: 'I beg to differ.', es: 'Permitime discrepar.', when: 'Formal, algo serio.' },
+      { en: 'I beg to differ.', es: 'Permitime discrepar.', when: 'Formal y tajante; con un superior puede sonar soberbio.' },
       { en: 'No way!', es: '¡Ni loco! / ¡Para nada!', when: 'Muy informal, con amigos. Con el jefe puede sonar grosero.' },
     ],
     situations: [
@@ -246,7 +246,7 @@ export const EXPRESSIONS: ExpressionGroup[] = [
     ],
     situations: [
       ['Tu jefe te pide que limpies una mesa y querés mostrar que lo hacés ya.', 0, 'En el trabajo, enseguida: right away.'],
-      ['Un compañero te pide un favor y le decís que no hay apuro con devolvértelo.', 3, 'No es urgente: no rush.'],
+      ['Un compañero te pide prestado el cargador y le decís que no hay apuro para devolvértelo.', 3, 'No es urgente: no rush.'],
       ['Tu amigo te llama desde abajo y le decís que ya bajás.', 1, 'Informal, ahora voy: in a sec.'],
     ],
   },
@@ -257,7 +257,7 @@ export const EXPRESSIONS: ExpressionGroup[] = [
     ways: [
       { en: 'We hit it off.', es: 'Congeniamos enseguida.', when: 'Cuando con alguien hubo onda desde el principio.' },
       { en: 'I get on well with my boss.', form: 'I get on well with…', es: 'Me llevo bien con mi jefe.', when: 'Relación buena y estable (también get along with).' },
-      { en: 'Let me break the ice.', es: 'Dejame romper el hielo.', when: 'Empezar a charlar en un grupo o situación incómoda.' },
+      { en: 'Just to break the ice, …', es: 'Para romper el hielo, …', when: 'Empezar a charlar en un grupo o situación incómoda.' },
       { en: "We're on the same page.", es: 'Estamos en la misma sintonía.', when: 'Cuando pensás igual que el otro sobre un plan o trabajo.' },
     ],
     situations: [
@@ -319,7 +319,7 @@ export const EXPRESSIONS: ExpressionGroup[] = [
     level: 'B1',
     idea: 'Ahora sí entendí',
     ways: [
-      { en: 'Now I get it.', es: 'Ahora entiendo.', when: 'Neutro e informal.' },
+      { en: 'Now I get it.', es: 'Ahora entiendo.', when: 'Informal.' },
       { en: 'It finally clicked.', es: 'Por fin me cayó la ficha.', when: 'Cuando algo que no entendías de repente tiene sentido.' },
       { en: 'That makes sense.', es: 'Tiene sentido.', when: 'Cuando la explicación te cierra.' },
       { en: 'Got it.', es: 'Entendido.', when: 'Muy corto, para confirmar una instrucción.' },

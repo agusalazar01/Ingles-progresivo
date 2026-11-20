@@ -25,12 +25,12 @@ const TIMES: Record<Tense, [string, string][]> = {
   pastSimple: [['yesterday', 'ayer'], ['last week', 'la semana pasada'], ['two days ago', 'hace dos días'], ['in 2019', 'en 2019']],
   pastCont: [['at 8 last night', 'anoche a las 8'], ['all afternoon', 'toda la tarde']],
   will: [['tomorrow', 'mañana'], ['next week', 'la semana que viene'], ['later', 'más tarde'], ['this arvo', 'esta tarde']],
-  goingTo: [['tomorrow', 'mañana'], ['next week', 'la semana que viene'], ['next year', 'el año que viene']],
+  goingTo: [['tomorrow', 'mañana'], ['next week', 'la semana que viene'], ['this weekend', 'este fin de semana']],
   presPerf: [['many times', 'muchas veces'], ['twice', 'dos veces'], ['this week', 'esta semana']],
   presPerfCont: [['for two hours', 'durante dos horas'], ['since this morning', 'desde esta mañana'], ['all day', 'todo el día']],
-  pastPerf: [['before the party', 'antes de la fiesta'], ['before 2020', 'antes de 2020']],
-  futPerf: [['by Friday', 'para el viernes'], ['by next year', 'para el año que viene']],
-  futCont: [['at this time tomorrow', 'mañana a esta hora'], ['at eight tonight', 'esta noche a las ocho'], ['tomorrow morning', 'mañana de mañana']],
+  pastPerf: [['before the party', 'antes de la fiesta'], ['before you arrived', 'antes de que llegaras'], ['by the time we got there', 'para cuando llegamos']],
+  futPerf: [['by Friday', 'para el viernes'], ['by tonight', 'para esta noche']],
+  futCont: [['at this time tomorrow', 'mañana a esta hora'], ['at eight tonight', 'esta noche a las ocho']],
   pastPerfCont: [['for two hours before the meeting', 'durante dos horas antes de la reunión'], ['for a while when you called', 'durante un rato cuando llamaste'], ['all morning before lunch', 'toda la mañana antes del almuerzo']],
   futPerfCont: [['for two hours by then', 'durante dos horas para entonces'], ['for three hours by midday', 'durante tres horas para el mediodía']],
   can: [['', '']],
@@ -47,8 +47,21 @@ function verbOk(v: Verb, t: Tense): boolean {
   if (t === 'futPerf' && !ACCOMPLISH.includes(v.id)) return false;
   if (t === 'presSimple' && v.rare) return false;
   if (t === 'can' && (v.rare || v.punctual)) return false;
+  // Querer o saber no van con can ni con los modales en pasado; en perfecto, solo con un tiempo que lo justifique.
+  if (['want', 'know'].includes(v.id) && ['can', 'shouldHave', 'couldHave', 'presPerf', 'pastPerf'].includes(t)) return false;
+  // Compras grandes o cosas de una vez: no son una costumbre ni algo que dure horas.
+  if (RARE_IDS.includes(v.id) && (t === 'presSimple' || PERF_CONT.includes(t))) return false;
+  if (BRIEF_IDS.includes(v.id) && PERF_CONT.includes(t)) return false;
   return true;
 }
+
+const PERF_CONT: Tense[] = ['presPerfCont', 'pastPerfCont', 'futPerfCont'];
+const RARE_IDS = ['get', 'buy', 'sell', 'rent', 'build', 'choose'];
+const BRIEF_IDS = ['come', 'bring', 'give', 'go', 'leave', 'meet', 'pay', 'feed', 'say'];
+/** Objetos que se hacen una vez (una foto, un pasaje, una torta): no van como costumbre ni con duración. */
+const ONCE_RX = /\b(a ticket|a mistake|a photo|the car|a cake|a new job|a job|a visa|a house|the book|the report|a letter|an email|the course|the project|a new course|a deck|a new shed|the exam|the test|the lottery|the match|a second-hand ute|a car|a new phone|a room|the house|a glass of wine|a bottle of wine)\b/;
+const HABIT_TIMES = ['every day', 'every week', 'on Sundays'];
+const LONG_TIMES = ['all afternoon', 'all day', 'for two hours', 'since this morning', 'all morning before lunch', 'for two hours before the meeting', 'for two hours by then', 'for three hours by midday', 'for a while when you called'];
 
 interface Pick {
   t: Tense;
@@ -63,30 +76,93 @@ function pickParts(tenses: Tense[], r: Rng, pols: Pol[] = ['aff', 'aff', 'neg', 
   const okTenses = only ? tenses.filter((t) => verbOk(VERBS.find((x) => x.id === only)!, t)) : tenses;
   const t = pick(okTenses.length ? okTenses : tenses, r);
   const v = only ? VERBS.find((x) => x.id === only)! : pick(VERBS.filter((x) => verbOk(x, t)), r);
-  const s = pick(SUBJECTS, r);
-  const c = pick(v.comps, r);
-  let time = pick(TIMES[t], r);
+  const comps = v.comps.filter((x) => !(ONCE_RX.test(x.en) && (t === 'presSimple' || PERF_CONT.includes(t))));
+  const c = pick(comps.length ? comps : v.comps, r);
+  // «We» con «my car» no cierra: si el objeto dice my, el sujeto no es we.
+  const subs = /\bmy\b/.test(c.en) ? SUBJECTS.filter((x) => x.en !== 'we') : SUBJECTS;
+  const pol = pick(pols, r);
+  let s = pick(subs, r);
+  // Preguntas sobre uno mismo («¿Gasté…?») suenan raras: en pregunta, otro sujeto.
+  for (let i = 0; i < 5 && pol === 'q' && (s.en === 'I' || s.en === 'we'); i++) s = pick(subs, r);
+  const once = ONCE_RX.test(c.en);
+  const okTimes = TIMES[t].filter(([en]) => {
+    if (once && (HABIT_TIMES.includes(en) || LONG_TIMES.includes(en))) return false;
+    if (['live', 'earn', 'have'].includes(v.id) && ['two days ago', 'this arvo', 'yesterday', 'all afternoon'].includes(en)) return false;
+    if (pol === 'neg' && ['twice', 'many times'].includes(en)) return false;
+    return true;
+  });
+  let time = okTimes.length ? pick(okTimes, r) : pick(TIMES[t], r);
   if (v.stative && ['presSimple', 'presPerf', 'pastPerf', 'futPerf'].includes(t)) time = ['', ''];
-  return { t, s, v, c, time, pol: pick(pols, r) };
+  if (v.stative && t === 'pastSimple' && ['live', 'have'].includes(v.id)) time = ['in 2019', 'en 2019'];
+  return { t, s, v, c, time, pol };
 }
 
 const tail = (p: Pick) => [p.c.en, p.time[0]].filter(Boolean).join(' ');
 const tailEs = (p: Pick) => [p.c.es, p.time[1]].filter(Boolean).join(' ');
 const en = (p: Pick, pol: Pol = p.pol, t: Tense = p.t) => sentenceEn(t, p.s, p.v, pol, tail(p));
-const es = (p: Pick, pol: Pol = p.pol, t: Tense = p.t) => sentenceEs(t, p.s, p.c.esVerb ?? p.v.es, pol, tailEs(p));
+/** Objeto indirecto en español: «le doy…», «les cuento…». */
+const IO_VERBS = ['give', 'tell', 'send', 'lend', 'ask', 'borrow', 'show'];
+const cliticOf = (p: Pick) => {
+  if (!IO_VERBS.includes(p.v.id)) return '';
+  const m = p.c.es.match(/(?:^|\s)(?:a|al) (mis|los|las|sus)?\b/);
+  return m ? (m[1] ? 'les' : 'le') : '';
+};
+const es = (p: Pick, pol: Pol = p.pol, t: Tense = p.t) => sentenceEs(t, p.s, p.c.esVerb ?? p.v.es, pol, tailEs(p), cliticOf(p));
 
-/** Errores verosímiles para el ejercicio de reconocer (incluye los típicos del español). */
+/**
+ * Opciones falsas para reconocer el tiempo: errores de FORMA dentro del mismo tiempo (concordancia, auxiliar,
+ * participio, falta de be, «will to»…). No se ofrecen otros tiempos que también podrían ir con la frase
+ * (danced / dances «on Sundays»): así hay una sola respuesta correcta. Solo si faltan opciones se usa un tiempo
+ * que choca con la pista (pasado con «tomorrow», futuro con «yesterday»).
+ */
 function distractors(p: Pick, correct: string): string[] {
+  const pol: Exclude<Pol, 'q'> = p.pol === 'neg' ? 'neg' : 'aff';
+  const v = p.v;
   const alt = new Set<string>();
-  const other: Tense[] = ['presSimple', 'pastSimple', 'presPerf', 'presCont', 'will', 'pastCont', 'pastPerf'];
-  for (const t of other) if (t !== p.t && verbOk(p.v, t)) alt.add(verbPhrase(t, p.s, p.v, p.pol === 'neg' ? 'neg' : 'aff'));
-  // concordancia y "didn't worked"
-  if (p.t === 'presSimple') alt.add(p.s.third ? p.v.base : third(p.v.base));
-  if (p.pol === 'neg' && p.t === 'pastSimple') alt.add(`didn't ${p.v.past}`);
-  if (p.pol === 'neg' && p.t === 'presSimple') alt.add(`${p.s.third ? "doesn't" : "don't"} ${third(p.v.base)}`);
-  if (p.t === 'presPerf') alt.add(`${p.s.third ? 'has' : 'have'} ${p.v.past === p.v.pp ? p.v.base : p.v.past}`);
+  const words = correct.split(' ');
+  const last = words[words.length - 1];
+  const ing = verbPhrase('presCont', p.s, v, 'aff').split(' ').slice(1).join(' ');
+  const forms = [v.base, third(v.base), v.past, v.pp, ing];
+  // Cambiar la forma del verbo principal (para verbos de más de una palabra, como «pick up», se cambia la frase).
+  const mainForms = forms.filter((f) => correct.endsWith(` ${f}`) || correct === f);
+  const main = mainForms.sort((a, b) => b.length - a.length)[0] ?? last;
+  const before = correct.slice(0, correct.length - main.length).trim();
+  const isHave = /\b(have|has|had|haven't|hasn't|hadn't)$/.test(before);
+  const isBe = /\b(am|is|are|was|were|be|been|isn't|aren't|wasn't|weren't|am not)$/.test(before);
+  const isModal = /\b(do|does|did|don't|doesn't|didn't|will|won't|can|can't|should|could|to)$/.test(before);
+  let wrongForms: string[] = [];
+  if (isHave) wrongForms = [v.base, v.past !== v.pp ? v.past : third(v.base), ing];
+  else if (isBe) wrongForms = [v.base, third(v.base)];
+  else if (isModal) wrongForms = [third(v.base), v.past !== v.base ? v.past : ing, ing];
+  else if (p.t === 'presSimple') wrongForms = [p.s.third ? v.base : third(v.base)];
+  if (p.t === 'presSimple' && pol === 'aff') alt.add(`${p.s.en === 'I' ? 'am' : p.s.third ? 'is' : 'are'} ${v.base}`);
+  else if (p.t === 'pastSimple') wrongForms = [v.base, third(v.base)];
+  for (const f of wrongForms) if (f !== main) alt.add(before ? `${before} ${f}` : f);
+  // Auxiliar equivocado
+  const swaps: [RegExp, string][] = [
+    [/^am\b/, 'is'], [/^is\b/, 'are'], [/^are\b/, 'is'], [/^was\b/, 'were'], [/^were\b/, 'was'],
+    [/^isn't\b/, "aren't"], [/^aren't\b/, "isn't"], [/^wasn't\b/, "weren't"], [/^weren't\b/, "wasn't"], [/^am not\b/, "isn't"],
+    [/^has\b/, 'have'], [/^have\b/, 'has'], [/^hasn't\b/, "haven't"], [/^haven't\b/, "hasn't"],
+    [/^does\b/, 'do'], [/^doesn't\b/, "don't"], [/^don't\b/, "doesn't"],
+  ];
+  for (const [rx, to] of swaps) if (rx.test(correct)) { alt.add(correct.replace(rx, to)); break; }
+  // Falta be (presente continuo, going to, pasado continuo)
+  if (['presCont', 'goingTo', 'pastCont'].includes(p.t) && pol === 'aff') alt.add(correct.split(' ').slice(1).join(' '));
+  if (p.t === 'will' || p.t === 'can') alt.add(`${words[0]} to ${v.base}`);
+  if (p.t === 'shouldHave' || p.t === 'couldHave') alt.add(`${words[0]} of ${v.pp}`);
+  if (p.t === 'pastSimple' && pol === 'neg') alt.add(`didn't ${v.past}`);
   alt.delete(correct);
-  return [...alt];
+  const out = [...alt].filter((x) => x && normalize(x) !== normalize(correct));
+  // Si faltan, un tiempo que choca con la pista.
+  const time = p.time[0];
+  const pastCue = /yesterday|ago|last|in 2019|before 2020/.test(time);
+  const futCue = /tomorrow|next|later|tonight|by |this weekend/.test(time);
+  const nowCue = /^(now|at the moment)$/.test(time);
+  if (out.length < 2) {
+    if (pastCue) out.push(verbPhrase('will', p.s, v, pol));
+    else if (futCue || nowCue) out.push(verbPhrase('pastSimple', p.s, v, pol));
+  }
+  return [...new Set(out)];
 }
 
 export interface GenItem {
@@ -213,6 +289,8 @@ function tenseWrong(p: Pick, pol: Exclude<Pol, 'q'>): Record<string, string> {
   const others: Tense[] = ['presSimple', 'presCont', 'pastSimple', 'pastCont', 'will', 'goingTo', 'presPerf', 'presPerfCont', 'pastPerf', 'futPerf', 'futCont', 'pastPerfCont', 'futPerfCont'];
   for (const t of others) {
     if (t === p.t) continue;
+    // will y going to valen los dos para el futuro: no se marcan como error.
+    if ((p.t === 'will' && t === 'goingTo') || (p.t === 'goingTo' && t === 'will')) continue;
     const cue = p.time[0] ? ` Acá «${p.time[0]}» pide ${TENSE_LABEL[p.t]}.` : ` Acá va ${TENSE_LABEL[p.t]}.`;
     add(verbPhrase(t, p.s, p.v, pol), `Eso es ${TENSE_LABEL[t]}, que se usa cuando ${USE[t]}.${cue}`);
   }
@@ -239,9 +317,14 @@ function tensePattern(tenses: Tense[], pattern: Pattern, r: Rng, fromTense?: Ten
       const correct = verbPhrase(p.t, p.s, p.v, pol);
       const opts = shuffle([correct, ...shuffle(distractors({ ...p, pol }, correct), r).slice(0, 2)], r);
       const sentence = `${p.s.en === 'I' ? 'I' : p.s.en.charAt(0).toUpperCase() + p.s.en.slice(1)} ___ ${tail(p)}.`;
+      const wrong = tenseWrong(p, pol);
+      for (const o of opts) {
+        const k = normalize(o);
+        if (o !== correct && !wrong[k]) wrong[k] = `Esa forma no va: en ${label} es «${correct}» (${formWhy(p.t, p.s, p.v, pol)}).`;
+      }
       return {
         sig,
-        exercise: { kind: 'choice', prompt: sentence, options: opts, answer: opts.indexOf(correct), explain: `${label}: ${en({ ...p, pol })}`, why: tenseWhy(p, pol), wrong: tenseWrong(p, pol) },
+        exercise: { kind: 'choice', prompt: sentence, options: opts, answer: opts.indexOf(correct), context: es({ ...p, pol }), explain: `${label}: ${en({ ...p, pol })}`, why: tenseWhy(p, pol), wrong },
       };
     }
     case 'complete': {
@@ -253,7 +336,7 @@ function tensePattern(tenses: Tense[], pattern: Pattern, r: Rng, fromTense?: Ten
         exercise: {
           kind: 'type',
           prompt: `${subj} ___ ${cue} ${tail(p)}.`.replace(/\s+\./, '.'),
-          answers: [verbPhrase(p.t, p.s, p.v, pol)],
+          answers: [verbPhrase(p.t, p.s, p.v, pol), ...(p.t === 'will' ? [verbPhrase('goingTo', p.s, p.v, pol)] : p.t === 'goingTo' ? [verbPhrase('will', p.s, p.v, pol)] : [])],
           context: es({ ...p, pol }),
           hint: `Mirá la pista de tiempo: va en ${label}.`,
           explain: en({ ...p, pol }),
@@ -322,14 +405,14 @@ interface CondPair {
 }
 const S = (en: string) => SUBJECTS.findIndex((x) => x.en === en);
 const PAIRS: CondPair[] = [
-  { ifS: S('she'), ifV: 'study', ifC: 2, resS: S('she'), resV: 'pass', resC: 0 },
+  { ifS: S('she'), ifV: 'study', ifC: 2, resS: S('she'), resV: 'pass', resC: null },
   { ifS: S('I'), ifV: 'have', ifC: 1, resS: S('I'), resV: 'buy', resC: 0 },
   { ifS: S('we'), ifV: 'win', ifC: 1, resS: S('we'), resV: 'travel', resC: 2 },
   { ifS: S('they'), ifV: 'sell', ifC: 0, resS: S('they'), resV: 'buy', resC: 0 },
   { ifS: S('he'), ifV: 'find', ifC: 0, resS: S('he'), resV: 'live', resC: 1 },
   { ifS: S('Ana'), ifV: 'finish', ifC: 0, resS: S('Ana'), resV: 'go', resC: 1 },
   { ifS: S('I'), ifV: 'know', ifC: 0, resS: S('I'), resV: 'help', resC: 0 },
-  { ifS: S('we'), ifV: 'lose', ifC: 0, resS: S('we'), resV: 'call', resC: 0 },
+  { ifS: S('I'), ifV: 'lose', ifC: 0, resS: S('I'), resV: 'call', resC: 0 },
   { ifS: S('you'), ifV: 'drink', ifC: 0, resS: S('you'), resV: 'sleep', resC: null, resNeg: true },
   { ifS: S('my parents'), ifV: 'sell', ifC: 0, resS: S('my parents'), resV: 'live', resC: 1 },
 ];
@@ -487,6 +570,24 @@ function clozeWrong(unitId: string, c: Cloze): Record<string, string> {
   return out;
 }
 
+/** Otras respuestas igual de correctas para completar (which ↔ that, although ↔ even though, I love working ↔ to work…). */
+function clozeOk(unitId: string, c: Cloze): string[] {
+  const t = target(c);
+  const l = t.toLowerCase();
+  const cap = (x: string) => (t.charAt(0) === t.charAt(0).toUpperCase() ? x.charAt(0).toUpperCase() + x.slice(1) : x);
+  const alts = c.alt.map((a) => a.toLowerCase());
+  const out = [...(c.ok ?? [])];
+  if (l === 'which' && !alts.includes('that')) out.push('that');
+  if (l === 'who' && !alts.includes('that')) out.push('that');
+  if (l === 'that' && /\b(the|a)\s+(phone|book|car|ute|pizza|museum|mate|café|house|job|film|movie)\b/i.test(c.s) && !alts.includes('which')) out.push('which');
+  if (['although', 'even though', 'though'].includes(l)) out.push(...['although', 'even though', 'though'].filter((x) => x !== l && !alts.includes(x)).map(cap));
+  if (l === 'as soon as' && !alts.includes('once')) out.push(cap('once'));
+  if (unitId === 'gerund-inf' && /^(love|like|hate|prefer)\b/i.test(c.s.split('{')[0].trim().split(' ').pop() ?? '') && /ing$/.test(l)) {
+    out.push(`to ${l.replace(/ing$/, '')}`, `to ${l.replace(/ing$/, 'e')}`, `to ${l.replace(/(.)\1ing$/, '$1')}`);
+  }
+  return [...new Set(out)];
+}
+
 function clozePattern(unitId: string, pattern: Pattern, r: Rng): GenItem | null {
   const bank = CLOZE[unitId];
   const pool = pattern === 'transform' ? bank.filter((x) => x.tr) : bank;
@@ -505,7 +606,7 @@ function clozePattern(unitId: string, pattern: Pattern, r: Rng): GenItem | null 
         exercise: {
           kind: 'type',
           prompt: `${fill(item, '___')}${item.cue ? ` (${item.cue})` : ''}`,
-          answers: [t],
+          answers: [t, ...clozeOk(unitId, item)],
           hint: 'Fijate en la oración en español: te dice qué va en el espacio.',
           explain: full(item),
           context: item.es,

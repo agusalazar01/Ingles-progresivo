@@ -73,7 +73,7 @@ export const WRITING: WritingLesson[] = [
     combine: [
       { parts: 'My name is Ana. I am from Chile.', task: 'Unilas con and.', answers: ['My name is Ana and I am from Chile.', 'My name is Ana and I am Chilean.'] },
       { parts: 'I have a cat. She is black.', task: 'Una sola oración, sin and.', answers: ['I have a black cat.'] },
-      { parts: 'I live in a flat. It is near the station.', task: 'Una sola oración.', answers: ['I live in a flat near the station.'] },
+      { parts: 'I live in a flat. It is near the station.', task: 'Una sola oración.', answers: ['I live in a flat near the station.', 'I live in a flat that is near the station.', 'I live in a flat which is near the station.'] },
     ],
     prompts: ['Presentate: nombre, de dónde sos y dónde vivís.', 'Presentá a tu mascota o a un animal que te guste.', 'Presentá a tu mejor amigo o amiga.'],
     frames: ['My name is…', 'I am from…', 'I live in…', 'I have…'],
@@ -141,10 +141,10 @@ export const WRITING: WritingLesson[] = [
       title: 'Summer and winter',
       es: 'A Lucas le gusta el verano y no le gusta el invierno, y dice por qué.',
       parts: [
-        { role: 'open', text: 'I like the summer because the days are long.' },
+        { role: 'open', text: 'I like summer because the days are long.' },
         { role: 'example', text: 'I go to the beach with my friends.' },
-        { role: 'turn', text: 'I don’t like the winter.' },
-        { role: 'example', text: 'It is cold and dark.' },
+        { role: 'turn', text: 'I don’t like winter.' },
+        { role: 'example', text: 'It is cold and dark, so I stay at home.' },
       ],
     },
     tip: 'Una opinión necesita una razón: I like… because… Después, la otra cara: I don’t like…',
@@ -223,7 +223,7 @@ export const WRITING: WritingLesson[] = [
       es: 'Lucas describe su ciudad: el río, las termas, la gente, la comida y el problema del trabajo.',
       parts: [
         { role: 'open', text: 'I live in Salto, a city in the north of Uruguay. It is not very big, but it has everything I need.' },
-        { role: 'body', text: 'There is a long river and a nice park next to it. In summer, people go to the hot springs near the city.' },
+        { role: 'body', text: 'There is a long river and a nice park next to it. In winter, people go to the hot springs near the city.' },
         { role: 'example', text: 'The streets are quiet and the people are friendly. I also like the food here, especially the asado on Sundays.' },
         { role: 'turn', text: 'The only problem is that there aren’t many jobs, so some young people move to Montevideo.' },
       ],
@@ -329,7 +329,7 @@ export const WRITING: WritingLesson[] = [
       es: 'Las redes son útiles para hablar con la familia lejos, pero Lucas cree que las usamos demasiado.',
       parts: [
         { role: 'open', text: 'Social media is useful, but I think we use it too much.' },
-        { role: 'body', text: 'I use Instagram every day to talk to my friends and see their photos. That is good because my family lives far away.' },
+        { role: 'body', text: 'I use Instagram every day to talk to my family and friends and see their photos. That is good because my family lives far away.' },
         { role: 'turn', text: 'But I often spend two hours on my phone at night, and then I can’t sleep. Some people only show the good parts of their life, so we feel bad about ours.' },
         { role: 'close', text: 'In my opinion, social media is fine for thirty minutes a day, but not more.' },
       ],
@@ -356,7 +356,7 @@ export const WRITING: WritingLesson[] = [
       parts: [
         { role: 'greet', text: 'Hi Mia,' },
         { role: 'open', text: 'How are you? I’m writing because it’s my birthday next Saturday and I’m having a small party at my place.' },
-        { role: 'body', text: 'We’re going to have a barbecue in the garden, and then we can watch the football. It starts at 7 pm.' },
+        { role: 'body', text: 'We’re going to have a barbecue in the garden, and then we can watch the football. The party starts at 7 pm.' },
         { role: 'example', text: 'You don’t need to bring anything, but if you want, you can bring something to drink.' },
         { role: 'close', text: 'Can you come? Let me know by Thursday, please.' },
         { role: 'sign', text: 'See you soon, Lucas' },
@@ -483,7 +483,7 @@ export const WRITING: WritingLesson[] = [
     level: 'B1',
     genre: 'opinion',
     title: '¿Trabajar desde casa?',
-    goal: 'Opinar con ventajas, desventajas y tu conclusión, en tres párrafos.',
+    goal: 'Opinar con ventajas, desventajas y tu conclusión, en cuatro párrafos.',
     words: 150,
     model: {
       title: 'Working from home',
@@ -577,7 +577,7 @@ export const WRITING: WritingLesson[] = [
     },
     tip: 'Compará por temas (plata, tranquilidad), no una opción entera y después la otra. While y however marcan el contraste. Cerrá eligiendo (Overall, I prefer…).',
     combine: [
-      { parts: 'Alone I spent half my salary on rent. Now I spend a third.', task: 'Unilas con while.', answers: ['Alone I spent half my salary on rent, while now I spend a third.', 'Alone I spent half my salary on rent while now I spend a third.'] },
+      { parts: 'When I lived alone, I spent half my salary on rent. Now I spend a third.', task: 'Unilas con while.', answers: ['When I lived alone, I spent half my salary on rent, while now I spend a third.', 'When I lived alone, I spent half my salary on rent while now I spend a third.'] },
       { parts: 'Sharing is cheaper. It is less lonely.', task: 'Una oración con and.', answers: ['Sharing is cheaper and less lonely.'] },
       { parts: 'There is always noise. It is worse at weekends.', task: 'Una oración con especially.', answers: ['There is always noise, especially at weekends.', 'There is always noise, especially on weekends.', 'There is always noise, especially on the weekend.', 'There is always noise, especially at the weekend.'] },
     ],
@@ -606,7 +606,7 @@ export const WRITING: WritingLesson[] = [
     tip: 'Arrancá con un gancho (What makes it special is…). Detalles concretos de los sentidos. Reconocé un punto débil (Admittedly,…) y cerrá con un consejo práctico.',
     combine: [
       { parts: 'Most houses have no electricity. At night the village is lit by candles.', task: 'Una oración con which means that.', answers: ['Most houses have no electricity, which means that at night the village is lit by candles.', 'Most houses have no electricity, which means at night the village is lit by candles.'] },
-      { parts: 'It is not special because of what it has. It is special because of what it doesn’t have.', task: 'Una oración con not…, but…', answers: ['It is special not because of what it has, but because of what it doesn’t have.', 'It is special not because of what it has but because of what it doesn’t have.'] },
+      { parts: 'It is not special because of what it has. It is special because of what it doesn’t have.', task: 'Una oración con not…, but…', answers: ['It is special not because of what it has, but because of what it doesn’t have.', 'It is special not because of what it has but because of what it doesn’t have.', 'What makes it special is not what it has, but what it doesn’t have.'] },
       { parts: 'Go in March. The crowds have left then.', task: 'Una oración con when.', answers: ['Go in March, when the crowds have left.', 'Go in March when the crowds have left.'] },
     ],
     prompts: ['Recomendá un lugar de tu país a un turista.', 'Describí un lugar al que te gustaría volver y por qué.', 'Recomendá un bar, restaurante o café que te guste.'],
@@ -729,7 +729,7 @@ export const WRITING: WritingLesson[] = [
       parts: [
         { role: 'greet', text: 'Dear Ms Taylor,' },
         { role: 'open', text: 'I am writing to complain about the apartment I booked through your agency for the week of 3–10 February (booking number 48213). Unfortunately, it was very different from the description on your website.' },
-        { role: 'body', text: 'Firstly, the advertisement promised a sea view, but the only window faced a car park. Secondly, the air conditioning did not work, and despite calling your office three times, nobody came to repair it. As a result, we could hardly sleep during a week of temperatures above 35 degrees.' },
+        { role: 'body', text: 'Firstly, the advertisement promised a sea view, but the only window faced a car park. Secondly, the air conditioning did not work, and although I called your office three times, nobody came to repair it. As a result, we could hardly sleep during a week of temperatures above 35 degrees.' },
         { role: 'example', text: 'I have attached photos of the window and of the broken air conditioner, as well as screenshots of the original advertisement, so that you can compare them. I have also included the times of my three phone calls to your office, when I was promised that a technician would come the same day.' },
         { role: 'close', text: 'Considering the problems described above, I would like to request a refund of fifty per cent of the total price. I would appreciate it if you could reply within fourteen days. If I do not hear from you, I will have to contact the consumer protection office.' },
         { role: 'sign', text: 'Yours sincerely, Lucas Pereira' },
@@ -737,7 +737,7 @@ export const WRITING: WritingLesson[] = [
     },
     tip: 'Motivo y datos (fecha, número) → los problemas en orden (Firstly, Secondly) y su consecuencia (As a result) → pruebas → qué pedís, con plazo → Yours sincerely. Firme, nunca grosero.',
     combine: [
-      { parts: 'I called three times. Nobody came.', task: 'Una oración con despite calling.', answers: ['Despite calling three times, nobody came.', 'Nobody came despite calling three times.', 'Nobody came, despite my calling three times.', 'Despite my calling three times, nobody came.'] },
+      { parts: 'I called three times. Nobody came.', task: 'Una oración con although.', answers: ['Although I called three times, nobody came.', 'Nobody came, although I called three times.', 'Nobody came although I called three times.'] },
       { parts: 'Could you reply within fourteen days?', task: 'Más formal: I would appreciate it if…', answers: ['I would appreciate it if you could reply within fourteen days.', 'I would appreciate it if you could reply within 14 days.'] },
       { parts: 'I have attached photos. You can compare them.', task: 'Una oración con so that.', answers: ['I have attached photos so that you can compare them.', 'I have attached photos, so that you can compare them.'] },
     ],

@@ -60,20 +60,20 @@ call('to-be', 'Conociendo a Oliver', 'Primera llamada', 'Presentate con to be: n
   o("G'day! I'm Oliver. I'm from Adelaide. What's your name?"),
   u("I'm Agustín.", [b(['i am|my name is|name is|it is|i m'], 'Nice to meet you!', 'Usaste bien «I am» / «My name is».')], 'Para decir tu nombre: «I am …» o «My name is …».'),
   o('Where are you from?'),
-  u("I'm from Uruguay.", [b(['from'], 'Uruguay! Awesome. I love asado.', 'Bien: «I am from …».')], 'Para decir de dónde sos: «I am from Uruguay».'),
+  u("I'm from Uruguay.", [b(['from'], "Nice! I'd love to go there one day.", 'Bien: «I am from …».')], 'Para decir de dónde sos: «I am from Uruguay».'),
   o("How old are you, if you don't mind me asking?"),
-  u("I'm 27 years old.", [b(['am|is|i m', '[0-9]|twenty|thirty|forty|nineteen|eighteen|years'], 'Too easy.', 'Bien: la edad va con to be (I am 27), no con have.')], 'La edad va con to be: «I am 27» (no «I have 27»).'),
+  u("I'm 27 years old.", [b(['am|is|i m', '[0-9]|twenty|thirty|forty|nineteen|eighteen|years'], 'Nice.', 'Bien: la edad va con to be (I am 27), no con have.')], 'La edad va con to be: «I am 27» (no «I have 27»).'),
   o('And how are you today?'),
-  u("I'm good, thanks. And you?", [b(['am|good|great|fine|well|tired|not bad|okay|ok'], "I'm good too, cheers.", 'Bien: «I am good / tired».')], 'Para decir cómo estás: «I am good, thanks» o «I am a bit tired».'),
+  u("I'm good, thanks. And you?", [b(['am|good|great|fine|well|tired|not bad|okay|ok'], "Cheers. I'm good, thanks.", 'Bien: «I am good / tired».')], 'Para decir cómo estás: «I am good, thanks» o «I am a bit tired».'),
 ]);
 
 call('to-be', 'En el hostel', 'Recepción de un hostel en Sydney', 'Contestá preguntas con is / are y negativas.', [
   o("Hi there, welcome to the hostel. Are you here for the night?"),
-  u("Yes, I am.", [b(['yes|yeah|yep|i am'], 'Beauty.', 'Bien: respuesta corta «Yes, I am».'), b(['no|not'], 'Ah, two nights then? No worries.', 'Bien: usaste la negativa.')], 'Respuesta corta: «Yes, I am» o «No, I am not».'),
+  u("Yes, I am.", [b(['no|not|nah'], 'Ah, two nights then? No worries.', 'Bien: usaste la negativa.'), b(['yes|yeah|yep|i am'], 'Beauty.', 'Bien: respuesta corta «Yes, I am».')], 'Respuesta corta: «Yes, I am» o «No, I am not».'),
   o('Is this your first time in Australia?'),
-  u('Yes, it is my first time here.', [b(['it is|yes|no|it s|first'], 'Exciting!', 'Bien: «Yes, it is».')], 'Con «Is this…?» se responde «Yes, it is» / «No, it is not».'),
+  u('Yes, it is my first time here.', [b(['it is|yes|no|it s|first'], 'Welcome!', 'Bien: «Yes, it is».')], 'Con «Is this…?» se responde «Yes, it is» / «No, it is not».'),
   o('Are you tired after the flight?'),
-  u("Yes, I'm very tired.", [b(['am|tired|not|yes|no'], "I reckon. The room is upstairs.", 'Bien: «I am (very) tired».')], 'Para contestar: «Yes, I am very tired» o «No, I am not tired».'),
+  u("Yes, I'm very tired.", [b(['am|tired|not|yes|no'], "Righto. The room is upstairs.", 'Bien: «I am (very) tired».')], 'Para contestar: «Yes, I am very tired» o «No, I am not tired».'),
   o('Your friends are in room twelve. Are they from Uruguay too?'),
   u('Yes, they are from Uruguay.', [b(['they are|they re|yes|no|from'], 'Good on ya.', 'Bien: con they va «are».')], 'Con they va are: «Yes, they are» / «They are from …».'),
 ]);
@@ -91,7 +91,7 @@ call('pronouns', 'La familia', 'Charla después del laburo', 'Hablá de tu famil
 
 call('pronouns', '¿De quién es?', 'Ordenando la casa compartida después de un asado', "Decí de quién es cada cosa: mine, yours, his, Ana's.", [
   o("Whose hat is this? Is it yours?"),
-  u("Yes, it's mine.", [b(['mine|my|yours|his|her|not'], 'Here you go.', 'Bien: usaste un posesivo.')], 'Para decir que es tuyo: «It is mine» o «It is my hat».'),
+  u("Yes, it's mine.", [b(['not|no'], 'Oh, whose is it then?', 'Bien: usaste la negativa.'), b(['mine|my|yours|his|her'], 'Here you go.', 'Bien: usaste un posesivo.')], 'Para decir que es tuyo: «It is mine» o «It is my hat».'),
   o('And this water bottle? Is it Jake\'s?'),
   u("No, it's not his. It's Ana's.", [b(['his|her|s|not|ana|jake'], 'Righto.', 'Bien: usaste his / \'s.')], "Para «de Ana»: «It is Ana's». Para «de él»: «It is his»."),
   o('Can you give me those sunnies, please?'),
@@ -113,16 +113,16 @@ call('articles-plurals', 'Los compañeros de trabajo', 'Primer día en un trabaj
   o('Are there any women in the team?'),
   u('Yes, there are three women.', [b(['women|woman|girls|no|yes'], 'Nice.', 'Bien: woman → women.')], 'Plural irregular: one woman, two women.'),
   o('Have you got children?'),
-  u("No, I haven't got children.", [b(['children|kids|child|no|yes'], 'Fair enough.', 'Bien: child → children.')], 'Plural irregular: one child, two children.'),
+  u("No, I haven't got children.", [b(['children|kids|child|no|yes'], 'Righto.', 'Bien: child → children.')], 'Plural irregular: one child, two children.'),
 ]);
 
 call('there-is', 'Tu barrio', 'Charla en el ute', 'Describí tu barrio con there is / there are.', [
   o("What's your neighbourhood like back home?"),
   u('There is a big park and there are some cafés.', [b(['there is|there are|there s'], 'Sounds good.', 'Bien: usaste there is / there are.')], 'Para «hay»: «There is a park», «There are some cafés».'),
   o('Is there a beach near your house?'),
-  u("Yes, there is. It's ten minutes away.", [b(['there is|there isn|yes|no|there s'], 'Lucky you.', 'Bien: «Yes, there is».')], 'Respuesta corta: «Yes, there is» / «No, there is not».'),
+  u("Yes, there is. It's ten minutes away.", [b(['there isn|no|not'], 'Ah well, there are other things to do.', 'Bien: «No, there is not».'), b(['there is|yes|there s'], 'Lucky you.', 'Bien: «Yes, there is».')], 'Respuesta corta: «Yes, there is» / «No, there is not».'),
   o('Are there any good restaurants?'),
-  u('Yes, there are a lot of parrillas.', [b(['there are|there aren|yes|no|lot'], "I'd love to try one.", 'Bien: con plural va «there are».')], 'Con plural: «There are a lot of restaurants».'),
+  u('Yes, there are a lot of parrillas.', [b(['there aren|no|not'], 'Fair enough.', 'Bien: «No, there are not».'), b(['there are|yes|lot'], "I'd love to try one.", 'Bien: con plural va «there are».')], 'Con plural: «There are a lot of restaurants».'),
 ]);
 
 call('there-is', 'La habitación del hostel', 'Te muestran tu cuarto', 'Preguntá qué hay con Is there…? / Are there…?', [
@@ -156,13 +156,13 @@ call('questions', 'Conociendo a alguien', 'En un asado (barbie) en la playa', 'H
 
 call('prep-time-place', 'Armando un plan', 'Combinando para salir', 'Usá in / on / at para horas, días y lugares.', [
   o("Let's catch up this week. Are you free on Friday?"),
-  u("Yes, I'm free on Friday.", [b(['on friday|on saturday|on sunday|on monday|on tuesday|on wednesday|on thursday|yes|no'], 'Ripper.', 'Bien: con días va «on».')], 'Con días va on: «on Friday».'),
+  u("Yes, I'm free on Friday.", [b(['on friday|on saturday|on sunday|on monday|on tuesday|on wednesday|on thursday|yes'], 'Ripper.', 'Bien: con días va «on».')], 'Con días va on: «on Friday».'),
   o('What time?'),
   u('At seven in the evening.', [b(['at'], "Seven's good.", 'Bien: con la hora va «at».')], 'Con la hora va at: «at seven».'),
   o('Where do you want to meet?'),
   u("Let's meet at the café on the corner.", [b(['at|in|on'], 'Perfect. See you there.', 'Bien: usaste una preposición de lugar.')], 'Lugar puntual: «at the café», «at the station».'),
   o('And when is your birthday, by the way?'),
-  u("It's in December, on the 26th.", [b(['in|on'], "A Christmas baby! We'll have a barbie.", 'Bien: in con meses, on con fechas.')], 'Mes con in: «in December»; fecha con on: «on the 26th».'),
+  u("It's in December, on the 26th.", [b(['in|on'], "Nice, we'll have a barbie.", 'Bien: in con meses, on con fechas.')], 'Mes con in: «in December»; fecha con on: «on the 26th».'),
 ]);
 
 call('prep-time-place', '¿Dónde está?', 'Buscando cosas en casa', 'Decí dónde están las cosas: in, on, under, next to.', [
@@ -182,7 +182,7 @@ call('pres-simple', 'Tu rutina', 'Charla en el descanso (smoko)', 'Contá tu rut
   o('What does your boss do in the morning?'),
   u('He checks his emails.', [b(['he|she', '-s'], 'Sounds about right.', 'Bien: con he/she el verbo lleva -s.')], 'Con he/she el verbo lleva -s: «He checks», «She works».'),
   o('Do you drink coffee or mate?'),
-  u('I drink mate every day.', [b(['i drink|i have|i love|i like|i prefer|i don'], 'Ha, typical Uruguayan!', 'Bien: «I drink mate every day».')], 'Algo que hacés siempre: «I drink mate every day».'),
+  u('I drink mate every day.', [b(['mate', 'i drink|i have|i love|i like|i prefer'], 'Ha, typical Uruguayan!', 'Bien: «I drink mate every day».'), b(['i drink|i have|i love|i like|i prefer|i don'], 'Fair enough.', 'Bien: presente simple para lo de todos los días.')], 'Algo que hacés siempre: «I drink mate every day».'),
   o("What don't you like about your job?"),
   u("I don't like the early mornings.", [b(['don t|do not|doesn t|does not|i hate|not'], 'Fair enough.', 'Bien: negativa con don\'t.')], 'Negativa: «I do not like …» (don\'t).'),
 ]);
@@ -191,7 +191,7 @@ call('pres-simple', 'El fin de semana', 'Charla en el ute', 'Contá qué hacés 
   o('What do you usually do on weekends?'),
   u('I usually play football with my friends.', [b(['i play|i go|i watch|i visit|i meet|i usually|i often|i sometimes|i stay'], 'Nice.', 'Bien: presente simple con un adverbio de frecuencia.')], 'Por ejemplo: «I usually play football».'),
   o('Does your brother play too?'),
-  u("No, he doesn't. He prefers basketball.", [b(['doesn t|does not|he plays|he prefers|he likes|yes he does|no he'], 'Each to their own.', 'Bien: respuesta con does / doesn\'t.')], 'Con he: «Yes, he does» / «No, he does not».'),
+  u("No, he doesn't. He prefers basketball.", [b(['doesn t|does not|he plays|he prefers|he likes|yes he does|no he'], 'Fair enough.', 'Bien: respuesta con does / doesn\'t.')], 'Con he: «Yes, he does» / «No, he does not».'),
   o('How often do you go to the beach?'),
   u('I go to the beach every summer.', [b(['every|always|often|sometimes|never|once|twice|usually'], "Here we go every arvo in summer.", 'Bien: usaste una expresión de frecuencia.')], 'Frecuencia: «every summer», «twice a week», «sometimes».'),
 ]);
@@ -200,9 +200,9 @@ call('pres-cont', '¿Qué estás haciendo?', 'Oliver te llama al celular', 'Cont
   o("Hey mate, what are you doing right now?"),
   u("I'm cooking dinner.", [b(['am|i m|are|is', '-ing'], 'Smells good from here!', 'Bien: am + verbo con -ing.')], 'Para algo de ahora: «I am cooking».'),
   o("What's the weather doing there?"),
-  u("It's raining.", [b(['is|it s', '-ing'], "Here it's sunny, sorry!", 'Bien: «It is raining».')], 'El clima ahora: «It is raining», «The sun is shining».'),
+  u("It's raining.", [b(['is|it s', '-ing'], "Here it's sunny.", 'Bien: «It is raining».')], 'El clima ahora: «It is raining», «The sun is shining».'),
   o('Are your friends watching the game?'),
-  u("Yes, they're watching it on TV.", [b(['are|they re|aren t|not', '-ing'], 'Who is winning?', 'Bien: «They are watching».')], 'Con they: «They are watching».'),
+  u("Yes, they're watching it on TV.", [b(['aren t|not', '-ing'], 'Fair enough.', 'Bien: «They are not watching».'), b(['are|they re', '-ing'], 'Who is winning?', 'Bien: «They are watching».')], 'Con they: «They are watching».'),
   o('What are you studying these days?'),
   u("I'm studying English for my trip.", [b(['am|i m', '-ing'], 'Good on ya.', 'Bien: presente continuo para algo de estos días.')], 'Algo de estos días: «I am studying English».'),
 ]);
@@ -218,9 +218,9 @@ call('pres-cont', 'Mirando por la ventana', 'Llamada mientras esperás el ómnib
 
 call('can', '¿Qué sabés hacer?', 'Entrevista para un trabajo de verano', 'Hablá de tus habilidades con can / can\'t.', [
   o('Can you drive a manual car?'),
-  u("No, I can't, but I can learn.", [b(['can|can t|can not'], "No worries, we'll teach you.", 'Bien: can / can\'t + verbo sin to.')], 'Con can el verbo va sin to: «I can drive», «I can not drive».'),
+  u("No, I can't, but I can learn.", [b(['can t|can not|cannot'], "No worries, we'll teach you.", 'Bien: can\'t + verbo sin to.'), b(['can'], 'Ripper, you can drive the ute.', 'Bien: can + verbo sin to.')], 'Con can el verbo va sin to: «I can drive», «I cannot drive» (I can\'t drive).'),
   o('Can you speak Spanish?'),
-  u('Yes, I can. It is my first language.', [b(['can|yes|of course'], "Ripper, we've got Spanish backpackers.", 'Bien: «Yes, I can».')], 'Respuesta corta: «Yes, I can» / «No, I can not».'),
+  u('Yes, I can. It is my first language.', [b(['can|yes|of course'], "Ripper, we've got Spanish backpackers.", 'Bien: «Yes, I can».')], 'Respuesta corta: «Yes, I can» / «No, I cannot» (No, I can\'t).'),
   o('What else can you do?'),
   u('I can cook and I can fix things.', [b(['i can'], 'Handy!', 'Bien: «I can cook».')], 'Habilidades: «I can cook», «I can fix things».'),
   o('Can you start next Monday?'),
@@ -228,7 +228,7 @@ call('can', '¿Qué sabés hacer?', 'Entrevista para un trabajo de verano', 'Hab
 ]);
 
 call('can', 'Pidiendo favores', 'En la casa compartida', 'Pedí y ofrecé ayuda con Can you…? / Can I…?', [
-  o("Mate, I'm making a barbie tonight."),
+  o("Mate, I'm having a barbie tonight."),
   u('Can I help you?', [b(['can i|can you|could i|could you'], 'Yeah, you can bring the snags.', 'Bien: ofreciste ayuda con «Can I…?».')], 'Para ofrecer ayuda: «Can I help you?».'),
   o('Can you pick up some ice on the way?'),
   u('Yes, I can. Can you send me the address?', [b(['can|yes|sure'], "I'll text it to you.", 'Bien.')], 'Para pedir algo: «Can you send me the address?».'),
@@ -251,7 +251,7 @@ call('vocab-daily', 'La rutina del trabajo nuevo', 'Te explican el día de traba
   o('We always start at seven. Do you usually wake up early?'),
   u('Yes, I always wake up early.', [b(['always|usually|often|sometimes|never|rarely'], 'Perfect for this job.', 'Bien: adverbio de frecuencia antes del verbo.')], 'El adverbio va antes del verbo: «I always wake up early».'),
   o('Do you ever take a nap after lunch?'),
-  u('No, I never take a nap.', [b(['never|sometimes|always|usually|rarely|no|yes'], 'Ha, me neither.', 'Bien.')], '«never» ya es negativo: «I never take a nap».'),
+  u('No, I never take a nap.', [b(['never|no'], 'Ha, me neither.', 'Bien.'), b(['sometimes|always|usually|rarely|yes'], 'Lucky you.', 'Bien.')], '«never» ya es negativo: «I never take a nap».'),
   o("We have smoko at ten. Do you drink tea or coffee?"),
   u('I usually have a coffee.', [b(['have|drink|coffee|tea|mate'], 'Flat white?', 'Bien: «have a coffee».')], 'Tomar algo: «have a coffee».'),
 ]);
@@ -262,9 +262,9 @@ call('past-simple', 'El fin de semana pasado', 'Lunes en el trabajo', 'Contá qu
   o('How was your weekend? What did you do?'),
   u('I went to the beach and played football.', [b(['went|played|visited|watched|had|saw|did|stayed|cooked|met|was'], 'Nice one.', 'Bien: verbos en pasado.')], 'En pasado: «I went to the beach», «I played football».'),
   o('Did you go out on Saturday night?'),
-  u("No, I didn't. I stayed home.", [b(['didn t|did not|went|yes|stayed|no'], 'Fair enough, big week.', 'Bien: didn\'t + verbo base.')], 'Negativa: «I did not go out» (didn\'t + verbo base).'),
+  u("No, I didn't. I stayed home.", [b(['didn t|did not|went|yes|stayed|no'], 'Fair enough.', 'Bien: didn\'t + verbo base.')], 'Negativa: «I did not go out» (didn\'t + verbo base).'),
   o('What did you eat?'),
-  u('I ate a chivito.', [b(['ate|had|cooked|made|ordered'], "I've got to try one.", 'Bien: eat → ate.')], 'Pasado irregular: eat → ate, have → had.'),
+  u('I ate a chivito.', [b(['ate|had|cooked|made|ordered'], 'Sounds tasty.', 'Bien: eat → ate.')], 'Pasado irregular: eat → ate, have → had.'),
   o('Where did you watch the game?'),
   u('I watched it at a pub.', [b(['watched|saw|didn t|did not'], 'Good stuff.', 'Bien: verbo regular con -ed.')], 'Regular: watch → watched.'),
 ]);
@@ -275,7 +275,7 @@ call('past-simple', 'Tu viaje', 'Contándole a Oliver cómo llegaste', 'Contá t
   o('How long did the flight take?'),
   u('It took about fifteen hours.', [b(['took|was|hours'], 'Wow.', 'Bien: take → took.')], 'Duración: «It took fifteen hours».'),
   o('Did you sleep on the plane?'),
-  u("No, I didn't sleep much.", [b(['didn t|did not|slept|yes|no'], "I can never sleep on planes either.", 'Bien.')], 'Negativa: «I did not sleep».'),
+  u("No, I didn't sleep much.", [b(['didn t|did not|no|not'], "I can never sleep on planes either.", 'Bien.'), b(['slept|yes'], 'Lucky you.', 'Bien.')], 'Negativa: «I did not sleep».'),
   o('What did you do when you arrived?'),
   u('I went to the hostel and had a shower.', [b(['went|had|slept|ate|called|took|was'], 'Smart move.', 'Bien.')], 'Por ejemplo: «I went to the hostel».'),
 ]);
@@ -290,7 +290,7 @@ call('past-cont', '¿Qué estabas haciendo?', 'Te llamó y no atendiste', 'Cont�
 ]);
 
 call('past-cont', 'Un susto', 'Contando una anécdota', 'Usá pasado continuo + pasado simple (when / while).', [
-  o("Did anything funny happen at work today?"),
+  o("Did anything crazy happen today?"),
   u('Yes. I was walking in the park when I saw a kangaroo.', [b(['was|were', '-ing', 'when|while|saw|came|jumped'], 'Ha! They love that park.', 'Bien: acción larga (was working) cortada por una corta (saw).')], 'Una acción en curso y otra que la corta: «I was walking when I saw…».'),
   o('What were you doing when it jumped?'),
   u('I was taking photos.', [b(['was|were', '-ing'], 'Classic.', 'Bien.')], '«I was taking photos».'),
@@ -299,10 +299,10 @@ call('past-cont', 'Un susto', 'Contando una anécdota', 'Usá pasado continuo + 
 ]);
 
 call('past-perfect', 'Antes de llegar', 'Hablando de tu llegada', 'Usá had + participio para algo anterior a otro pasado.', [
-  o('Had you visited Australia before this trip?'),
-  u("No, I had never been here before.", [b(['had|hadn t'], 'First time, nice.', 'Bien: had + participio.')], 'Antes de ese momento: «I had never been here before».'),
+  o('When you arrived, had you ever been abroad?'),
+  u("No, I had never been abroad before.", [b(['had never|hadn t|had not|no'], 'First time, nice.', 'Bien: had + participio.'), b(['had|yes'], 'Ah, an experienced traveller.', 'Bien: had + participio.')], 'Antes de ese momento: «I had never been abroad before».'),
   o('When you arrived at the hostel, had your friends arrived?'),
-  u('Yes, they had already arrived.', [b(['had|hadn t'], 'Good, someone to show you around.', 'Bien: «had already arrived».')], 'Algo anterior: «They had already arrived».'),
+  u('Yes, they had already arrived.', [b(['hadn t|had not|no'], 'So you got there first.', 'Bien: «had not arrived».'), b(['had|yes'], 'Good, someone to show you around.', 'Bien: «had already arrived».')], 'Algo anterior: «They had already arrived».'),
   o('Had you eaten before the flight?'),
   u("Yes, I had eaten at the airport.", [b(['had|hadn t'], 'Smart.', 'Bien.')], '«I had eaten before the flight».'),
 ]);
@@ -332,7 +332,7 @@ call('future', 'Predicciones', 'Charla sobre el año que viene', 'Hacé predicci
   u('Yes, I think it will be a great year.', [b(['will|won t'], "I reckon you're right.", 'Bien: will para predecir.')], 'Predicción: «I think it will be…».'),
   o('Will you travel next year?'),
   u('Maybe. I will decide later.', [b(['will|won t|maybe|probably|i think'], 'Let me know if you come here.', 'Bien.')], '«I will come back» / «I will decide later».'),
-  o('What will you do with the money?'),
+  o('What will you do with the money you save?'),
   u("I'll save it to build a house in Uruguay.", [b(['will|i ll|going to'], 'Good on ya, mate.', 'Bien.')], '«I will save it…».'),
 ]);
 
@@ -351,7 +351,7 @@ call('future-perf', 'Planes a largo plazo', 'Charla sobre el futuro', 'Proyectat
   o('Will you be living in Uruguay or Australia?'),
   u("I'll be living in Uruguay.", [b(['will be|ll be', '-ing'], 'Near the beach?', 'Bien: will be living.')], '«I will be living in …».'),
   o('Will you have learnt to surf by then?'),
-  u("I hope I'll have learnt.", [b(['will have|ll have|hope|maybe|yes|no'], 'Ha! We can practise here.', 'Bien.')], '«I will have learnt to surf».'),
+  u("I hope so. I'll have learnt by then.", [b(['will have|ll have|hope|maybe|yes|no'], 'Ha! We can practise here.', 'Bien.')], '«I will have learnt to surf».'),
 ]);
 
 call('future-cont', 'Mañana a esta hora', 'Charla sobre mañana', 'Decí qué vas a estar haciendo con will be + -ing.', [
@@ -360,14 +360,14 @@ call('future-cont', 'Mañana a esta hora', 'Charla sobre mañana', 'Decí qué v
   o('And at eight in the evening?'),
   u("I'll be having dinner with my friends.", [b(['will be|ll be', '-ing'], 'Sounds good.', 'Bien: «will be having».')], '«I will be having dinner».'),
   o('Will you be using your car on Saturday?'),
-  u("No, I won't be using it.", [b(['will be|ll be|won t be|will not be', '-ing'], 'Great, can I borrow it?', 'Bien: won’t be + -ing.'), b(['yes|no'], 'Fair enough.', 'Bien. Completo: «I won’t be using it».')], '«I won’t be using it» / «Yes, I’ll be using it».'),
+  u("No, I won't be using it.", [b(['won t be|will not be|no'], 'Great, can I borrow it?', 'Bien: won’t be + -ing.'), b(['will be|ll be', '-ing'], 'Fair enough.', 'Bien: will be + -ing.'), b(['yes'], 'Fair enough.', 'Bien. Completo: «I’ll be using it».')], '«I won’t be using it» / «Yes, I’ll be using it».'),
 ]);
 
 call('future-cont', 'El viaje', 'Antes de un viaje', 'Contá tu viaje con will be + -ing.', [
   o("So you're flying out next week. Where will you be staying?"),
   u("I'll be staying at a hostel in Sydney.", [b(['will be|ll be', '-ing'], 'Nice one.', 'Bien: «will be staying».')], '«I will be staying at…».'),
   o('Will you be travelling alone?'),
-  u("No, I'll be travelling with a friend.", [b(['will be|ll be|won t be', '-ing'], 'Good company helps.', 'Bien.'), b(['yes|no'], 'Right.', 'Bien. Completo: «I’ll be travelling with a friend».')], '«I will be travelling with…».'),
+  u("No, I'll be travelling with a friend.", [b(['will be|ll be|won t be', '-ing'], 'Should be fun.', 'Bien.'), b(['yes|no'], 'Right.', 'Bien. Completo: «I’ll be travelling with a friend».')], '«I will be travelling with…».'),
   o("I'll be thinking of you, mate. Send me a photo."),
   u("Sure, I'll send you one.", [b([ANY], 'Legend.', 'Bien.')], 'Podés decir: «Sure, I will».'),
 ]);
@@ -425,9 +425,9 @@ call('pres-perfect', 'Novedades', 'Oliver vuelve de vacaciones', 'Contá novedad
   o("I've been away a week. What's new?"),
   u("We've already finished the Shiraz.", [b(['have|ve|has'], 'Already? Good work.', 'Bien: presente perfecto para novedades.')], 'Novedad: «We have already finished…».'),
   o('Have you found a car yet?'),
-  u("No, I haven't found one yet.", [b(['haven t|have not|have|ve|yet|just'], "Keep looking, they pop up.", 'Bien: «I have not found one yet».')], 'Con yet en negativa: «I have not found one yet».'),
+  u("No, I haven't found one yet.", [b(['haven t|have not|not|no'], "Keep looking, they pop up.", 'Bien: «I have not found one yet».'), b(['yes|have|found|just'], 'Nice! What did you get?', 'Bien: presente perfecto.')], 'Con yet en negativa: «I have not found one yet».'),
   o('Has your boss paid you?'),
-  u('Yes, he has just paid me.', [b(['has|hasn t|have'], 'Beauty.', 'Bien: con he va has.')], 'Con he: «He has just paid me».'),
+  u('Yes, he has just paid me.', [b(['hasn t|has not|no'], 'Give him a nudge.', 'Bien: con he va has.'), b(['has|have|yes'], 'Beauty.', 'Bien: con he va has.')], 'Con he: «He has just paid me».'),
 ]);
 
 call('pres-perf-cont', '¿Cuánto hace?', 'Charla sobre lo que venís haciendo', 'Usá have been + -ing con for / since.', [
@@ -463,7 +463,7 @@ call('cond-1-2', 'La lotería', 'Charla soñando', 'Usá if + pasado, would (con
   o("If you won the lottery, what would you do?"),
   u('If I won the lottery, I would buy a farm.', [b(['would|d'], 'Dream big!', 'Bien: if + pasado, would + verbo.')], 'Condicional 2: «If I won…, I would buy…».'),
   o('Would you stay in Australia?'),
-  u("No, I would go back to Uruguay.", [b(['would|wouldn t|d'], 'Fair enough, family is family.', 'Bien.')], '«I would go back…» / «I would not stay».'),
+  u("No, I would go back to Uruguay.", [b(['go back|uruguay|wouldn t|would not|no'], 'Fair enough, family is family.', 'Bien.'), b(['would|d|yes'], "Good on ya. We'd love to have you.", 'Bien.')], '«I would go back…» / «I would not stay».'),
   o('If you were the boss here, what would you change?'),
   u('If I were the boss, I would start later.', [b(['were|was', 'would|d'], 'Ha! Everyone would love you.', 'Bien: If I were…')], 'Con if se usa were: «If I were the boss, I would…».'),
 ]);
@@ -552,7 +552,7 @@ call('collocations', 'Make o do', 'Charla en el descanso', 'Usá make / do / tak
   o("Have you made any friends here yet?"),
   u("Yes, I've made a lot of friends.", [b(['made|make'], 'Good on ya.', 'Bien: make friends.')], 'Hacer amigos = «make friends».'),
   o('What do you do after work?'),
-  u('I do exercise and take a shower.', [b(['do|take|have|go'], 'Healthy!', 'Bien: do exercise, take a shower.')], '«do exercise», «take a shower».'),
+  u('I do some exercise and have a shower.', [b(['do|take|have|go'], 'Healthy!', 'Bien: do exercise, take a shower.')], '«do exercise», «take a shower».'),
   o('Did you make a mistake on your first day?'),
   u('Yes, I made a big mistake.', [b(['made|make'], 'Ha! Everyone does.', 'Bien: make a mistake.')], 'Equivocarse = «make a mistake».'),
   o("Let's take a photo for your family."),
@@ -572,7 +572,7 @@ call('phrasal-1', 'Buscando cosas', 'En la casa compartida', 'Usá phrasal verbs
   o("What are you looking for, mate?"),
   u("I'm looking for my keys.", [b(['looking for|look for'], 'Check the kitchen.', 'Bien: look for = buscar.')], 'Buscar = «look for».'),
   o("Did you turn off the heater?"),
-  u('Yes, I turned it off.', [b(['turned off|turn off|turned it off|turn it off|turned on'], 'Good, power is expensive.', 'Bien: turn off.')], 'Apagar = «turn off».'),
+  u('Yes, I turned it off.', [b(['no|forgot|not'], 'Can you turn it off now?', 'Bien.'), b(['turned off|turn off|turned it off|turn it off'], 'Good, power is expensive.', 'Bien: turn off.')], 'Apagar = «turn off».'),
   o("We've run out of milk. Can you pick some up?"),
   u("Sure, I'll pick some up.", [b(['pick|get|buy|sure|yes'], 'Cheers.', 'Bien: pick up.')], '«pick up» = pasar a buscar / comprar al pasar.'),
   o('Did you find out the bus times?'),
@@ -589,10 +589,10 @@ call('phrasal-1', 'No te rindas', 'Charla motivadora', 'Usá give up, get up, go
 ]);
 
 call('relatives', 'La gente del trabajo', 'Describiendo compañeros', 'Usá who / which / where.', [
-  o("Who's the guy who drives the forklift?"),
-  u("He's the guy who works in the kitchen.", [b(['who|that'], 'Ah, that\'s Jake.', 'Bien: who para personas.')], 'Para personas: «the guy who…».'),
-  o("What's that thing which you use for opening tins?"),
-  u('It is the tool which opens tins.', [b(['which|that'], 'Right, a tin opener.', 'Bien: which para cosas.')], 'Para cosas: «the tool which…».'),
+  o("Who's Jake?"),
+  u("He's the guy who drives the forklift.", [b(['who|that'], 'Ah, right.', 'Bien: who para personas.')], 'Para personas: «the guy who…».'),
+  o("What's a tin opener?"),
+  u("It's a tool which opens tins.", [b(['which|that'], 'Spot on.', 'Bien: which para cosas.')], 'Para cosas: «the tool which…».'),
   o("Tell me about the town where you grew up."),
   u('It is a small town where everyone knows each other.', [b(['where'], 'Sounds like here.', 'Bien: where para lugares.')], 'Para lugares: «a town where…».'),
 ]);
@@ -608,7 +608,7 @@ call('relatives', 'Recomendaciones', 'Pidiendo dónde comer', 'Recomendá con wh
 
 call('connectors', 'Opiniones', 'Charla sobre el trabajo', 'Conectá ideas con because, but, so, although.', [
   o("Do you like your job?"),
-  u("Yes, I like it because I learn a lot.", [b(['because|but|so|although|and'], 'True, you learn heaps.', 'Bien: usaste un conector.')], 'Para dar la razón: «because…».'),
+  u("Yes, I like it because I learn a lot.", [b(['because|but|so|although|and'], 'Fair enough.', 'Bien: usaste un conector.')], 'Para dar la razón: «because…».'),
   o("Isn't it tiring?"),
   u("It's tiring, but I enjoy it.", [b(['but|although|though|however'], 'Good attitude.', 'Bien: but para contrastar.')], 'Contraste: «It is tiring, but…».'),
   o("It's going to be hot tomorrow."),
@@ -620,7 +620,7 @@ call('connectors', 'Opiniones', 'Charla sobre el trabajo', 'Conectá ideas con b
 call('connectors', 'Decidiendo', 'Pensando en comprar un auto', 'Usá unless, in case, however.', [
   o("Are you going to buy a car?"),
   u("I won't buy one unless it's cheap.", [b(['unless|if|because|but'], 'Fair enough.', 'Bien: unless = a menos que.')], '«unless» = a menos que.'),
-  o("Should you bring a jacket to the trip?"),
+  o("Are you bringing a jacket on the trip?"),
   u("Yes, I'll bring one in case it gets cold.", [b(['in case|because|if|so'], 'Good idea, nights are cold.', 'Bien: in case = por si.')], 'Por si acaso: «in case it gets cold».'),
   o("Cars are cheap in the country. However, they're old."),
   u("I know. However, I only need it for a few months.", [b(['however|but|although|so|because'], 'Makes sense.', 'Bien.')], '«However, …».'),
@@ -652,7 +652,7 @@ call('aussie', 'Hablando como australiano', 'Barbie en la casa de Oliver', 'Usá
   o("Thanks for coming this arvo."),
   u("No worries! Thanks for the barbie.", [b(['no worries|thanks|cheers|thank'], 'Any time.', 'Bien: «No worries».')], '«No worries» = no pasa nada / de nada.'),
   o("You coming to the footy on Saturday?"),
-  u("Yeah, sounds good. I reckon it'll be fun.", [b(['yeah|yes|sure|reckon|sounds good|no'], 'Ripper.', 'Bien.')], '«I reckon…» = me parece.'),
+  u("Yeah, sounds good. I reckon it'll be fun.", [b(['yeah|yes|sure|reckon|sounds good'], 'Ripper.', 'Bien.'), b(['no|not'], 'No worries, another time.', 'Bien.')], '«I reckon…» = me parece.'),
 ]);
 
 call('aussie', 'Un día en la playa', 'Bondi', 'Entendé y usá slang australiano.', [
@@ -665,8 +665,8 @@ call('aussie', 'Un día en la playa', 'Bondi', 'Entendé y usá slang australian
 ]);
 
 call('false-friends', 'Cuidado con las palabras', 'Charla con trampas', 'Usá bien los falsos amigos.', [
-  o("What do you actually do in Uruguay?"),
-  u('Actually, I work in a bank. Currently I am on holiday.', [b(['actually|currently|now|at the moment|i work'], 'Ah, makes sense.', 'Bien: actually = en realidad; currently = actualmente.')], '«actualmente» = currently (no actually).'),
+  o("So you're a student in Uruguay?"),
+  u("Actually, I work in a bank. Currently, I'm on holiday.", [b(['actually|currently|now|at the moment|i work'], 'Ah, makes sense.', 'Bien: actually = en realidad; currently = actualmente.')], '«actualmente» = currently (no actually).'),
   o('Did you attend the meeting this morning?'),
   u("Yes, I attended the meeting.", [b(['attended|attend|went|yes|no'], 'Good.', 'Bien: attend = asistir a un evento.')], 'Asistir a una reunión = «attend».'),
   o("You looked embarrassed at the party!"),
@@ -688,16 +688,16 @@ call('gerund-inf', 'Gustos y planes', 'Charla tranquila', 'Usá -ing después de
   o('What do you want to do next year?'),
   u('I want to travel around Australia.', [b(['want to|would like to|plan to|hope to|going to'], 'Do the Great Ocean Road.', 'Bien: want + to.')], 'Después de want va to: «I want to travel».'),
   o("Are you interested in learning to surf?"),
-  u("Yes, I'm interested in learning.", [b(['interested in|-ing|yes|no'], "I'll teach you.", 'Bien: preposición + -ing.')], 'Después de una preposición va -ing: «interested in learning».'),
+  u("Yes, I'm interested in learning.", [b(['no|not'], 'No worries.', 'Bien.'), b(['interested in|-ing|yes'], "I'll teach you.", 'Bien: preposición + -ing.')], 'Después de una preposición va -ing: «interested in learning».'),
   o("Don't forget to bring a hat tomorrow."),
   u("I won't forget to bring it.", [b(['forget to|remember to|won t|will|ok|sure'], 'Good.', 'Bien.')], '«remember to bring» / «forget to bring».'),
 ]);
 
 call('gerund-inf', 'Dejar o seguir', 'Hablando de hábitos', 'Usá stop/keep/avoid + -ing.', [
   o("Did you stop drinking soft drinks?"),
-  u('Yes, I stopped drinking them.', [b(['stopped|stop|quit|gave up', '-ing'], 'Good on ya.', 'Bien: stop + -ing = dejar de.')], 'Dejar de: «stop drinking».'),
-  o('Do you keep practising English every day?'),
-  u('Yes, I keep practising every day.', [b(['keep|kept|-ising|-icing', '-ing'], 'It shows.', 'Bien: keep + -ing.')], 'Seguir haciendo: «keep practising».'),
+  u('Yes, I stopped drinking them.', [b(['did not|didn t|not|no'], "Fair enough, they're hard to quit.", 'Bien.'), b(['stopped|stop|quit|gave up', '-ing'], 'Good on ya.', 'Bien: stop + -ing = dejar de.')], 'Dejar de: «stop drinking».'),
+  o('Are you still practising every day?'),
+  u("Yes, I keep practising, even when I'm tired.", [b(['keep|kept|-ising|-icing', '-ing'], 'It shows.', 'Bien: keep + -ing.')], 'Seguir haciendo: «keep practising».'),
   o("I'm looking forward to seeing you at the barbie."),
   u("Me too, I'm looking forward to seeing everyone.", [b(['looking forward to', '-ing'], 'Ripper.', 'Bien: look forward to + -ing.')], '«look forward to + -ing».'),
 ]);
@@ -760,9 +760,9 @@ call('inversion', 'Fue Ana la que…', 'Aclarando quién hizo qué', 'Usá It wa
 
 call('sounds-vowels', 'Ship o sheep', 'Practicando vocales', 'Decí bien las vocales cortas y largas.', [
   o("Can you say: I live in a big city."),
-  u('I live in a big city.', [b(['live|leave', 'city'], 'Spot on.', 'Bien: «live» con i corta.')], '«live» con i corta, distinta de «leave».'),
+  u('I live in a big city.', [b(['leave'], 'Hmm, that sounded like «leave». Try «live», short i.', 'Ojo: sonó como leave.'), b(['live', 'city'], 'Spot on.', 'Bien: «live» con i corta.')], '«live» con i corta, distinta de «leave».'),
   o("Now say: The sheep are on the hill."),
-  u('The sheep are on the hill.', [b(['sheep|ship', 'hill'], 'Nice and clear.', 'Bien.')], '«sheep» con i larga.'),
+  u('The sheep are on the hill.', [b(['ship'], 'Hmm, that sounded like «ship». Try «sheep», long ee.', 'Ojo: sonó como ship.'), b(['sheep', 'hill'], 'Nice and clear.', 'Bien.')], '«sheep» con i larga.'),
   o("What's your favourite food? Say it in a sentence."),
   u('My favourite food is pizza.', [b(['favourite|favorite|food|is|like|love'], 'Good choice.', 'Bien.')], 'Por ejemplo: «My favourite food is…».'),
 ]);
@@ -773,15 +773,15 @@ call('sounds-endings', 'Finales -s y -ed', 'Practicando finales', 'Pronunciá bi
   o('What does your friend do every day?'),
   u('She works, she eats and she plays football.', [b(['works|eats|plays|goes|watches|studies|drinks|-s'], 'Sounds fun.', 'Bien: -s con she.')], 'Con she el verbo lleva -s: «works», «plays».'),
   o('Did you want to go out tonight?'),
-  u('Yes, I wanted to go out.', [b(['wanted|want|yes|no'], 'Ripper.', 'Bien: «wanted» suena /ɪd/.')], '«wanted» suma una sílaba: want-ed.'),
+  u('Yes, I wanted to go out.', [b(['wanted|want|yes'], 'Ripper.', 'Bien: «wanted» suena /ɪd/.'), b(['no|not'], 'No worries, another time.', 'Bien.')], '«wanted» suma una sílaba: want-ed.'),
 ]);
 
 call('connected-speech', 'Hablá de corrido', 'Charla rápida', 'Practicá frases rápidas y naturales.', [
   o("What are you gonna do tonight?"),
   u("I'm gonna watch a movie.", [b(['going to|gonna|will|watch|go|stay'], 'Nice.', 'Bien.')], '«gonna» = going to, en charla rápida.'),
   o("Do you wanna grab a cup of tea first?"),
-  u('Sure, I want to grab a cup of tea.', [b(['want to|wanna|sure|yes|ok|cup'], 'Kettle\'s on.', 'Bien.')], '«wanna» = want to.'),
-  o("What do you think of it?"),
+  u('Yeah, I wanna grab one.', [b(['want to|wanna|sure|yes|ok|cup'], 'Kettle\'s on.', 'Bien.')], '«wanna» = want to.'),
+  o("What do you think of the movie?"),
   u("I think it's great.", [b(['think|reckon|great|good|nice|love'], 'Me too.', 'Bien.')], '«What do you» suena «whaddaya».'),
 ]);
 
@@ -804,7 +804,7 @@ call('sounds-endings', 'Contando el día', 'Llamada a la noche', 'Contá tu día
 ]);
 call('connected-speech', 'Planes rápidos', 'Mensaje de voz', 'Respondé rápido y natural.', [
   o("Hey, what's up? Wanna come to the beach?"),
-  u('Yeah, I want to come.', [b(['yeah|yes|want to|wanna|sure|no'], 'Ripper.', 'Bien.')], '«I wanna come» = I want to come.'),
+  u('Yeah, I want to come.', [b(['yeah|yes|want to|wanna|sure'], 'Ripper.', 'Bien.'), b(['no|not'], 'No worries, another time.', 'Bien.')], '«I wanna come» = I want to come.'),
   o("Got your stuff ready?"),
   u("Yeah, I've got it.", [b(['got|yes|yeah|ready'], 'See you there.', 'Bien.')], '«I have got it».'),
   o("Let's meet at nine, alright?"),

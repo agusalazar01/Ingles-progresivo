@@ -13,6 +13,12 @@ import { HEALTH_EXPR, HEALTH_UNIT } from './u-health';
 import { FEELINGS_EXPR, FEELINGS_UNIT } from './u-feelings';
 import { MONEY_EXPR, MONEY_UNIT } from './u-money';
 import { STORIES_EXPR, STORIES_UNIT } from './u-stories';
+import { FAMILY_EXPR, FAMILY_UNIT } from './u-family';
+import { SHOPPING_EXPR, SHOPPING_UNIT } from './u-shopping';
+import { WEATHER_EXPR, WEATHER_UNIT } from './u-weather';
+import { JOBHUNT_EXPR, JOBHUNT_UNIT } from './u-jobhunt';
+import { NEWS_EXPR, NEWS_UNIT } from './u-news';
+import { DEBATE_EXPR, DEBATE_UNIT } from './u-debate';
 
 export { EXPR_TYPE_LABEL, type Expression, type ExprType } from './dsl';
 
@@ -20,12 +26,14 @@ export { EXPR_TYPE_LABEL, type Expression, type ExprType } from './dsl';
 export const CONTEXT_UNITS: Unit[] = [
   GREETINGS_UNIT, FOOD_UNIT, PLANS_UNIT, BEACH_UNIT, TRANSPORT_UNIT,
   HOUSE_UNIT, FEELINGS_UNIT, PROBLEMS_UNIT, HEALTH_UNIT, WORK_UNIT, MONEY_UNIT, STORIES_UNIT,
+  FAMILY_UNIT, SHOPPING_UNIT, WEATHER_UNIT, JOBHUNT_UNIT, NEWS_UNIT, DEBATE_UNIT,
 ];
 
 /** Catálogo completo, en orden de aparición. */
 export const CATALOG: Expression[] = [
   ...GREETINGS_EXPR, ...FOOD_EXPR, ...PLANS_EXPR, ...BEACH_EXPR, ...TRANSPORT_EXPR,
   ...HOUSE_EXPR, ...FEELINGS_EXPR, ...PROBLEMS_EXPR, ...HEALTH_EXPR, ...WORK_EXPR, ...MONEY_EXPR, ...STORIES_EXPR,
+  ...FAMILY_EXPR, ...SHOPPING_EXPR, ...WEATHER_EXPR, ...JOBHUNT_EXPR, ...NEWS_EXPR, ...DEBATE_EXPR,
   ...MODAL_EXPR,
 ];
 

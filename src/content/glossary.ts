@@ -5,6 +5,19 @@
 export type GlossEntry = [string, string, string, string?];
 
 export const GLOSSARY: Record<string, GlossEntry> = {
+  // ── v1.17: familia, compras, clima, trabajo, noticias, debate ──
+  nan: ['australiano', 'abuela (cariñoso)', "I'm visiting my nan on Sunday."],
+  refund: ['sustantivo', 'reembolso, devolución de la plata', 'Can I get a refund?'],
+  receipt: ['sustantivo', 'ticket, comprobante (la p no suena)', "Here's your receipt."],
+  stinking: ['adjetivo', 'tremendo (en «stinking hot»: calor insoportable)', "It's stinking hot today."],
+  sunburnt: ['adjetivo', 'quemado por el sol', 'I got sunburnt at the beach.'],
+  barista: ['sustantivo', 'barista (el que prepara café)', "I've worked as a barista for two years."],
+  resume: ['sustantivo', 'currículum (también CV)', 'Send us your resume.'],
+  availability: ['sustantivo', 'disponibilidad (días y horas)', "What's your availability like?"],
+  bushfire: ['sustantivo', 'incendio forestal', 'The road was closed because of a bushfire.'],
+  quitting: ['verbo', 'renunciando, dejando (quit)', "Apparently, he's quitting."],
+  rumour: ['sustantivo', 'rumor', 'Rumour has it they are getting married.'],
+  devil: ['sustantivo', "diablo (play devil's advocate = hacer de abogado del diablo)", "Just to play devil's advocate…"],
   // ── Australia ──
   arvo: ['australiano', 'la tarde (afternoon)', 'See you this arvo.', "Let's have a barbie in the arvo."],
   brekkie: ['australiano', 'desayuno (breakfast)', "Let's grab some brekkie.", 'Brekkie is on me.'],

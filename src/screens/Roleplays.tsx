@@ -81,9 +81,17 @@ const SHOW_AIM: Level[] = ['A1', 'A2'];
  * Biblioteca de roleplays: situaciones reales para vivir y trabajar en Australia. Cada una es un guion
  * con ramas; la IA de charla queda como modo libre opcional.
  */
-export function Roleplays({ onExit, onAiCall, onTutor }: { onExit: () => void; onAiCall: (script: CallScript) => void; onTutor: () => void }) {
-  const [view, setView] = useState<View>({ v: 'library' });
-  const back = () => (view.v === 'library' ? onExit() : view.v === 'talk' ? (stopSpeaking(), setView({ v: 'brief', id: view.id })) : setView({ v: 'library' }));
+export function Roleplays({ onExit, onAiCall, onTutor, startId }: { onExit: () => void; onAiCall: (script: CallScript) => void; onTutor: () => void; startId?: string }) {
+  // Desde el camino se abre directo un roleplay; al volver de su ficha se vuelve al camino.
+  const [view, setView] = useState<View>(startId && roleplayById(startId)?.script ? { v: 'brief', id: startId } : { v: 'library' });
+  const back = () =>
+    view.v === 'library' || (startId && view.v === 'brief')
+      ? onExit()
+      : view.v === 'talk'
+        ? (stopSpeaking(), setView({ v: 'brief', id: view.id }))
+        : startId
+          ? onExit()
+          : setView({ v: 'library' });
   useBack(true, back, 2);
 
   if (view.v === 'brief') return <Brief e={roleplayById(view.id)!} onBack={back} onStart={() => setView({ v: 'talk', id: view.id })} onAiCall={onAiCall} />;
@@ -91,7 +99,7 @@ export function Roleplays({ onExit, onAiCall, onTutor }: { onExit: () => void; o
     const e = roleplayById(view.id)!;
     return <Talk e={e} s={e.script!} onBack={back} onDone={(log, turns) => setView({ v: 'done', id: view.id, log, turns })} />;
   }
-  if (view.v === 'done') return <Done e={roleplayById(view.id)!} log={view.log} turns={view.turns} onAgain={() => setView({ v: 'talk', id: view.id })} onBack={() => setView({ v: 'library' })} />;
+  if (view.v === 'done') return <Done e={roleplayById(view.id)!} log={view.log} turns={view.turns} onAgain={() => setView({ v: 'talk', id: view.id })} onBack={() => (startId ? onExit() : setView({ v: 'library' }))} />;
   return <Library onBack={back} onOpen={(id) => setView({ v: 'brief', id })} onTutor={onTutor} />;
 }
 

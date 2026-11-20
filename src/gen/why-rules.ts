@@ -391,7 +391,7 @@ export function prepWhy(target: string, after: string): string {
   else if (DAYS.test(first) || DAYS.test(two)) why = 'con días y fechas va on (on Monday)';
   else if (MONTHS.test(first)) why = 'con meses, años y estaciones va in (in December)';
   else if (/^the (morning|afternoon|evening)$/.test(two)) why = 'con las partes del día va in (in the evening); pero at night';
-  else if (/^(night|home|work|school|uni|the weekend)$/.test(first.toLowerCase()) || /^the (station|bus stop|airport|door|party)$/.test(two)) why = `«at ${first.toLowerCase() === 'the' ? two : first.toLowerCase()}» es un punto o un lugar puntual: va at`;
+  else if (/^(night|home|work|school|uni)$/.test(first.toLowerCase()) || /^the (station|bus stop|airport|door|party)$/.test(two)) why = `«at ${first.toLowerCase() === 'the' ? two : first.toLowerCase()}» es un punto o un lugar puntual: va at`;
   else if (/^the (table|wall|floor|bus|train|beach)$/.test(two)) why = t === 'on' ? 'sobre una superficie o en un transporte público va on (on the table, on the bus)' : '';
   if (!why) return RULES['prep-time-place'][t] ?? '';
   return `Va «${t}» porque ${why}.`;

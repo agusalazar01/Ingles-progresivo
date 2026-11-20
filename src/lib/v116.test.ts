@@ -14,8 +14,8 @@ const base = (): AppState => ({
 });
 
 describe('v1.16 unidades de situaciones', () => {
-  it('hay 12 unidades temáticas dentro del camino y de los temas', () => {
-    expect(CONTEXT_UNITS.length).toBe(12);
+  it('hay 18 unidades temáticas dentro del camino y de los temas', () => {
+    expect(CONTEXT_UNITS.length).toBe(18);
     for (const u of CONTEXT_UNITS) {
       expect(UNITS.some((x) => x.id === u.id), u.id).toBe(true);
       expect(THEMES.some((t) => t.units.includes(u.id)), u.id).toBe(true);
