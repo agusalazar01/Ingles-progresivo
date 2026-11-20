@@ -19,6 +19,18 @@
 
 App para aprender inglés pensada para hispanohablantes. Cada tema se apoya en el anterior, y usa los métodos con más evidencia científica.
 
+## Novedades de la versión 1.18
+
+- **Camino nuevo con nodos** (diseño provisorio: círculos y línea): 33 secciones de A1 a C1. Cada unidad tiene sus lecciones, una Escucha y una Práctica para afianzar; cada sección, roleplays, un cuento, una postal de Australia y un repaso final; cada nivel cierra con un Repaso de etapa. Se puede saltar un nivel con una prueba.
+- **33 cuentos de verdad**, uno por sección, con el texto original: cuentos ilustrados (Global Storybooks), fábulas de Esopo y clásicos de O. Henry, Saki, Oscar Wilde, Stockton y Poe. Cada uno con traducción, desglose, preguntas y ejercicios.
+- **6 unidades nuevas:** familia, compras, clima, buscar trabajo, noticias y debatir.
+- **Revisión de todo el contenido:** ejercicios sin ambigüedades, más respuestas correctas aceptadas, español corregido, llamadas y roleplays que entienden bien el sí y el no, y datos de Australia actualizados.
+
+## Novedades de la versión 1.17
+
+- **Taller de verbos mejor explicado:** cada forma (base, he/she/it, pasado, participio, -ing) dice para qué sirve y trae dos oraciones de ejemplo con la forma resaltada, su traducción y ▶ para escucharlas. Se acabó el «Ejemplo: a dog = un perro» suelto. Los verbos de estado (have, know, want, understand, see, live) explican cuándo sí y cuándo no van en -ing.
+- **Cada personaje con su voz en los diálogos de las unidades:** Mia habla con voz de mujer y Leo con voz de hombre, tanto en ▶ como en «Escuchar todo», y dos personajes nunca comparten voz. Usa tu paquete de voces (Pocket); si no tiene de ese género, una voz del teléfono; y si tampoco, cambia el tono.
+
 ## Novedades de la versión 1.11
 
 - **Charla con la profe (IA online):** dentro de Roleplays. Hablás libre solo en inglés con Kate, directo con la IA (Groq), sin Oliver y con tu reconocimiento de voz (Parakeet, si lo elegiste). Después de cada frase tuya aparece la corrección: qué dijiste, cómo se dice bien y por qué, en español. Tiene botón 💡 para cuando no sabés qué decir, y al terminar un resumen con tus errores y vocabulario para guardar. Muestra cuánto del tope gratis diario llevás gastado.

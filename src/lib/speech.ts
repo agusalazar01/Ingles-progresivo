@@ -92,7 +92,7 @@ export async function canSpeak(): Promise<boolean> {
 }
 
 /** Habla `text`. `varied` elige una voz inglesa al azar (entrenamiento con muchas voces). */
-export async function say(text: string, opts: { accent?: Accent; varied?: boolean; slow?: boolean; lang?: string; voice?: string } = {}) {
+export async function say(text: string, opts: { accent?: Accent; varied?: boolean; slow?: boolean; lang?: string; voice?: string; pitch?: number } = {}) {
   const accent = opts.accent ?? 'variado';
   const wanted = opts.voice ?? (opts.varied ? '' : preferred);
   // Con una voz fija se vuelve a pedir la lista para que el índice coincida con el del teléfono.
@@ -108,7 +108,7 @@ export async function say(text: string, opts: { accent?: Accent; varied?: boolea
 
   if (native) {
     await TextToSpeech.stop().catch(() => {});
-    await TextToSpeech.speak({ text, lang, rate, voice: voice?.index, category: 'playback' });
+    await TextToSpeech.speak({ text, lang, rate, pitch: opts.pitch ?? 1, voice: voice?.index, category: 'playback' });
     return;
   }
   if ('speechSynthesis' in window) {
@@ -116,6 +116,7 @@ export async function say(text: string, opts: { accent?: Accent; varied?: boolea
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang;
     u.rate = rate;
+    if (opts.pitch) u.pitch = opts.pitch;
     const v = voice ? speechSynthesis.getVoices()[voice.index] : undefined;
     if (v) u.voice = v;
     // Se espera a que termine de hablar (sirve para animar al personaje de la llamada).

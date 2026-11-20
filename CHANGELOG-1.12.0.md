@@ -65,7 +65,7 @@
 - Voces: todo personaje de roleplay tiene voz de hombre o de mujer; si el nombre no lo dice (Agente, Officer Brown), se elige una fija por personaje en vez de usar la voz de Oliver.
 - Correcciones de contenido: «sílabas», people/persons, consignas de backshift y futuro perfecto. Numeración de roleplays sin huecos.
 
-## 1.17.0 — el camino, los cuentos y la gran revisión
+## 1.18.0 — el camino, los cuentos y la gran revisión
 **Camino**
 - Camino nuevo con nodos (diseño provisorio: círculos y línea): 33 secciones de A1 a C1, cada una con una meta comunicativa, que reúnen las 57 unidades. Los ejercicios de siempre son los nodos de lección: no se perdió ninguno.
 - Intermedio para afianzar sin repetir: cada unidad tiene su Escucha a mitad de camino (dictados) y su Práctica al final (lo que te costó, con otro tipo de ejercicio). Cada sección cierra con un Repaso final, y cada nivel con un **Repaso de etapa 🏆** con todo el nivel (75 % para aprobar).

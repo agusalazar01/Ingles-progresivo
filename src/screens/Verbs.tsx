@@ -5,11 +5,23 @@ import { ExerciseRunner, type RunnerItem } from '../components/ExerciseRunner';
 import { completeVerbStage, STEP_PASS, stepScore, VERB_UNIT, type ItemResult } from '../lib/actions';
 import { say } from '../lib/speech';
 import { getState, useAppState } from '../lib/store';
-import { ingOf, third } from '../gen/english';
-import { isIrregular, stageItems, VSTAGES, WORKSHOP, workshopVerb } from '../gen/verbs';
+import { isIrregular, stageItems, verbGuide, VSTAGES, WORKSHOP, workshopVerb } from '../gen/verbs';
 import type { Route } from '../App';
 
 const STAGES = VSTAGES.length;
+
+/** La oración con la forma del verbo resaltada. */
+function Hl({ text, hl }: { text: string; hl: string }) {
+  const m = new RegExp(`\\b${hl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).exec(text);
+  if (!m) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, m.index)}
+      <span className="en-hl">{m[0]}</span>
+      {text.slice(m.index + m[0].length)}
+    </>
+  );
+}
 
 /** Un verbo se abre cuando dominaste el anterior: de los más frecuentes a los menos. */
 export function verbOpen(index: number, verbs: Record<string, number>) {
@@ -147,36 +159,36 @@ export function VerbLesson({ verbId, banner, onExit, onNext }: { verbId: string;
         </button>
       </div>
       <p className="meaning">{v.es}</p>
-      <table className="forms">
-        <tbody>
-          <tr>
-            <th>Base</th>
-            <td>{v.base}</td>
-          </tr>
-          <tr>
-            <th>he / she / it</th>
-            <td>{third(v.base)}</td>
-          </tr>
-          <tr>
-            <th>Pasado</th>
-            <td>{v.past}</td>
-          </tr>
-          <tr>
-            <th>Participio</th>
-            <td>{v.pp}</td>
-          </tr>
-          <tr>
-            <th>-ing</th>
-            <td>{ingOf(v)}</td>
-          </tr>
-        </tbody>
-      </table>
       <p className="small">
         {isIrregular(v)
-          ? 'Es irregular: el pasado y el participio no terminan en -ed, hay que aprenderlos de memoria.'
+          ? `Es irregular: el pasado (${v.past}) y el participio (${v.pp}) no terminan en -ed, hay que aprenderlos de memoria.`
           : 'Es regular: el pasado y el participio terminan en -ed.'}{' '}
-        Ejemplo: «{v.comps[0].en}» = {v.comps[0].es}.
+        Abajo tenés para qué sirve cada forma, con ejemplos. Tocá ▶ para escucharlos.
       </p>
+      <div className="verb-guide">
+        {verbGuide(v).map((g) => (
+          <div key={g.label} className="verb-form">
+            <div className="row between">
+              <span className="form-label">{g.label}</span>
+              <b className="verb-form-word">{g.form}</b>
+            </div>
+            <p className="small">{g.use}</p>
+            {g.examples.map((e) => (
+              <div key={e.en} className="verb-ex">
+                <div className="example-row">
+                  <p className="en">
+                    <Hl text={e.en} hl={e.hl} />
+                  </p>
+                  <button className="icon" onClick={() => say(e.en, { accent })} aria-label="Escuchar">
+                    ▶
+                  </button>
+                </div>
+                <p className="es">{e.es}</p>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
       {failed !== null && (
         <div className="feedback bad">
           <p className="verdict">Todavía no: {Math.round(failed * 100)}% al primer intento</p>
